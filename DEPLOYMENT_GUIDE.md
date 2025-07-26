@@ -39,11 +39,11 @@ This guide covers deploying your Schedule Maker application using a split deploy
 ## 2. Backend Deployment
 
 ### Option A: Railway (Recommended)
-1. Push your code to GitHub
+1. Push your code to GitHub (including the `nixpacks.toml` file in the root)
 2. Go to [railway.app](https://railway.app)
 3. Create new project → Deploy from GitHub
-4. Select your repository
-5. Set root directory to `backend`
+4. Select your repository (deploy the entire repo, not just backend folder)
+5. Railway will automatically use the `nixpacks.toml` configuration
 6. Add environment variables:
    ```
    DATABASE_URL=your_postgresql_connection_string
