@@ -1,0 +1,42 @@
+# Backend Dependencies for Schedule Maker 2.0
+# Usar las versiones más recientes disponibles
+
+# Core Framework
+fastapi
+uvicorn[standard]
+websockets
+
+# Database
+sqlalchemy
+psycopg2-binary
+alembic
+
+# Authentication & Security
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+pydantic[email]
+email-validator
+
+# Environment & Configuration
+python-dotenv
+pydantic-settings
+
+# Cache & Session
+redis
+python-multipart
+
+# Utilities
+python-dateutil
+pytz
+faker
+pandas
+
+# File handling
+aiofiles
+
+# CORS & Middleware
+starlette
+
+# Optional: Para desarrollo
+# python-reload (solo si necesitas hot reload avanzado)

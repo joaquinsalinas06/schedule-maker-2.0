@@ -1,0 +1,578 @@
+{
+  "info": {
+    "name": "Schedule Maker 2.0 API",
+    "description": "Complete API collection for Schedule Maker 2.0 backend testing.\n\nDefault user: joaquinsalinassalas@gmail.com / 12345678\n\nSchedule Generation: Select specific section IDs you want to consider. System groups by course and generates combinations with ALL courses represented.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "2.0.1"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_email",
+      "value": "joaquinsalinassalas@gmail.com",
+      "type": "string"
+    },
+    {
+      "key": "user_password",
+      "value": "12345678",
+      "type": "string"
+    },
+    {
+      "key": "combination_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "System Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Database Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/db-status",
+              "host": ["{{base_url}}"],
+              "path": ["db-status"]
+            }
+          }
+        },
+        {
+          "name": "API Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"User registered successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\",\n  \"first_name\": \"Joaquin\",\n  \"last_name\": \"Salinas\",\n  \"university_id\": 1,\n  \"student_id\": \"20240001\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Login successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Access token received\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.access_token).to.be.a('string');",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "refresh"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Universities",
+      "item": [
+        {
+          "name": "Get All Universities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/universities",
+              "host": ["{{base_url}}"],
+              "path": ["api", "universities"]
+            }
+          }
+        },
+        {
+          "name": "Get University by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/universities/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "universities", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create University (Admin Only)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test University\",\n  \"short_name\": \"TEST\",\n  \"time_format\": \"hours\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/universities",
+              "host": ["{{base_url}}"],
+              "path": ["api", "universities"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Courses",
+      "item": [
+        {
+          "name": "Search Courses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/courses/search?q=computacion&university=UTEC&page=1&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "courses", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "computacion"
+                },
+                {
+                  "key": "university",
+                  "value": "UTEC"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Course with Sections",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/courses/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "courses", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Courses by University",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/courses/university/1?page=1&size=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "courses", "university", "1"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Departments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/courses/departments?university=UTEC",
+              "host": ["{{base_url}}"],
+              "path": ["api", "courses", "departments"],
+              "query": [
+                {
+                  "key": "university",
+                  "value": "UTEC"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Analyze CSV File",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/courses/analyze-csv",
+              "host": ["{{base_url}}"],
+              "path": ["api", "courses", "analyze-csv"]
+            }
+          }
+        },
+        {
+          "name": "Import Courses from CSV",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/courses/import-csv?university_id=1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "courses", "import-csv"],
+              "query": [
+                {
+                  "key": "university_id",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Schedule Builder",
+      "item": [
+        {
+          "name": "Step 1: Get Available Courses",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/schedules/courses?semester=2024-2",
+              "host": ["{{base_url}}"],
+              "path": ["api", "schedules", "courses"],
+              "query": [
+                {
+                  "key": "semester",
+                  "value": "2024-2"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Step 2: Generate Combinations from Courses",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Combinations generated successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data.combinations && jsonData.data.combinations.length > 0) {",
+                  "        pm.collectionVariables.set('combination_id', jsonData.data.combinations[0].combination_id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"selected_sections\": [6, 9, 12],\n  \"semester\": \"2024-2\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/schedules/generate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "schedules", "generate"]
+            }
+          }
+        },
+        {
+          "name": "Step 3: Save Favorite Schedule",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{base_url}}/api/schedules/save?combination_id={{combination_id}}&name=My Favorite Schedule&description=Best combination",
+              "host": ["{{base_url}}"],
+              "path": ["api", "schedules", "save"],
+              "query": [
+                {
+                  "key": "combination_id",
+                  "value": "{{combination_id}}"
+                },
+                {
+                  "key": "name",
+                  "value": "My Favorite Schedule"
+                },
+                {
+                  "key": "description",
+                  "value": "Best combination"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Saved Schedules",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/schedules/saved",
+              "host": ["{{base_url}}"],
+              "path": ["api", "schedules", "saved"]
+            }
+          }
+        },
+        {
+          "name": "Delete Saved Schedule",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/schedules/saved/{{schedule_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "schedules", "saved", "{{schedule_id}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
