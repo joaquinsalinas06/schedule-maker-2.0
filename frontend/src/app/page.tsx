@@ -21,7 +21,7 @@ import { AutocompleteInput } from "@/components/ui/autocomplete-input"
 import { useAutocomplete } from "@/hooks/useAutocomplete"
 import { authService } from "@/services/auth"
 import { apiService } from "@/services/api"
-import { Course, University, SelectedSection, Filter } from "@/types"
+import { Course, SelectedSection, Filter } from "@/types"
 import { ScheduleVisualization } from "@/components/ScheduleVisualization"
 import { FavoriteSchedules } from "@/components/FavoriteSchedules"
 import { SessionManager } from '@/components/collaboration/SessionManager'
@@ -256,26 +256,26 @@ export default function Dashboard() {
     }
   }
 
-  const handleRemoveSection = (sectionId: number) => {
-    setSelectedSections(prev => prev.filter(s => s.sectionId !== sectionId))
-  }
+  // const handleRemoveSection = (sectionId: number) => {
+  //   setSelectedSections(prev => prev.filter(s => s.sectionId !== sectionId))
+  // }
 
-  const handleSectionToggle = (section: any, isSelected: boolean) => {
-    if (isSelected) {
-      const newSelectedSection: SelectedSection = {
-        sectionId: section.id,
-        courseCode: section.course.code,
-        courseName: section.course.name,
-        sectionCode: section.section_number,
-        professor: section.professor,
-        credits: section.course.credits,
-        sessions: section.sessions
-      }
-      setSelectedSections(prev => [...prev, newSelectedSection])
-    } else {
-      setSelectedSections(prev => prev.filter(s => s.sectionId !== section.id))
-    }
-  }
+  // const handleSectionToggle = (section: any, isSelected: boolean) => {
+  //   if (isSelected) {
+  //     const newSelectedSection: SelectedSection = {
+  //       sectionId: section.id,
+  //       courseCode: section.course.code,
+  //       courseName: section.course.name,
+  //       sectionCode: section.section_number,
+  //       professor: section.professor,
+  //       credits: section.course.credits,
+  //       sessions: section.sessions
+  //     }
+  //     setSelectedSections(prev => [...prev, newSelectedSection])
+  //   } else {
+  //     setSelectedSections(prev => prev.filter(s => s.sectionId !== section.id))
+  //   }
+  // }
   
   // Favorite schedule management
   const addToFavorites = (schedule: any) => {
@@ -1256,7 +1256,7 @@ export default function Dashboard() {
                     <div className="text-center py-12 text-muted-foreground">
                       <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
                       <p>No hay horarios generados aún.</p>
-                      <p className="text-sm mt-2">Ve a "Generar Horarios" para seleccionar cursos y crear combinaciones.</p>
+                      <p className="text-sm mt-2">Ve a &quot;Generar Horarios&quot; para seleccionar cursos y crear combinaciones.</p>
                     </div>
                   </CardContent>
                 </Card>

@@ -12,8 +12,7 @@ import {
   BookOpen, 
   Eye,
   Download,
-  Share2,
-  Copy
+  Share2
 } from "lucide-react"
 
 // Define the interfaces here since we might not have them in types yet
@@ -166,7 +165,7 @@ Copia este código o link para compartir con otros estudiantes.`);
             <Heart className="w-16 h-16 mx-auto mb-4 opacity-50" />
             <p>No tienes horarios favoritos guardados.</p>
             <p className="text-sm mt-2">
-              Ve a "Generar Horarios" y marca algunos como favoritos para verlos aquí.
+              Ve a &quot;Generar Horarios&quot; y marca algunos como favoritos para verlos aquí.
             </p>
           </div>
         </CardContent>

@@ -3,7 +3,7 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChevronLeft, ChevronRight, Download, Calendar, Clock, BookOpen, Heart, Edit2, ArrowLeft } from "lucide-react"
+import { ChevronLeft, ChevronRight, Download, Calendar, Clock, Heart, ArrowLeft } from "lucide-react"
 
 interface Session {
   session_id: number
@@ -362,7 +362,7 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
           
           // Measure text and truncate if needed
           let displayText = text
-          let textWidth = ctx.measureText(displayText).width
+          const textWidth = ctx.measureText(displayText).width
           
           if (textWidth > maxWidth) {
             // Binary search for the right length

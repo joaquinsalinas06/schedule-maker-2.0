@@ -3,7 +3,6 @@ import {
   CourseSearchParams, 
   Course,
   ScheduleRequest, 
-  ScheduleResponse, 
   University 
 } from '@/types';
 

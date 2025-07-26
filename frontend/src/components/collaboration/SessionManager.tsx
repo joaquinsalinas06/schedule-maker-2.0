@@ -15,8 +15,7 @@ import {
   Play, 
   BarChart3, 
   Calendar,
-  MapPin,
-  ExternalLink
+  MapPin
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 

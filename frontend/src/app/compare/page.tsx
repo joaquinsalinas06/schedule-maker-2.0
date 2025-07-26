@@ -13,7 +13,6 @@ import {
   MapPin, 
   User,
   Copy,
-  Share2,
   BarChart3
 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
