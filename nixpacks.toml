@@ -1,11 +1,15 @@
 [phases.setup]
-nixPkgs = ["python3", "python3Packages.pip"]
+nixPkgs = ["python3", "python3Packages.pip", "python3Packages.virtualenv"]
 
 [phases.install]
-cmds = ["cd backend && pip install -r requirements.txt"]
+cmds = [
+  "cd backend",
+  "python3 -m venv venv",
+  "source venv/bin/activate && pip install -r requirements.txt"
+]
 
 [phases.build]
 cmds = ["cd backend"]
 
 [start]
-cmd = "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+cmd = "cd backend && source venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
