@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.schemas import CourseResponse, CourseWithSections, APIResponse, CSVImportResponse, CSVAnalysisResponse
 from app.services.course_service import CourseService
-from app.services.csv_import_service import CSVImportService
+# from app.services.csv_import_service import CSVImportService
 from app.utils.text_utils import should_perform_search
 
 router = APIRouter(prefix="/api/courses", tags=["courses"])
@@ -76,48 +76,48 @@ def get_departments(university: Optional[str] = Query(None), db: Session = Depen
     course_service = CourseService(db)
     return course_service.get_departments(university)
 
-@router.post("/import-csv", response_model=CSVImportResponse)
-async def import_courses_csv(
-    file: UploadFile = File(...),
-    university_id: int = Query(1, description="University ID to import courses to"),
-    db: Session = Depends(get_db)
-):
-    """
-    Import courses from CSV file
-    
-    Expected CSV format:
-    - Should have columns: Código Curso, Curso, Sección, Sesión Grupo, Modalidad, Horario, Ubicación, Vacantes, Matriculados, Docente, Correo
-    - Horario format: 'Mie. 09:00 - 11:00'
-    - Location format: 'UTEC-BA A907(48)'
-    """
-    # Validate file type
-    if not file.filename.endswith(('.csv', '.CSV')):
-        raise HTTPException(
-            status_code=400,
-            detail="Only CSV files are supported"
-        )
-    
-    import_service = CSVImportService(db)
-    result = await import_service.import_csv_file(file, university_id)
-    
-    return result
+# @router.post("/import-csv", response_model=CSVImportResponse)
+# async def import_courses_csv(
+#     file: UploadFile = File(...),
+#     university_id: int = Query(1, description="University ID to import courses to"),
+#     db: Session = Depends(get_db)
+# ):
+#     """
+#     Import courses from CSV file
+#     
+#     Expected CSV format:
+#     - Should have columns: Código Curso, Curso, Sección, Sesión Grupo, Modalidad, Horario, Ubicación, Vacantes, Matriculados, Docente, Correo
+#     - Horario format: 'Mie. 09:00 - 11:00'
+#     - Location format: 'UTEC-BA A907(48)'
+#     """
+#     # Validate file type
+#     if not file.filename.endswith(('.csv', '.CSV')):
+#         raise HTTPException(
+#             status_code=400,
+#             detail="Only CSV files are supported"
+#         )
+#     
+#     import_service = CSVImportService(db)
+#     result = await import_service.import_csv_file(file, university_id)
+#     
+#     return result
 
-@router.post("/analyze-csv", response_model=CSVAnalysisResponse)
-async def analyze_csv_file(
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db)
-):
-    """
-    Analyze CSV file without importing - provides statistics and validation
-    """
-    # Validate file type
-    if not file.filename.endswith(('.csv', '.CSV')):
-        raise HTTPException(
-            status_code=400,
-            detail="Only CSV files are supported"
-        )
-    
-    import_service = CSVImportService(db)
-    result = import_service.analyze_csv_file(file)
-    
-    return result
+# @router.post("/analyze-csv", response_model=CSVAnalysisResponse)
+# async def analyze_csv_file(
+#     file: UploadFile = File(...),
+#     db: Session = Depends(get_db)
+# ):
+#     """
+#     Analyze CSV file without importing - provides statistics and validation
+#     """
+#     # Validate file type
+#     if not file.filename.endswith(('.csv', '.CSV')):
+#         raise HTTPException(
+#             status_code=400,
+#             detail="Only CSV files are supported"
+#         )
+#     
+#     import_service = CSVImportService(db)
+#     result = import_service.analyze_csv_file(file)
+#     
+#     return result
