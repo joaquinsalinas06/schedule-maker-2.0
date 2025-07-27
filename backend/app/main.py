@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import database and models
-from app.database.connection import engine, get_db
+from app.database.connection import engine, get_db, SessionLocal
 from app.models import Base
 
 # Import routers
@@ -34,6 +34,70 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Database initialization
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup"""
+    try:
+        # Create tables
+        Base.metadata.create_all(bind=engine)
+        print("✓ Database tables created")
+        
+        # Initialize basic data if needed
+        db = SessionLocal()
+        try:
+            from app.models.university import University
+            from app.models.user import User
+            from app.utils.security import get_password_hash
+            from datetime import datetime
+            
+            # Create UTEC university if it doesn't exist
+            utec = db.query(University).filter(University.short_name == "UTEC").first()
+            if not utec:
+                utec = University(
+                    name="Universidad de Ingeniería y Tecnología",
+                    short_name="UTEC",
+                    time_format="hours",
+                    semester_info="Semester system with cycles 1-8 plus electives",
+                    parsing_config='{"time_format": "24h", "days": ["L", "M", "W", "J", "V", "S"]}'
+                )
+                db.add(utec)
+                db.commit()
+                db.refresh(utec)
+                print("✓ UTEC university created")
+            
+            # Create admin user if it doesn't exist
+            admin = db.query(User).filter(User.email == "admin@utec.edu.pe").first()
+            if not admin:
+                admin = User(
+                    email="admin@utec.edu.pe",
+                    hashed_password=get_password_hash("admin123"),
+                    first_name="Admin",
+                    last_name="UTEC",
+                    university_id=utec.id,
+                    student_id="ADMIN001",
+                    role="admin",
+                    is_verified=True,
+                    last_login=datetime.now()
+                )
+                db.add(admin)
+                db.commit()
+                print("✓ Admin user created")
+            
+            # ONE-TIME: Create sample courses (remove this after first run)
+            from app.models.course import Course
+            existing_courses = db.query(Course).filter(Course.university_id == utec.id).first()
+            if not existing_courses:
+                print("🔄 Creating sample courses...")
+                from scripts.setup_database import create_sample_courses
+                create_sample_courses(db, utec.id)
+                print("✓ Sample courses created")
+        finally:
+            db.close()
+            
+    except Exception as e:
+        print(f"❌ Database initialization failed: {e}")
+
 # Include routers
 app.include_router(auth.router)
 app.include_router(universities.router)
@@ -41,6 +105,7 @@ app.include_router(courses.router)
 app.include_router(schedules.router)
 app.include_router(collaboration.router)
 app.include_router(websocket.router)
+
 
 # Health check endpoints
 @app.get("/health")
