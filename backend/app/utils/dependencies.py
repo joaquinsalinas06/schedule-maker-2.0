@@ -40,16 +40,30 @@ def get_current_active_user(current_user: User = Depends(get_current_user)) -> U
 
 async def get_current_user_websocket(token: str, db: Session) -> Optional[User]:
     """Get current user for WebSocket connections"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
+        logger.info(f"Decoding JWT token for WebSocket: {token[:20]}...")
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:
+            logger.warning("No 'sub' field found in JWT payload")
             return None
             
+        logger.info(f"JWT decoded successfully, user_id: {user_id}")
         user = db.query(User).options(joinedload(User.university)).filter(User.id == int(user_id)).first()
+        
+        if user:
+            logger.info(f"User found: {user.id} ({user.email})")
+        else:
+            logger.warning(f"No user found with ID: {user_id}")
+            
         return user
         
-    except JWTError:
+    except JWTError as e:
+        logger.error(f"JWT decode error: {str(e)}")
         return None
-    except Exception:
+    except Exception as e:
+        logger.error(f"Unexpected error in WebSocket auth: {str(e)}")
         return None

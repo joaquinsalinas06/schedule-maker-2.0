@@ -60,6 +60,10 @@ export function SessionManager() {
   const joinSession = (session: CollaborativeSession) => {
     setCurrentSession(session);
     const token = localStorage.getItem('token');
+    console.log('Joining session:', session.session_code);
+    console.log('Token found:', !!token);
+    console.log('Token preview:', token ? token.substring(0, 20) + '...' : 'none');
+    
     if (token) {
       websocketService.connect(session.session_code, token);
     } else {

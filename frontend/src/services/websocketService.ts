@@ -20,12 +20,17 @@ class WebSocketService {
     this.token = token;
     
     const baseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8001';
-    const wsUrl = `${baseUrl}/ws/collaborate/${sessionCode}?token=${encodeURIComponent(token)}`;
+    // Remove trailing slash from baseUrl to avoid double slashes
+    const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const wsUrl = `${cleanBaseUrl}/ws/collaborate/${sessionCode}?token=${encodeURIComponent(token)}`;
+    
+    console.log('WebSocket connecting to:', wsUrl);
     
     try {
       this.ws = new WebSocket(wsUrl);
       this.setupEventListeners();
     } catch (error) {
+      console.error('WebSocket connection error:', error);
       this.handleConnectionError();
     }
   }
@@ -35,7 +40,11 @@ class WebSocketService {
     this.token = token;
     
     const baseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8001';
-    const wsUrl = `${baseUrl}/ws/compare/${sessionCode}?token=${encodeURIComponent(token)}`;
+    // Remove trailing slash from baseUrl to avoid double slashes
+    const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const wsUrl = `${cleanBaseUrl}/ws/compare/${sessionCode}?token=${encodeURIComponent(token)}`;
+    
+    console.log('WebSocket comparison connecting to:', wsUrl);
     
     try {
       this.ws = new WebSocket(wsUrl);
@@ -72,12 +81,18 @@ class WebSocketService {
     this.ws.onclose = (event) => {
       useCollaborationStore.getState().setIsConnected(false);
       
+      console.log(`WebSocket closed: code=${event.code}, reason=${event.reason}`);
+      
       if (event.code !== 1000) { // Not a normal closure
+        if (event.code === 1008) {
+          console.error('WebSocket closed due to policy violation (likely authentication error)');
+        }
         this.handleConnectionError();
       }
     };
 
     this.ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
       this.handleConnectionError();
     };
   }

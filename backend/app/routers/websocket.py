@@ -27,16 +27,22 @@ async def websocket_collaborate(
     user = None
     try:
         # Authenticate user from token
+        logger.info(f"Attempting WebSocket auth for session {session_code} with token: {token[:20]}...")
         user = await get_current_user_websocket(token, db)
         
         if not user:
+            logger.warning(f"WebSocket auth failed - no user found for token")
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
+            
+        logger.info(f"WebSocket user authenticated: {user.id} ({user.email})")
             
         # Verify session exists and user can join
         try:
             participant = CollaborationService.join_session(db, session_code, user.id)
+            logger.info(f"User {user.id} successfully joined session {session_code}")
         except Exception as e:
+            logger.error(f"Failed to join session {session_code}: {str(e)}")
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
             
