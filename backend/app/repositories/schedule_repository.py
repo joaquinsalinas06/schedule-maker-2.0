@@ -40,10 +40,13 @@ class ScheduleRepository(BaseRepository[Schedule]):
 
     def get_courses_for_university(self, university_id: int, semester: str) -> List[Course]:
         """Get all courses with their sections and sessions for a university"""
-        return self.db.query(Course).filter(
+        # First, let's get courses that actually have sections for this semester
+        courses_with_sections = self.db.query(Course).join(Section).filter(
             Course.university_id == university_id,
-            Course.is_active == True
-        ).options(
+            Course.is_active == True,
+            Section.semester == semester,
+            Section.is_active == True
+        ).distinct().options(
             joinedload(Course.sections.and_(
                 Section.semester == semester,
                 Section.is_active == True
@@ -51,6 +54,8 @@ class ScheduleRepository(BaseRepository[Schedule]):
                 SessionModel.is_active == True
             ))
         ).all()
+        
+        return courses_with_sections
 
     def get_sections_for_user_university(self, section_ids: List[int], university_id: int, semester: str) -> List[Section]:
         """Verify sections belong to user's university and are active"""

@@ -58,13 +58,14 @@ const weekDayChars = ["L", "M", "W", "J", "V", "S"]
 
 // Mapping from Spanish day names to array indices
 const dayNameToIndex: { [key: string]: number } = {
-  "Lunes": 0,
-  "Martes": 1, 
-  "Miércoles": 2,
-  "Jueves": 3,
-  "Viernes": 4,
-  "Sábado": 5,
-  "Domingo": 6 // In case Sunday is used
+  // English day names (for CSV imports)
+  "Monday": 0,
+  "Tuesday": 1,
+  "Wednesday": 2,
+  "Thursday": 3,
+  "Friday": 4,
+  "Saturday": 5,
+  "Sunday": 6
 }
 
 // Modern color palette for courses
@@ -262,7 +263,7 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
       const timeMinutes = startTime + hour * 60
       
       if (hour > 0) {
-        ctx.fillText(minutesToTime(timeMinutes - 60), sideMarginOffset - 12, yPos - 8)
+        ctx.fillText(minutesToTime(timeMinutes - 60), sideMarginOffset - 12, yPos - (hourHeight / 2) + 6)
       }
       
       ctx.beginPath()
