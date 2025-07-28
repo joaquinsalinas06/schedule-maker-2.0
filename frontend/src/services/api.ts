@@ -36,8 +36,6 @@ export const apiService = {
     }
 
     const queryParams = new URLSearchParams();
-    console.log('Autocomplete query:', query);
-    console.log(queryParams.toString());
     queryParams.append('q', query.trim());
     if (university) queryParams.append('university', university);
     queryParams.append('limit', limit.toString());
@@ -62,7 +60,7 @@ export const apiService = {
   // Schedule Generation
   generateSchedules: async (request: ScheduleRequest): Promise<any> => {
     const response = await api.post('/api/schedules/generate', request);
-    console.log(response.data);
+
     return response.data;
   },
 

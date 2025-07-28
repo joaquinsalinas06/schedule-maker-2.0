@@ -24,9 +24,11 @@ async def websocket_collaborate(
 ):
     """WebSocket endpoint for collaborative schedule creation"""
     
+    user = None
     try:
         # Authenticate user from token
         user = await get_current_user_websocket(token, db)
+        
         if not user:
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
@@ -63,18 +65,17 @@ async def websocket_collaborate(
             except WebSocketDisconnect:
                 break
             except json.JSONDecodeError:
-                logger.warning(f"Invalid JSON received from user {user.id}")
                 continue
             except Exception as e:
-                logger.error(f"Error handling WebSocket message: {str(e)}")
                 continue
                 
     except WebSocketDisconnect:
         pass
     except Exception as e:
-        logger.error(f"WebSocket connection error: {str(e)}")
+        pass
     finally:
-        await manager.disconnect(user.id)
+        if user:
+            await manager.disconnect(user.id)
 
 async def handle_websocket_message(message: dict, session_code: str, user_id: int, db: Session):
     """Handle different types of WebSocket messages"""
@@ -183,10 +184,10 @@ async def websocket_compare(
             except WebSocketDisconnect:
                 break
             except Exception as e:
-                logger.error(f"Comparison WebSocket error: {str(e)}")
                 continue
                 
     except Exception as e:
-        logger.error(f"Comparison WebSocket connection error: {str(e)}")
+        pass
     finally:
-        await manager.disconnect(user.id)
+        if 'user' in locals() and user:
+            await manager.disconnect(user.id)

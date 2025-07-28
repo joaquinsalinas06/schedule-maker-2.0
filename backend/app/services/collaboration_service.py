@@ -188,7 +188,7 @@ class CollaborationService:
                 "name": f"{p.user.first_name} {p.user.last_name}",
                 "email": p.user.email,
                 "role": p.role,
-                "joined_at": p.joined_at
+                "joined_at": p.joined_at.isoformat() if p.joined_at else None
             })
         
         return {
@@ -201,7 +201,7 @@ class CollaborationService:
             "is_active": session.is_active,
             "max_participants": session.max_participants,
             "current_schedule_data": session.current_schedule_data,
-            "expires_at": session.expires_at,
+            "expires_at": session.expires_at.isoformat() if session.expires_at else None,
             "participants": participant_data
         }
     

@@ -12,7 +12,6 @@ export function toast({ title, description, variant = "default" }: ToastProps) {
     console.error(message);
     alert(`Error: ${message}`);
   } else {
-    console.log(message);
     alert(`Success: ${message}`);
   }
 }

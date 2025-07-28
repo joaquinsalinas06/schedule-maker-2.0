@@ -45,8 +45,11 @@ async def get_current_user_websocket(token: str, db: Session) -> Optional[User]:
         user_id: str = payload.get("sub")
         if user_id is None:
             return None
+            
+        user = db.query(User).options(joinedload(User.university)).filter(User.id == int(user_id)).first()
+        return user
+        
     except JWTError:
         return None
-    
-    user = db.query(User).options(joinedload(User.university)).filter(User.id == int(user_id)).first()
-    return user
+    except Exception:
+        return None

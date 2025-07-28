@@ -75,7 +75,6 @@ function ComparePageContent() {
         setError('Error al cargar el horario compartido.');
       }
     } catch (error) {
-      console.error('Error loading shared schedule:', error);
       setError('Error de conexión. Verifica tu conexión a internet.');
     } finally {
       setLoading(false);
@@ -116,7 +115,6 @@ function ComparePageContent() {
       await navigator.clipboard.writeText(window.location.href);
       alert('Link de comparación copiado al portapapeles');
     } catch (error) {
-      console.error('Error copying URL:', error);
     }
   };
 

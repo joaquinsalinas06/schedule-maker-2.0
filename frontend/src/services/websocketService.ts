@@ -19,14 +19,13 @@ class WebSocketService {
     this.sessionCode = sessionCode;
     this.token = token;
     
-    const baseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+    const baseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8001';
     const wsUrl = `${baseUrl}/ws/collaborate/${sessionCode}?token=${encodeURIComponent(token)}`;
     
     try {
       this.ws = new WebSocket(wsUrl);
       this.setupEventListeners();
     } catch (error) {
-      console.error('WebSocket connection error:', error);
       this.handleConnectionError();
     }
   }
@@ -35,7 +34,7 @@ class WebSocketService {
     this.sessionCode = sessionCode;
     this.token = token;
     
-    const baseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+    const baseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8001';
     const wsUrl = `${baseUrl}/ws/compare/${sessionCode}?token=${encodeURIComponent(token)}`;
     
     try {
@@ -51,9 +50,14 @@ class WebSocketService {
     if (!this.ws) return;
 
     this.ws.onopen = () => {
-      console.log('WebSocket connected');
       this.reconnectAttempts = 0;
       useCollaborationStore.getState().setIsConnected(true);
+      
+      // Send a message to announce joining
+      this.sendMessage({
+        type: 'user_join',
+        timestamp: new Date().toISOString()
+      });
     };
 
     this.ws.onmessage = (event) => {
@@ -61,12 +65,11 @@ class WebSocketService {
         const message: WebSocketMessage = JSON.parse(event.data);
         this.handleMessage(message);
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        // Silently handle parsing errors
       }
     };
 
     this.ws.onclose = (event) => {
-      console.log('WebSocket disconnected:', event.code, event.reason);
       useCollaborationStore.getState().setIsConnected(false);
       
       if (event.code !== 1000) { // Not a normal closure
@@ -75,7 +78,6 @@ class WebSocketService {
     };
 
     this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
       this.handleConnectionError();
     };
   }
@@ -87,15 +89,11 @@ class WebSocketService {
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
       
-      console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
-      
       setTimeout(() => {
         if (this.sessionCode && this.token) {
           this.connect(this.sessionCode, this.token);
         }
       }, delay);
-    } else {
-      console.error('Max reconnection attempts reached');
     }
   }
 
@@ -139,12 +137,10 @@ class WebSocketService {
 
       case 'course_added':
         // Handle course addition
-        console.log('Course added:', message.data);
         break;
 
       case 'course_removed':
         // Handle course removal
-        console.log('Course removed:', message.data);
         break;
 
       case 'cursor_update':
@@ -172,20 +168,17 @@ class WebSocketService {
       case 'comparison_update':
         if (message.data) {
           // Handle comparison updates
-          console.log('Comparison updated:', message.data);
         }
         break;
 
       default:
-        console.log('Unknown message type:', message.type);
+        // Unknown message type
     }
   }
 
   sendMessage(message: WebSocketMessage): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
-    } else {
-      console.warn('WebSocket is not connected');
     }
   }
 

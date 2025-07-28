@@ -59,9 +59,16 @@ export function SessionManager() {
 
   const joinSession = (session: CollaborativeSession) => {
     setCurrentSession(session);
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem('token');
     if (token) {
       websocketService.connect(session.session_code, token);
+    } else {
+      console.error('No authentication token found');
+      toast({
+        title: "Authentication Error",
+        description: "Please log in again to join the session",
+        variant: "destructive",
+      });
     }
   };
 

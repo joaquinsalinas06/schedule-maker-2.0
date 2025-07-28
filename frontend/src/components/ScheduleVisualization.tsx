@@ -45,10 +45,94 @@ interface ScheduleVisualizationProps {
   favoritedCombinations?: Set<string>
 }
 
-const CANVAS_WIDTH = 1400
-const CANVAS_HEIGHT = 900
-const TOP_MARGIN = 0.15
+// Dynamic canvas dimensions that will be calculated based on container
+let CANVAS_WIDTH = 1400
+let CANVAS_HEIGHT = 900
+let TOP_MARGIN = 0.15
 const SIDE_MARGIN = 0.15
+
+const getResponsiveMargins = (containerWidth: number) => {
+  if (containerWidth <= MOBILE_BREAKPOINT) {
+    return {
+      topMargin: 0.08,    // Much smaller top margin on mobile
+      sideMargin: 0.12    // Slightly smaller side margin
+    }
+  } else if (containerWidth <= TABLET_BREAKPOINT) {
+    return {
+      topMargin: 0.10,    // Smaller top margin on tablet
+      sideMargin: 0.13
+    }
+  } else {
+    return {
+      topMargin: 0.15,    // Original top margin on desktop
+      sideMargin: 0.15
+    }
+  }
+}
+
+// Responsive breakpoints and aspect ratios
+const MOBILE_BREAKPOINT = 768
+const TABLET_BREAKPOINT = 1024
+
+const getResponsiveDimensions = (containerWidth: number) => {
+  let width, height
+  
+  if (containerWidth <= MOBILE_BREAKPOINT) {
+    // Mobile: More square aspect ratio for better fit
+    width = Math.min(containerWidth - 32, 600) // 16px padding on each side
+    height = Math.round(width * 0.75) // 4:3 aspect ratio
+  } else if (containerWidth <= TABLET_BREAKPOINT) {
+    // Tablet: Moderate aspect ratio
+    width = Math.min(containerWidth - 48, 900)
+    height = Math.round(width * 0.65) // Wider than mobile
+  } else {
+    // Desktop: Original wide aspect ratio
+    width = Math.min(containerWidth - 64, 1400)
+    height = Math.round(width * 0.64) // ~16:10 aspect ratio
+  }
+  
+  return { width, height }
+}
+
+const getResponsiveFontSizes = (containerWidth: number) => {
+  if (containerWidth <= MOBILE_BREAKPOINT) {
+    return {
+      titleFont: 12,      // "Horario #" - much smaller
+      infoFont: 9,        // Credits and courses info - much smaller
+      headerFont: 10,
+      timeFont: 9,
+      courseFont: 8,
+      professorFont: 7,
+      locationFont: 7,
+      noScheduleTitle: 16,
+      noScheduleSubtitle: 11
+    }
+  } else if (containerWidth <= TABLET_BREAKPOINT) {
+    return {
+      titleFont: 14,      // "Horario #" - much smaller
+      infoFont: 10,       // Credits and courses info - much smaller
+      headerFont: 12,
+      timeFont: 11,
+      courseFont: 10,
+      professorFont: 9,
+      locationFont: 8,
+      noScheduleTitle: 20,
+      noScheduleSubtitle: 13
+    }
+  } else {
+    return {
+      titleFont: 16,      // "Horario #" - much smaller (was 24)
+      infoFont: 11,       // Credits and courses info - much smaller (was 14)
+      headerFont: 13,
+      timeFont: 12,
+      courseFont: 11,
+      professorFont: 10,
+      locationFont: 9,
+      noScheduleTitle: 24,
+      noScheduleSubtitle: 16
+    }
+  }
+}
 const MAJOR_LINE_WIDTH = 2
 const MINOR_LINE_WIDTH = 1
 const DAY_COUNT = 6 // Monday to Saturday
@@ -82,20 +166,42 @@ const courseColors = [
 
 export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackToSelection, showBackButton = false, favoritedCombinations = new Set() }: ScheduleVisualizationProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [currentScheduleIndex, setCurrentScheduleIndex] = useState(0)
   const [startTime, setStartTime] = useState(7 * 60) // 7:00 AM in minutes
   const [endTime, setEndTime] = useState(22 * 60)   // 10:00 PM in minutes
+  const [containerWidth, setContainerWidth] = useState(1400)
 
   const { combinations, total_combinations } = scheduleData
 
-  // Debug logging
-  console.log('ScheduleVisualization received data:', scheduleData)
-  console.log('Combinations:', combinations)
-  console.log('Current schedule index:', currentScheduleIndex)
+
+
+  // Handle container resize and set responsive dimensions
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const width = containerRef.current.offsetWidth
+        setContainerWidth(width)
+        const dimensions = getResponsiveDimensions(width)
+        CANVAS_WIDTH = dimensions.width
+        CANVAS_HEIGHT = dimensions.height
+      }
+    }
+
+    updateDimensions()
+    window.addEventListener('resize', updateDimensions)
+    
+    return () => {
+      window.removeEventListener('resize', updateDimensions)
+    }
+  }, [])
 
   useEffect(() => {
+    const dimensions = getResponsiveDimensions(containerWidth)
+    CANVAS_WIDTH = dimensions.width
+    CANVAS_HEIGHT = dimensions.height
     drawSchedule(currentScheduleIndex)
-  }, [currentScheduleIndex, combinations, startTime, endTime])
+  }, [currentScheduleIndex, combinations, startTime, endTime, containerWidth])
 
   const timeToMinutes = (timeStr: string): number => {
     const [hours, minutes] = timeStr.split(':').map(Number)
@@ -124,6 +230,11 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    // Get responsive font sizes and margins
+    const fontSizes = getResponsiveFontSizes(containerWidth)
+    const margins = getResponsiveMargins(containerWidth)
+    TOP_MARGIN = margins.topMargin
+
     // Fix blurry canvas on high-DPI displays
     const dpr = window.devicePixelRatio || 1
     const rect = canvas.getBoundingClientRect()
@@ -145,7 +256,6 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
 
     const schedule = combinations[scheduleIndex]
 
-    console.log('Drawing schedule:', schedule) // Debug log
 
     if (!schedule) {
       // Draw "No schedule" message with dark theme
@@ -153,27 +263,23 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
       
       ctx.fillStyle = '#f1f5f9'
-      ctx.font = 'bold 28px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.font = `bold ${fontSizes.noScheduleTitle}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
       ctx.textAlign = 'center'
       ctx.fillText('No hay horarios disponibles', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2)
       
-      ctx.font = '18px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      ctx.font = `${fontSizes.noScheduleSubtitle}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
       ctx.fillStyle = '#94a3b8'
-      ctx.fillText('Intenta seleccionar más secciones o cambiar los filtros', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 50)
+      ctx.fillText('Intenta seleccionar más secciones o cambiar los filtros', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 40)
       return
     }
 
     // Calculate dimensions
-    const dayWidth = (CANVAS_WIDTH * (1 - SIDE_MARGIN)) / DAY_COUNT
+    const dayWidth = (CANVAS_WIDTH * (1 - margins.sideMargin)) / DAY_COUNT
     const hourCount = (endTime - startTime) / 60.0
     const hourHeight = (CANVAS_HEIGHT * (1 - TOP_MARGIN)) / hourCount
     const topMarginOffset = CANVAS_HEIGHT * TOP_MARGIN
-    const sideMarginOffset = CANVAS_WIDTH * SIDE_MARGIN
+    const sideMarginOffset = CANVAS_WIDTH * margins.sideMargin
 
-    console.log('Canvas dimensions:', {
-      CANVAS_WIDTH, CANVAS_HEIGHT, dayWidth, hourCount, hourHeight, 
-      topMarginOffset, sideMarginOffset, startTime, endTime
-    })
 
     // Validate dimensions
     if (!isFinite(dayWidth) || !isFinite(hourHeight) || hourHeight <= 0) {
@@ -207,21 +313,24 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
     ctx.stroke()
 
     // Draw title and info with dark theme styling
-    ctx.fillStyle = '#f1f5f9'
-    ctx.font = 'bold 32px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-    ctx.textAlign = 'left'
-    ctx.fillText(`Horario ${scheduleIndex + 1}`, 24, 28)
+    const headerY = containerWidth <= MOBILE_BREAKPOINT ? 8 : 12
+    const infoSpacing = containerWidth <= MOBILE_BREAKPOINT ? 10 : 14
     
-    ctx.font = 'semibold 18px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+    ctx.fillStyle = '#f1f5f9'
+    ctx.font = `bold ${fontSizes.titleFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+    ctx.textAlign = 'left'
+    ctx.fillText(`Horario ${scheduleIndex + 1}`, 16, headerY)
+    
+    ctx.font = `semibold ${fontSizes.infoFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
     ctx.fillStyle = '#a855f7'
-    ctx.fillText(`${schedule.total_credits} créditos`, 24, 68)
+    ctx.fillText(`${schedule.total_credits} créditos`, 16, headerY + infoSpacing)
     
     ctx.fillStyle = '#6366f1'
-    ctx.fillText(`${schedule.courses.length} cursos`, 24, 92)
+    ctx.fillText(`${schedule.courses.length} cursos`, 16, headerY + infoSpacing * 2)
 
     // Draw day headers with dark theme styling
     ctx.fillStyle = '#f1f5f9'
-    ctx.font = 'bold 20px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+    ctx.font = `bold ${fontSizes.timeFont + 2}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
     ctx.textAlign = 'center'
     for (let day = 0; day < DAY_COUNT; day++) {
       const xPos = sideMarginOffset + dayWidth * (day + 0.5)
@@ -254,7 +363,7 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
     // Draw horizontal hour lines
     ctx.strokeStyle = '#1e293b'
     ctx.lineWidth = 1
-    ctx.font = '16px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+    ctx.font = `${fontSizes.timeFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
     ctx.textAlign = 'right'
     ctx.fillStyle = '#94a3b8'
     
@@ -270,23 +379,17 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
       ctx.moveTo(0, yPos)
       ctx.lineTo(CANVAS_WIDTH, yPos)
       ctx.stroke()
-    }
-
-    // Draw courses with improved styling and debugging
-    console.log('Drawing courses for schedule:', schedule.courses) // Debug log
+    } 
     
     schedule.courses.forEach((courseSection, courseIndex) => {
-      console.log(`Drawing course ${courseIndex}:`, courseSection) // Debug log
       
       if (!courseSection.sessions || courseSection.sessions.length === 0) {
-        console.log(`No sessions for course ${courseSection.course_code}`)
         return
       }
 
       const color = courseColors[courseIndex % courseColors.length]
       
       courseSection.sessions.forEach((session, sessionIndex) => {
-        console.log(`Drawing session ${sessionIndex}:`, session) // Debug log
         
         // Handle both string day names and numeric days
         let dayIndex: number
@@ -294,28 +397,21 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
           // Backend is sending day as string name (e.g., "Miércoles")
           dayIndex = dayNameToIndex[session.day]
           if (dayIndex === undefined) {
-            console.log(`Unknown day name: ${session.day}`)
             return
           }
         } else {
           // Backend is sending day as number (1=Monday, 2=Tuesday, etc.)
           dayIndex = session.day - 1
         }
-        
-        console.log(`Session day: ${session.day}, dayIndex: ${dayIndex}`) // Debug log
-        
+
         if (dayIndex < 0 || dayIndex >= DAY_COUNT) {
-          console.log(`Day ${session.day} is out of range`)
           return
         }
 
         const sessionStartMinutes = timeToMinutes(session.start_time)
         const sessionEndMinutes = timeToMinutes(session.end_time)
         
-        console.log(`Session time: ${session.start_time} - ${session.end_time} (${sessionStartMinutes} - ${sessionEndMinutes} minutes)`)
-        
         if (sessionStartMinutes < startTime || sessionEndMinutes > endTime) {
-          console.log(`Session time is outside display range (${startTime} - ${endTime})`)
           return
         }
 
@@ -326,13 +422,10 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
 
         // Validate coordinates before drawing
         if (!isFinite(xPos) || !isFinite(yPos) || !isFinite(blockHeight) || blockHeight <= 0) {
-          console.log(`Invalid coordinates: xPos=${xPos}, yPos=${yPos}, blockHeight=${blockHeight}`)
-          return
+     return
         }
 
-        console.log(`Drawing block at x:${xPos}, y:${yPos}, width:${dayWidth}, height:${blockHeight}`)
-
-        // Draw subtle shadow first
+    // Draw subtle shadow first
         ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'
         ctx.fillRect(xPos + 6, yPos + 4, dayWidth - 8, blockHeight - 6)
 
@@ -390,25 +483,25 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
         let currentY = textY
         
         // Course name (main title)
-        const nameHeight = drawFittingText(courseSection.course_name, textX, currentY, maxWidth, 16, 'bold')
+        const nameHeight = drawFittingText(courseSection.course_name, textX, currentY, maxWidth, fontSizes.courseFont, 'bold')
         currentY += nameHeight + 2
         
         // Course code and section
         const codeText = `${courseSection.course_code} - Sec. ${courseSection.section_number}`
-        const codeHeight = drawFittingText(codeText, textX, currentY, maxWidth, 13, 'semibold')
+        const codeHeight = drawFittingText(codeText, textX, currentY, maxWidth, fontSizes.courseFont - 1, 'semibold')
         currentY += codeHeight + 2
         
         // Professor (if there's space)
         if (blockHeight > 65) {
           ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
-          const professorHeight = drawFittingText(courseSection.professor, textX, currentY, maxWidth, 12)
+          const professorHeight = drawFittingText(courseSection.professor, textX, currentY, maxWidth, fontSizes.professorFont)
           currentY += professorHeight + 2
         }
         
         // Time (if there's space)
         if (blockHeight > 85) {
           ctx.fillStyle = '#ffffff'
-          const timeHeight = drawFittingText(`${session.start_time} - ${session.end_time}`, textX, currentY, maxWidth, 12, 'bold')
+          const timeHeight = drawFittingText(`${session.start_time} - ${session.end_time}`, textX, currentY, maxWidth, fontSizes.timeFont, 'bold')
           currentY += timeHeight + 2
         }
         
@@ -416,7 +509,7 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
         if (session.location && blockHeight > 105) {
           ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
           const locationText = `📍 ${session.location}`
-          drawFittingText(locationText, textX, currentY, maxWidth, 11)
+          drawFittingText(locationText, textX, currentY, maxWidth, fontSizes.locationFont)
         }
       })
     })
@@ -475,7 +568,7 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
   return (
     <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
       <CardHeader>
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
           <div className="flex items-center gap-4">
             {showBackButton && (
               <Button
@@ -498,7 +591,7 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
               </CardDescription>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               variant="outline"
@@ -549,19 +642,18 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
       <CardContent>
         <div className="space-y-4">
           {/* Schedule Canvas */}
-          <div className="border border-border rounded-lg bg-slate-900 p-6 shadow-inner">
+          <div ref={containerRef} className="border border-border rounded-lg bg-slate-900 p-6 shadow-inner">
             <canvas
               ref={canvasRef}
               className="w-full h-auto max-w-full rounded-md shadow-sm"
               style={{ 
-                maxHeight: '700px',
                 backgroundColor: '#0f172a'
               }}
             />
           </div>
 
           {/* Course Legend */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {combinations[currentScheduleIndex]?.courses.map((courseSection, index) => {
               const color = courseColors[index % courseColors.length]
               return (
@@ -581,25 +673,30 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
           </div>
 
           {/* Time Settings */}
-          <div className="flex items-center gap-4 p-3 border border-border rounded-lg bg-muted/30">
-            <Clock className="w-4 h-4 text-muted-foreground" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-3 border border-border rounded-lg bg-muted/30">
             <div className="flex items-center gap-2">
-              <label className="text-sm text-foreground">Desde:</label>
-              <input
-                type="time"
-                value={minutesToTime(startTime)}
-                onChange={(e) => setStartTime(timeToMinutes(e.target.value))}
-                className="px-2 py-1 text-xs border border-border rounded bg-background text-foreground"
-              />
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-foreground font-medium">Horario:</span>
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-foreground">Hasta:</label>
-              <input
-                type="time"
-                value={minutesToTime(endTime)}
-                onChange={(e) => setEndTime(timeToMinutes(e.target.value))}
-                className="px-2 py-1 text-xs border border-border rounded bg-background text-foreground"
-              />
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-foreground">Desde:</label>
+                <input
+                  type="time"
+                  value={minutesToTime(startTime)}
+                  onChange={(e) => setStartTime(timeToMinutes(e.target.value))}
+                  className="px-2 py-1 text-xs border border-border rounded bg-background text-foreground"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-foreground">Hasta:</label>
+                <input
+                  type="time"
+                  value={minutesToTime(endTime)}
+                  onChange={(e) => setEndTime(timeToMinutes(e.target.value))}
+                  className="px-2 py-1 text-xs border border-border rounded bg-background text-foreground"
+                />
+              </div>
             </div>
           </div>
         </div>
