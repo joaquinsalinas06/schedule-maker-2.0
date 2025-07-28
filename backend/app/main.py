@@ -84,14 +84,7 @@ async def startup_event():
                 db.commit()
                 print("✓ Admin user created")
             
-            # ONE-TIME: Create sample courses (remove this after first run)
-            from app.models.course import Course
-            existing_courses = db.query(Course).filter(Course.university_id == utec.id).first()
-            if not existing_courses:
-                print("🔄 Creating sample courses...")
-                from scripts.setup_database import create_sample_courses
-                create_sample_courses(db, utec.id)
-                print("✓ Sample courses created")
+            print("✓ Database initialization complete - ready for CSV import")
         finally:
             db.close()
             
@@ -124,12 +117,6 @@ async def database_status():
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Database connection failed: {str(e)}")
 
-# Startup event to create tables
-@app.on_event("startup")
-async def startup_event():
-    # Create database tables
-    Base.metadata.create_all(bind=engine)
-    print("Database tables created successfully")
 
 # Root endpoint
 @app.get("/")
