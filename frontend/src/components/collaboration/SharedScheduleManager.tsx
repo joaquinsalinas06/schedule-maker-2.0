@@ -35,7 +35,7 @@ interface SharedSchedule {
   schedule: {
     name: string;
     combination: any;
-    total_credits: number;
+    total_courses: number;
   };
   views_count?: number;
 }
@@ -88,7 +88,7 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
         const parsed = JSON.parse(stored);
         setFavoriteSchedules(parsed);
       } catch (error) {
-        console.error('Failed to parse favorite schedules:', error);
+        // Failed to parse favorite schedules
         setFavoriteSchedules([]);
       }
     }
@@ -101,7 +101,7 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
       // setSharedSchedules(schedules);
       setSharedSchedules([]); // Temporary empty array
     } catch (error) {
-      console.error('Failed to load shared schedules:', error);
+      // Failed to load shared schedules
       toast({
         title: "Error",
         description: "Failed to load shared schedules",
@@ -133,10 +133,6 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
     }
 
     try {
-      console.log('=== FAVORITE SCHEDULE DATA ===');
-      console.log('favoriteSchedule:', favoriteSchedule);
-      console.log('favoriteSchedule.combination:', favoriteSchedule.combination);
-      console.log('==============================');
       
       // First, we need to save the schedule to the database if it's not already there
       const scheduleData = {
@@ -146,21 +142,12 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
         description: favoriteSchedule.notes || ''
       };
       
-      console.log('=== SCHEDULE DATA TO SAVE ===');
-      console.log('scheduleData:', scheduleData);
-      console.log('============================');
 
       // Create the schedule in database first
       const savedSchedule = await CollaborationAPI.saveSchedule(scheduleData);
-      console.log('=== SAVED SCHEDULE RESPONSE ===');
-      console.log('Full response:', savedSchedule);
-      console.log('Keys:', Object.keys(savedSchedule));
-      console.log('savedSchedule.data:', savedSchedule.data);
-      console.log('===============================');
       
       // Extract the schedule_id from the response structure  
       const scheduleId = savedSchedule.data.schedule_id;
-      console.log('Using schedule_id:', scheduleId, 'type:', typeof scheduleId);
       
       const shareData = {
         schedule_id: scheduleId,
@@ -189,7 +176,7 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
 
       return sharedSchedule;
     } catch (error: any) {
-      console.error('Failed to share schedule:', error);
+      // Failed to share schedule
       toast({
         title: "Error",
         description: error.response?.data?.detail || error.message || "Failed to share schedule",
@@ -216,7 +203,7 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
         description: `Viewing "${result.schedule.name}" shared by ${result.shared_by.name}`,
       });
     } catch (error: any) {
-      console.error('Failed to load shared schedule:', error);
+      // Failed to load shared schedule
       toast({
         title: "Schedule Not Found",
         description: "Please check that the code is correct.",
@@ -311,7 +298,7 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
                 <option value="">Choose a favorite schedule...</option>
                 {favoriteSchedules.map((schedule) => (
                   <option key={schedule.id} value={schedule.id}>
-                    {schedule.name} ({schedule.combination?.total_credits || 0} credits)
+                    {schedule.name} ({schedule.combination?.courses?.length || 0} courses)
                   </option>
                 ))}
               </select>
@@ -415,7 +402,7 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
                     <div>
                       <CardTitle className="text-xl">{viewingSchedule.schedule.name}</CardTitle>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Shared by {viewingSchedule.shared_by.name} • {viewingSchedule.schedule.combination?.total_credits || 0} credits
+                        Shared by {viewingSchedule.shared_by.name} • {viewingSchedule.schedule.combination?.courses?.length || 0} courses
                       </p>
                       <div className="flex gap-2 mt-2">
                         <Badge variant="secondary">{viewingSchedule.permissions}</Badge>
@@ -443,15 +430,15 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
                         </div>
                         <div className="text-center p-3 bg-green-50 rounded-lg">
                           <div className="text-2xl font-bold text-green-600">
-                            {viewingSchedule.schedule.combination.total_credits}
+                            {viewingSchedule.schedule.combination.courses.length}
                           </div>
-                          <div className="text-sm text-green-600">Credits</div>
+                          <div className="text-sm text-green-600">Courses</div>
                         </div>
                       </div>
                       
                       <div className="space-y-3">
                         <h4 className="font-semibold text-lg">Courses</h4>
-                        {viewingSchedule.schedule.combination.courses.map((course: { course_code: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; course_name: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; section_number: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; credits: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; professor: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; sessions: any[]; }, index: React.Key | null | undefined) => (
+                        {viewingSchedule.schedule.combination.courses.map((course: { course_code: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; course_name: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; section_number: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; professor: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; sessions: any[]; }, index: React.Key | null | undefined) => (
                           <div key={index} className="border rounded-lg p-4 bg-gray-50">
                             <div className="flex justify-between items-start mb-2">
                               <div>
@@ -460,7 +447,6 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
                               </div>
                               <div className="text-right">
                                 <Badge variant="outline">Section {course.section_number}</Badge>
-                                <p className="text-sm text-gray-500 mt-1">{course.credits} credits</p>
                               </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
@@ -542,7 +528,7 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          <span>{schedule.schedule.total_credits} credits</span>
+                          <span>{schedule.schedule.combination?.courses?.length || 0} courses</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />

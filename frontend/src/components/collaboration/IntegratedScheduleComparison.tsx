@@ -28,7 +28,7 @@ interface ComparisonSchedule {
   combination: any;
   color: string;
   sections: any[];
-  totalCredits: number;
+  totalCourses: number;
   addedAt: string;
 }
 
@@ -95,7 +95,7 @@ export function IntegratedScheduleComparison() {
         combination: result.schedule.combination,
         color: USER_COLORS[schedules.length % USER_COLORS.length].name,
         sections: result.schedule.combination.sections || [],
-        totalCredits: result.schedule.total_credits || 0,
+        totalCourses: result.schedule.combination?.courses?.length || 0,
         addedAt: new Date().toISOString()
       };
 
@@ -133,7 +133,7 @@ export function IntegratedScheduleComparison() {
       combination: favoriteSchedule.combination,
       color: USER_COLORS[schedules.length % USER_COLORS.length].name,
       sections: favoriteSchedule.combination.sections || [],
-      totalCredits: favoriteSchedule.combination.total_credits || 0,
+      totalCourses: favoriteSchedule.combination?.courses?.length || 0,
       addedAt: new Date().toISOString()
     };
 
@@ -393,7 +393,7 @@ export function IntegratedScheduleComparison() {
                         <div>
                           <div className="font-semibold">{schedule.name}</div>
                           <div className="text-sm text-muted-foreground">
-                            By {schedule.userName} • {schedule.totalCredits} credits • {schedule.sections.length} courses
+                            By {schedule.userName} • {schedule.totalCourses} courses • {schedule.sections.length} sections
                           </div>
                           <div className="text-xs text-muted-foreground">
                             Added {new Date(schedule.addedAt).toLocaleDateString()}

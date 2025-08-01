@@ -26,11 +26,47 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/';
+      localStorage.removeItem('favoriteSchedules');
+      localStorage.removeItem('favoritedCombinations');
+      
+      // Show temporary message before redirect
+      const body = document.body;
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        color: white;
+        font-family: system-ui, -apple-system, sans-serif;
+      `;
+      overlay.innerHTML = `
+        <div style="text-align: center; padding: 2rem; background: #1f2937; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
+          <div style="width: 48px; height: 48px; border: 4px solid #06b6d4; border-top: 4px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+          <h2 style="margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 600;">Sesión Expirada</h2>
+          <p style="margin: 0; color: #9ca3af;">Redirigiendo al login...</p>
+        </div>
+        <style>
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        </style>
+      `;
+      body.appendChild(overlay);
+      
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
     }
     return Promise.reject(error);
   }
-);
+);}
 
 export const authService = {
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {

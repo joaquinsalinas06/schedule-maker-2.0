@@ -28,7 +28,6 @@ interface CourseSession {
 interface ComparisonCourse {
   course_code: string;
   course_name: string;
-  credits: number;
   professor: string;
   sessions?: CourseSession[];
 }
@@ -36,7 +35,7 @@ interface ComparisonCourse {
 interface ScheduleComparison {
   id: string;
   name: string;
-  total_credits: number;
+  total_courses: number;
   courses: ComparisonCourse[];
   shared_by?: string;
   created_at?: string;
@@ -75,7 +74,7 @@ function ComparePageContent() {
         const schedule: ScheduleComparison = {
           id: shareData.id,
           name: shareData.title,
-          total_credits: shareData.schedule_data.total_credits || 0,
+          total_courses: shareData.schedule_data.courses?.length || 0,
           courses: shareData.schedule_data.courses || [],
           shared_by: shareData.shared_by?.name || 'Usuario anónimo',
           created_at: shareData.created_at
@@ -225,7 +224,7 @@ function ComparePageContent() {
                   <div key={schedule.id} className="text-center p-4 border rounded-lg">
                     <h4 className="font-semibold">{schedule.name}</h4>
                     <p className="text-sm text-muted-foreground">
-                      {schedule.total_credits} créditos • {schedule.courses.length} cursos
+                      {schedule.total_courses} cursos • {schedule.courses.length} secciones
                     </p>
                     <p className="text-xs text-muted-foreground">
                       por {schedule.shared_by}
@@ -252,7 +251,7 @@ function ComparePageContent() {
                   <CardTitle className="flex items-center justify-between">
                     <span>{schedule.name}</span>
                     <Badge variant="secondary">
-                      {schedule.total_credits} créditos
+                      {schedule.total_courses} cursos
                     </Badge>
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
@@ -267,9 +266,6 @@ function ComparePageContent() {
                           <h4 className="font-medium text-sm">
                             {course.course_code} - {course.course_name}
                           </h4>
-                          <Badge variant="outline" className="text-xs">
-                            {course.credits} cr
-                          </Badge>
                         </div>
                         <div className="text-xs text-muted-foreground space-y-1">
                           <div className="flex items-center gap-1">

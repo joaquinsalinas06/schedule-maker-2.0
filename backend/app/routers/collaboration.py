@@ -94,49 +94,24 @@ async def share_schedule(
 ):
     """Share a schedule with another user or publicly"""
     
-    # Debug logging for share request
     try:
         body = await request.body()
         body_str = body.decode('utf-8')
         content_type = request.headers.get('content-type', '')
         
-        print(f"=== SHARE SCHEDULE DEBUG ===")
-        print(f"Content-Type: {content_type}")
-        print(f"Raw body: {body_str}")
-        print(f"===========================")
-        
         # Parse the request data
         if 'application/json' in content_type:
             import json
             json_data = json.loads(body_str)
-            print(f"Parsing as JSON...")
         else:
             from urllib.parse import parse_qs
-            print(f"Parsing as form data...")
             parsed_data = parse_qs(body_str)
             json_data = {key: values[0] if values else None for key, values in parsed_data.items()}
         
-        print(f"=== PARSED SHARE DATA ===")
-        for key, value in json_data.items():
-            print(f"{key}: {value} (type: {type(value)})")
-        print(f"=========================")
-        
         # Try to create the model
         share_data = ScheduleShareCreate(**json_data)
-        print(f"=== SHARE MODEL SUCCESS ===")
-        print(f"schedule_id: {share_data.schedule_id}")
-        print(f"shared_with: {share_data.shared_with}")
-        print(f"permissions: {share_data.permissions}")
-        print(f"expires_hours: {share_data.expires_hours}")
-        print(f"===========================")
         
     except Exception as e:
-        print(f"=== ERROR PARSING SHARE REQUEST ===")
-        print(f"Error: {e}")
-        print(f"Error type: {type(e)}")
-        import traceback
-        print(f"Traceback: {traceback.format_exc()}")
-        print(f"===================================")
         raise HTTPException(status_code=422, detail=f"Invalid share request: {e}")
     
     share = CollaborationService.share_schedule(
@@ -158,27 +133,7 @@ async def access_shared_schedule(
 ):
     """Access a shared schedule using share token"""
     
-    print(f"=== ACCESSING SHARED SCHEDULE ===")
-    print(f"Share token: {share_token}")
-    print(f"User ID: {current_user.id}")
-    
     result = CollaborationService.get_shared_schedule(db, share_token, current_user.id)
-    
-    print(f"=== COLLABORATION SERVICE RESULT ===")
-    print(f"Result keys: {list(result.keys())}")
-    print(f"Schedule: {result['schedule']}")
-    print(f"Schedule type: {type(result['schedule'])}")
-    if result['schedule']:
-        print(f"Schedule ID: {result['schedule'].id}")
-        print(f"Schedule name: {result['schedule'].name}")
-        print(f"Schedule description: {result['schedule'].description}")
-        print(f"Schedule semester: {result['schedule'].semester}")
-        print(f"Schedule total_credits: {result['schedule'].total_credits}")
-        print(f"Schedule sessions: {result['schedule'].schedule_sessions}")
-    print(f"Share: {result['share']}")
-    if result['share']:
-        print(f"Share shared_by: {result['share'].shared_by}")
-    print(f"====================================")
     
     # Get the sharer user info
     sharer = db.query(User).filter(User.id == result["share"].shared_by).first()
@@ -234,10 +189,6 @@ async def access_shared_schedule(
         "total_credits": schedule.total_credits or sum(course["credits"] for course in unique_courses)
     }
     
-    print(f"=== BUILT COMBINATION DATA ===")
-    print(f"Total courses: {len(unique_courses)}")
-    print(f"Total credits: {combination_data['total_credits']}")
-    print(f"=============================")
     
     return {
         "schedule": {

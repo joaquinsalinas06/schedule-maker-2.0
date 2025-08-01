@@ -40,7 +40,7 @@ export function SessionManager() {
       // setSessions(userSessions);
       setSessions([]); // Temporary empty array
     } catch (error: any) {
-      console.error('Failed to load sessions:', error);
+      // Failed to load sessions
       toast({
         title: "Error",
         description: "Failed to load your sessions",
@@ -62,14 +62,11 @@ export function SessionManager() {
   const joinSession = (session: CollaborativeSession) => {
     setCurrentSession(session);
     const token = localStorage.getItem('token');
-    console.log('Joining session:', session.session_code);
-    console.log('Token found:', !!token);
-    console.log('Token preview:', token ? token.substring(0, 20) + '...' : 'none');
     
     if (token) {
       websocketService.connect(session.session_code, token);
     } else {
-      console.error('No authentication token found');
+      // No authentication token found
       toast({
         title: "Authentication Error",
         description: "Please log in again to join the session",

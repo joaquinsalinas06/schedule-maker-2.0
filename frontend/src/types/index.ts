@@ -13,7 +13,6 @@ export interface Course {
   id: number;
   code: string;
   name: string;
-  credits: number;
   university_id: number;
   department: string;
   description?: string;
@@ -74,7 +73,6 @@ export interface ScheduleRequest {
 export interface ScheduleCombination {
   combination_id: number;
   sections: Section[];
-  total_credits: number;
   conflicts: unknown[];
 }
 
@@ -136,7 +134,6 @@ export interface SelectedSection {
   courseName: string;
   sectionCode: string;
   professor: string;
-  credits: number;
   sessions: Session[];
 }
 

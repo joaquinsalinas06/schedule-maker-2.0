@@ -24,13 +24,13 @@ class WebSocketService {
     const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     const wsUrl = `${cleanBaseUrl}/ws/collaborate/${sessionCode}?token=${encodeURIComponent(token)}`;
     
-    console.log('WebSocket connecting to:', wsUrl);
+    // WebSocket connecting
     
     try {
       this.ws = new WebSocket(wsUrl);
       this.setupEventListeners();
     } catch (error) {
-      console.error('WebSocket connection error:', error);
+      // WebSocket connection error
       this.handleConnectionError();
     }
   }
@@ -44,13 +44,13 @@ class WebSocketService {
     const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     const wsUrl = `${cleanBaseUrl}/ws/compare/${sessionCode}?token=${encodeURIComponent(token)}`;
     
-    console.log('WebSocket comparison connecting to:', wsUrl);
+    // WebSocket comparison connecting
     
     try {
       this.ws = new WebSocket(wsUrl);
       this.setupEventListeners();
     } catch (error) {
-      console.error('WebSocket comparison connection error:', error);
+      // WebSocket comparison connection error
       this.handleConnectionError();
     }
   }
@@ -81,18 +81,18 @@ class WebSocketService {
     this.ws.onclose = (event) => {
       useCollaborationStore.getState().setIsConnected(false);
       
-      console.log(`WebSocket closed: code=${event.code}, reason=${event.reason}`);
+      // WebSocket closed
       
       if (event.code !== 1000) { // Not a normal closure
         if (event.code === 1008) {
-          console.error('WebSocket closed due to policy violation (likely authentication error)');
+          // WebSocket closed due to policy violation (likely authentication error)
         }
         this.handleConnectionError();
       }
     };
 
     this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      // WebSocket error
       this.handleConnectionError();
     };
   }

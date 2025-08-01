@@ -91,7 +91,7 @@ def generate_schedule_combinations(
             semester=request.semester
         )
         
-        print(f"Generated {result_data['total_combinations']} valid combinations from {result_data['selected_courses_count']} courses")
+        # Generated combinations
 
         return APIResponse(
             data=result_data,
@@ -119,28 +119,18 @@ async def save_favorite_schedule(
     User picks one combination from the generated options and saves it.
     """
     
-    # Debug logging - raw request
     try:
         body = await request.body()
         body_str = body.decode('utf-8')
         content_type = request.headers.get('content-type', '')
         
-        print(f"=== SAVE SCHEDULE DEBUG ===")
-        print(f"Content-Type: {content_type}")
-        print(f"Raw body: {body_str}")
-        print(f"===========================")
-        
         # Handle both JSON and form-encoded data
         if 'application/json' in content_type:
-            # Parse as JSON
             import json
             json_data = json.loads(body_str)
-            print(f"Parsing as JSON...")
             schedule_data = SaveScheduleRequest(**json_data)
         else:
-            # Parse as form-encoded data
             from urllib.parse import parse_qs
-            print(f"Parsing as form data...")
             parsed_data = parse_qs(body_str)
             
             # Extract values (parse_qs returns lists, so take first value)
@@ -152,26 +142,8 @@ async def save_favorite_schedule(
             }
             schedule_data = SaveScheduleRequest(**json_data)
         
-        print(f"=== PARSED DATA ===")
-        print(f"combination_id: {schedule_data.combination_id}")
-        print(f"name: {schedule_data.name}")
-        print(f"description: {schedule_data.description}")
-        print(f"semester: {schedule_data.semester}")
-        print(f"combination: {schedule_data.combination}")
-        if schedule_data.combination:
-            print(f"combination keys: {list(schedule_data.combination.keys()) if isinstance(schedule_data.combination, dict) else 'Not a dict'}")
-            if isinstance(schedule_data.combination, dict) and 'courses' in schedule_data.combination:
-                print(f"number of courses: {len(schedule_data.combination['courses'])}")
-        print(f"==================")
-        
     except Exception as e:
-        print(f"=== ERROR PARSING REQUEST ===")
-        print(f"Error: {e}")
-        print(f"Error type: {type(e)}")
-        print(f"=============================")
         raise HTTPException(status_code=422, detail=f"Invalid request data: {e}")
-    
-    print(f"current_user: {current_user.id if current_user else 'None'}")
     
     schedule_service = ScheduleService(db)
     result_data = schedule_service.save_schedule(
@@ -182,24 +154,10 @@ async def save_favorite_schedule(
         semester=schedule_data.semester
     )
     
-    print(f"=== SAVE SCHEDULE SERVICE RESPONSE ===")
-    print(f"result_data: {result_data}")
-    print(f"result_data type: {type(result_data)}")
-    if isinstance(result_data, dict):
-        print(f"result_data keys: {list(result_data.keys())}")
-        for key, value in result_data.items():
-            print(f"  {key}: {value}")
-    print(f"=====================================")
-    
     response = APIResponse(
         data=result_data,
         message="Schedule combination saved successfully"
     )
-    
-    print(f"=== FINAL API RESPONSE ===")
-    print(f"response: {response}")
-    print(f"response.data: {response.data}")
-    print(f"=========================")
     
     return response
 

@@ -101,9 +101,6 @@ export class CollaborationAPI {
       combination: scheduleData.combination
     };
     
-    console.log('=== SAVE SCHEDULE PAYLOAD ===');
-    console.log('Payload:', JSON.stringify(payload, null, 2));
-    console.log('============================');
     
     const response = await apiClient.post('/api/schedules/save', payload);
     return response.data;

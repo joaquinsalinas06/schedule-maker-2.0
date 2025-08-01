@@ -406,9 +406,9 @@ export function EnhancedCollaborativeBuilder() {
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {selectedSections.reduce((sum, section) => sum + section.credits, 0)}
+                {new Set(selectedSections.map(section => section.courseCode)).size}
               </div>
-              <div className="text-muted-foreground">Total Credits</div>
+              <div className="text-muted-foreground">Total Courses</div>
             </div>
           </div>
         </CardContent>

@@ -28,7 +28,6 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=AuthResponse)
 def login_user(user_credentials: UserLogin, db: Session = Depends(get_db)):
-    print(user_credentials)
     auth_service = AuthService(db)
     access_token, user = auth_service.authenticate_user(
         email=user_credentials.email,

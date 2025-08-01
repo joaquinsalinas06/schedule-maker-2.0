@@ -52,7 +52,7 @@ export const useWebSocket = (url: string, token: string, options: UseWebSocketOp
         const message: WebSocketMessage = JSON.parse(event.data);
         onMessage?.(message);
       } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
+        // Failed to parse WebSocket message
       }
     };
 

@@ -468,7 +468,6 @@ class CSVImportService:
             total_courses = len(course_groups)
             
             for current_course, (course_code, course_df) in enumerate(course_groups, 1):
-                print(f"📚 Processing course {current_course}/{total_courses}: {course_code}")
                 
                 try:
                     course_data = self.process_course_data(course_code, course_df.to_dict('records'))

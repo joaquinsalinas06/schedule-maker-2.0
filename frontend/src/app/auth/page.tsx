@@ -108,7 +108,7 @@ export default function AuthPage() {
       }
       window.location.href = "/dashboard"
     } catch (error) {
-      console.error("Auth error:", error)
+      // Auth error
       setErrors({ general: "Error en la autenticación. Intenta nuevamente." })
     } finally {
       setIsLoading(false)

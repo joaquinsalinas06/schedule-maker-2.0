@@ -21,14 +21,12 @@ interface CourseSection {
   course_name: string
   section_id: number
   section_number: string
-  credits: number
   professor: string
   sessions: Session[]
 }
 
 interface ScheduleCombination {
   combination_id: string
-  total_credits: number
   course_count: number
   courses: CourseSection[]
 }
@@ -284,7 +282,7 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
 
     // Validate dimensions
     if (!isFinite(dayWidth) || !isFinite(hourHeight) || hourHeight <= 0) {
-      console.error('Invalid canvas dimensions')
+      // Invalid canvas dimensions
       return
     }
 
@@ -324,7 +322,7 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
     
     ctx.font = `semibold ${fontSizes.infoFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
     ctx.fillStyle = '#a855f7'
-    ctx.fillText(`${schedule.total_credits} créditos`, 16, headerY + infoSpacing)
+    ctx.fillText(`${schedule.courses.length} cursos`, 16, headerY + infoSpacing)
     
     ctx.fillStyle = '#6366f1'
     ctx.fillText(`${schedule.courses.length} cursos`, 16, headerY + infoSpacing * 2)
@@ -594,7 +592,7 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
                 Horarios Generados
               </CardTitle>
               <CardDescription>
-                {total_combinations} combinaciones disponibles • {combinations[currentScheduleIndex]?.total_credits || 0} créditos
+                {total_combinations} combinaciones disponibles • {combinations[currentScheduleIndex]?.courses.length || 0} cursos
               </CardDescription>
             </div>
           </div>
@@ -672,7 +670,6 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm text-foreground">{courseSection.course_code}</div>
                     <div className="text-xs text-muted-foreground truncate">{courseSection.course_name}</div>
-                    <div className="text-xs text-muted-foreground">{courseSection.credits} créditos</div>
                   </div>
                 </div>
               )

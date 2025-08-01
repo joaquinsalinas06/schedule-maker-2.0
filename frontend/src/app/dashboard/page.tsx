@@ -30,7 +30,6 @@ import { FavoriteSchedules } from "@/components/FavoriteSchedules"
 type LocalScheduleCombination = {
   combination_id: number;
   sections: Section[];
-  total_credits: number;
   conflicts: unknown[];
 }
 
@@ -56,6 +55,8 @@ export default function Dashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [authError, setAuthError] = useState(false)
   const [selectedSections, setSelectedSections] = useState<SelectedSection[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Course[]>([])
@@ -112,13 +113,12 @@ export default function Dashboard() {
         acc[courseCode] = {
           courseName: section.courseName,
           courseCode: section.courseCode,
-          credits: section.credits,
           sections: []
         }
       }
       acc[courseCode].sections.push({ ...section, index })
       return acc
-    }, {} as Record<string, { courseName: string, courseCode: string, credits: number, sections: Array<SelectedSection & { index: number }> }>)
+    }, {} as Record<string, { courseName: string, courseCode: string, sections: Array<SelectedSection & { index: number }> }>)
     
     return Object.values(grouped)
   }
@@ -234,7 +234,6 @@ export default function Dashboard() {
       courseName: course.name,
       sectionCode: section.section_number,
       professor: section.professor,
-      credits: course.credits,
       sessions: section.sessions,
     }
     
@@ -245,11 +244,8 @@ export default function Dashboard() {
     setSelectedSections(selectedSections.filter((_, i) => i !== index))
   }
 
-  const totalCredits = selectedSections.reduce((creditsMap, section) => {
-    creditsMap[section.courseCode] = section.credits
-    return creditsMap
-  }, {} as Record<string, number>)
-  const totalCreditsSum = Object.values(totalCredits).reduce((sum, credits) => sum + credits, 0)
+  const uniqueCourses = [...new Set(selectedSections.map(section => section.courseCode))]
+  const totalCoursesCount = uniqueCourses.length
 
   const handleGenerateSchedules = async () => {
     if (selectedSections.length === 0) return
@@ -264,7 +260,8 @@ export default function Dashboard() {
       setGeneratedSchedules(response.data)
       setActiveSection('schedules') // Switch to schedules view
       setViewingFavoriteSchedule(null) // Clear any favorite being viewed
-    } catch {
+    } catch (error: any) {
+      // Handle auth errors through the axios interceptor
     } finally {
       setIsLoading(false)
     }
@@ -364,7 +361,7 @@ export default function Dashboard() {
 
       return { share_token: shareCode };
     } catch (error: any) {
-      console.error('Failed to share schedule:', error);
+      // Failed to share schedule
       toast({
         title: "Error",
         description: error.message || "Failed to share schedule",
@@ -373,11 +370,17 @@ export default function Dashboard() {
     }
   }
 
-  // Check if user is authenticated (only run on client side)
+  // Simple auth check - only redirect if no token exists
   useEffect(() => {
-    if (typeof window !== 'undefined' && !authService.isAuthenticated()) {
-      window.location.href = '/'
+    const checkAuth = () => {
+      if (typeof window !== 'undefined' && !authService.isAuthenticated()) {
+        window.location.href = '/'
+        return
+      }
+      setAuthLoading(false)
     }
+    
+    checkAuth()
   }, [])
 
   // Handle shared schedule URL parameters via URL
@@ -385,15 +388,8 @@ export default function Dashboard() {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
       const code = urlParams.get('code')
-      console.log('=== DASHBOARD URL PARAMS ===')
-      console.log('URL:', window.location.href)
-      console.log('Search:', window.location.search)
-      console.log('Code:', code)
-      console.log('Code length:', code?.length)
-      console.log('==========================')
       
       if (code && code.length === 8) {
-        console.log('Switching to collaboration tab with code:', code)
         // Switch to collaboration section and shared tab
         setActiveSection('collaborate')
         setCollaborationTab('shared')
@@ -427,7 +423,7 @@ export default function Dashboard() {
         try {
           setFavoriteSchedules(JSON.parse(savedFavorites))
         } catch {
-          console.error('Error loading saved favorites')
+          // Error loading saved favorites
         }
       }
       
@@ -436,11 +432,25 @@ export default function Dashboard() {
           const combinations = JSON.parse(savedCombinations)
           setFavoritedCombinations(new Set(combinations))
         } catch {
-          console.error('Error loading saved combinations')
+          // Error loading saved combinations
         }
       }
     }
   }, [])
+
+  // Show simple loading if checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <div className="text-white">
+            <h2 className="text-xl font-semibold mb-2">Cargando...</h2>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 dark:from-slate-950 dark:via-purple-950 dark:to-slate-950">
@@ -605,11 +615,7 @@ export default function Dashboard() {
                       <div className="text-xs text-muted-foreground">Secciones</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-emerald-400">{totalCreditsSum}</div>
-                      <div className="text-xs text-muted-foreground">Créditos</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-orange-400">{Object.keys(totalCredits).length}</div>
+                      <div className="text-2xl font-bold text-orange-400">{totalCoursesCount}</div>
                       <div className="text-xs text-muted-foreground">Cursos</div>
                     </div>
                   </div>
@@ -704,7 +710,7 @@ export default function Dashboard() {
                                     <div className="flex-1">
                                       <CardTitle className="text-lg text-foreground">{course.name}</CardTitle>
                                       <CardDescription className="text-muted-foreground">
-                                        {course.code} • {course.credits} créditos • {course.university?.short_name || 'Universidad'}
+                                        {course.code} • {course.university?.short_name || 'Universidad'}
                                       </CardDescription>
                                       <div className="text-sm text-muted-foreground mt-2">
                                         {course.sections?.length || 0} secciones disponibles
@@ -774,7 +780,7 @@ export default function Dashboard() {
                                   {courseGroup.courseCode}
                                 </div>
                                 <div className="text-xs text-muted-foreground truncate">
-                                  {courseGroup.courseName} • {courseGroup.credits} créd.
+                                  {courseGroup.courseName}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {courseGroup.sections.length} sección{courseGroup.sections.length > 1 ? 'es' : ''}
@@ -870,7 +876,7 @@ export default function Dashboard() {
                           <div>
                             <CardTitle className="text-foreground">{sectionPopup.course.name}</CardTitle>
                             <CardDescription className="text-muted-foreground">
-                              {sectionPopup.course.code} • {sectionPopup.course.credits} créditos
+                              {sectionPopup.course.code}
                             </CardDescription>
                           </div>
                           <Button
@@ -1115,7 +1121,7 @@ export default function Dashboard() {
                                       {course.name}
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                      {course.code} • {course.credits} créd.
+                                      {course.code}
                                     </div>
                                   </div>
                                   <Button
@@ -1167,7 +1173,7 @@ export default function Dashboard() {
                                         {courseGroup.courseCode}
                                       </div>
                                       <div className="text-xs text-muted-foreground truncate">
-                                        {courseGroup.courseName} • {courseGroup.credits} créd.
+                                        {courseGroup.courseName}
                                       </div>
                                       <div className="text-xs text-muted-foreground">
                                         {courseGroup.sections.length} sección{courseGroup.sections.length > 1 ? 'es' : ''}
@@ -1264,7 +1270,7 @@ export default function Dashboard() {
                           <div>
                             <CardTitle className="text-foreground">{sectionPopup.course.name}</CardTitle>
                             <CardDescription className="text-muted-foreground">
-                              {sectionPopup.course.code} • {sectionPopup.course.credits} créditos
+                              {sectionPopup.course.code}
                             </CardDescription>
                           </div>
                           <Button

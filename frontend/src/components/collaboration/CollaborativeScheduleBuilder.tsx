@@ -111,13 +111,12 @@ export function CollaborativeScheduleBuilder() {
         acc[courseCode] = {
           courseName: section.courseName,
           courseCode: section.courseCode,
-          credits: section.credits,
           sections: []
         }
       }
       acc[courseCode].sections.push({ ...section, index })
       return acc
-    }, {} as Record<string, { courseName: string, courseCode: string, credits: number, sections: Array<any & { index: number }> }>)
+    }, {} as Record<string, { courseName: string, courseCode: string, sections: Array<any & { index: number }> }>)
     
     return Object.values(grouped)
   }
@@ -143,7 +142,6 @@ export function CollaborativeScheduleBuilder() {
       courseName: course.name,
       sectionCode: section.section_number,
       professor: section.professor,
-      credits: course.credits,
       sessions: section.sessions,
     };
     
@@ -222,11 +220,8 @@ export function CollaborativeScheduleBuilder() {
     }
   };
 
-  const totalCredits = selectedSections.reduce((creditsMap, section) => {
-    creditsMap[section.courseCode] = section.credits;
-    return creditsMap;
-  }, {} as Record<string, number>);
-  const totalCreditsSum = Object.values(totalCredits).reduce((sum, credits) => sum + credits, 0);
+  const uniqueCourses = new Set(selectedSections.map(section => section.courseCode));
+  const totalCourses = uniqueCourses.size;
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -479,7 +474,7 @@ export function CollaborativeScheduleBuilder() {
                               {course.name}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {course.code} • {course.credits} créd.
+                              {course.code}
                             </div>
                           </div>
                           <Button
@@ -509,7 +504,7 @@ export function CollaborativeScheduleBuilder() {
                 <BookOpen className="w-5 h-5" />
                 Secciones Seleccionadas ({selectedSections.length})
               </CardTitle>
-              <CardDescription>Total: {totalCreditsSum} créditos</CardDescription>
+              <CardDescription>Total: {totalCourses} cursos</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -532,7 +527,7 @@ export function CollaborativeScheduleBuilder() {
                               {courseGroup.courseCode}
                             </div>
                             <div className="text-xs text-muted-foreground truncate">
-                              {courseGroup.courseName} • {courseGroup.credits} créd.
+                              {courseGroup.courseName}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               {courseGroup.sections.length} sección{courseGroup.sections.length > 1 ? 'es' : ''}
@@ -610,7 +605,7 @@ export function CollaborativeScheduleBuilder() {
                 <div>
                   <CardTitle className="text-foreground">{sectionPopup.course.name}</CardTitle>
                   <CardDescription className="text-muted-foreground">
-                    {sectionPopup.course.code} • {sectionPopup.course.credits} créditos
+                    {sectionPopup.course.code}
                   </CardDescription>
                 </div>
                 <Button

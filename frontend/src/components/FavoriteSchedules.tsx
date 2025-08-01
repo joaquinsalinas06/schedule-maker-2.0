@@ -24,14 +24,12 @@ interface CourseSection {
   course_name: string
   section_id: number
   section_number: string
-  credits: number
   professor: string
   sessions: Session[]
 }
 
 interface ScheduleCombination {
   combination_id: string
-  total_credits: number
   course_count: number
   courses: CourseSection[]
 }
@@ -113,7 +111,7 @@ export function FavoriteSchedules({
         }
       }, 'image/png');
     } catch (error) {
-      console.error('Failed to generate image, falling back to text:', error);
+      // Failed to generate image, falling back to text
       // Fallback to text-based download
       createScheduleTextDownload(favorite);
     } finally {
@@ -155,8 +153,8 @@ export function FavoriteSchedules({
               border: 2px solid #e2e8f0;
             ">
               <div style="text-align: center;">
-                <div style="font-size: 24px; font-weight: bold; color: #667eea;">${favorite.combination.total_credits}</div>
-                <div style="font-size: 12px; color: #718096; text-transform: uppercase; letter-spacing: 1px;">Credits</div>
+                <div style="font-size: 24px; font-weight: bold; color: #667eea;">${favorite.combination.courses.length}</div>
+                <div style="font-size: 12px; color: #718096; text-transform: uppercase; letter-spacing: 1px;">Courses</div>
               </div>
               <div style="text-align: center;">
                 <div style="font-size: 24px; font-weight: bold; color: #764ba2;">${favorite.combination.courses.length}</div>
@@ -179,7 +177,7 @@ export function FavoriteSchedules({
                 <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Course</th>
                 <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Section</th>
                 <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Professor</th>
-                <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Credits</th>
+                <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Section</th>
                 <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Schedule</th>
               </tr>
             </thead>
@@ -211,7 +209,7 @@ export function FavoriteSchedules({
                       font-size: 12px; 
                       font-weight: 600;
                       display: inline-block;
-                    ">${course.credits}</div>
+                    ">Sección</div>
                   </td>
                   <td style="padding: 15px 12px; font-size: 12px; line-height: 1.6; vertical-align: top;">
                     ${course.sessions?.map(session => {
@@ -267,7 +265,7 @@ export function FavoriteSchedules({
 ${favorite.name}
 ${'='.repeat(favorite.name.length)}
 
-Total Credits: ${favorite.combination.total_credits}
+Total Courses: ${favorite.combination.courses.length}
 Number of Courses: ${favorite.combination.courses.length}
 Created: ${new Date(favorite.created_at).toLocaleDateString()}
 
@@ -276,7 +274,6 @@ ${favorite.combination.courses.map((course, index) => `
 ${index + 1}. ${course.course_code}: ${course.course_name}
    Section: ${course.section_number}
    Professor: ${course.professor}
-   Credits: ${course.credits}
    Schedule: ${course.sessions?.map(session => {
      const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
      const dayName = dayNames[session.day_of_week] || 'N/A';
@@ -407,7 +404,7 @@ Generated on ${new Date().toLocaleDateString()}
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4 text-purple-500" />
-                  <span>{favorite.combination.total_credits} créditos</span>
+                  <span>{favorite.combination.courses.length} cursos</span>
                 </div>
               </div>
 

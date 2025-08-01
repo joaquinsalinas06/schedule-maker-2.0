@@ -8,6 +8,6 @@ export function toast({ title, description, variant = "default" }: {
   if (typeof window !== 'undefined') {
     // This function is mainly for backward compatibility
     // Direct usage of useToast hook is preferred
-    console.log({ title, description, variant });
+    // Toast function for backward compatibility
   }
 }

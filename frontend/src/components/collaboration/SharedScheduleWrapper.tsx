@@ -8,10 +8,6 @@ function SharedScheduleContent() {
   const searchParams = useSearchParams();
   const code = searchParams.get('code');
   
-  console.log('=== SHARED SCHEDULE WRAPPER ===')
-  console.log('Code from searchParams:', code)
-  console.log('Code length:', code?.length)
-  console.log('===============================')
   
   return (
     <SharedScheduleManager autoLoadCode={code} />

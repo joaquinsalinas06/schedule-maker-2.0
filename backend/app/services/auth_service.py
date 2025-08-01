@@ -49,7 +49,6 @@ class AuthService:
         return access_token, user
 
     def authenticate_user(self, email: str, password: str) -> tuple[str, User]:
-        print(email,password)
         user = self.user_repo.get_by_email(email)
         
         if not user or not verify_password(password, user.hashed_password):
