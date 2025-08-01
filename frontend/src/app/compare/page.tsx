@@ -16,17 +16,34 @@ import {
   BarChart3
 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+
+interface CourseSession {
+  day: string;
+  start_time: string;
+  end_time: string;
+  location: string;
+}
+
+interface ComparisonCourse {
+  course_code: string;
+  course_name: string;
+  credits: number;
+  professor: string;
+  sessions?: CourseSession[];
+}
 
 interface ScheduleComparison {
   id: string;
   name: string;
   total_credits: number;
-  courses: any[];
+  courses: ComparisonCourse[];
   shared_by?: string;
   created_at?: string;
 }
 
 function ComparePageContent() {
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [schedules, setSchedules] = useState<ScheduleComparison[]>([]);
@@ -74,7 +91,7 @@ function ComparePageContent() {
       } else {
         setError('Error al cargar el horario compartido.');
       }
-    } catch (error) {
+    } catch {
       setError('Error de conexión. Verifica tu conexión a internet.');
     } finally {
       setLoading(false);
@@ -93,7 +110,7 @@ function ComparePageContent() {
     setSchedules(schedules.filter(s => s.id !== id));
   };
 
-  const getTimeSlot = (session: any) => {
+  const getTimeSlot = (session: CourseSession) => {
     return `${session.start_time} - ${session.end_time}`;
   };
 
@@ -113,8 +130,17 @@ function ComparePageContent() {
   const copyCurrentUrl = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      alert('Link de comparación copiado al portapapeles');
-    } catch (error) {
+      toast({
+        title: 'Link copiado',
+        description: 'Link de comparación copiado al portapapeles',
+        variant: 'success'
+      });
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'No se pudo copiar el link al portapapeles',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -250,7 +276,7 @@ function ComparePageContent() {
                             <User className="h-3 w-3" />
                             {course.professor}
                           </div>
-                          {course.sessions?.map((session: any, sessionIdx: number) => (
+                          {course.sessions?.map((session: CourseSession, sessionIdx: number) => (
                             <div key={sessionIdx} className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               {getDayAbbr(session.day)}

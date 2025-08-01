@@ -81,8 +81,31 @@ export class CollaborationAPI {
     return response.data;
   }
 
-  static async getMySharedSchedules(): Promise<ScheduleShare[]> {
+  static async getSharedSchedules(): Promise<ScheduleShare[]> {
     const response = await apiClient.get('/collaboration/shared');
+    return response.data;
+  }
+
+  static async revokeScheduleShare(shareId: number): Promise<void> {
+    await apiClient.delete(`/collaboration/shared/${shareId}`);
+  }
+
+  static async saveSchedule(scheduleData: any): Promise<any> {
+    // Convert the schedule data to the format expected by the backend
+    const payload = {
+      combination_id: scheduleData.combination?.combination_id || `temp_${Date.now()}`,
+      name: scheduleData.name,
+      description: scheduleData.description || '',
+      semester: scheduleData.semester || 'ciclo-1',
+      // Include the actual course data so backend can store sessions
+      combination: scheduleData.combination
+    };
+    
+    console.log('=== SAVE SCHEDULE PAYLOAD ===');
+    console.log('Payload:', JSON.stringify(payload, null, 2));
+    console.log('============================');
+    
+    const response = await apiClient.post('/api/schedules/save', payload);
     return response.data;
   }
 

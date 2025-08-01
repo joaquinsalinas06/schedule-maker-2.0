@@ -30,12 +30,19 @@ services:
       - DEBUG=True
       - WS_HOST=0.0.0.0
       - WS_PORT=8000
+      # Admin user configuration (set these via environment variables)
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - ADMIN_FIRST_NAME=${ADMIN_FIRST_NAME:-Admin}
+      - ADMIN_LAST_NAME=${ADMIN_LAST_NAME:-User}
+      - ADMIN_STUDENT_ID=${ADMIN_STUDENT_ID:-ADMIN001}
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - ./backend:/app
       - /app/venv
+      - .:/project
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
   frontend:

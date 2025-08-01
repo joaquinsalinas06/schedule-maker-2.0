@@ -66,23 +66,31 @@ async def startup_event():
                 db.refresh(utec)
                 print("✓ UTEC university created")
             
-            # Create admin user if it doesn't exist
-            admin = db.query(User).filter(User.email == "admin@utec.edu.pe").first()
-            if not admin:
-                admin = User(
-                    email="admin@utec.edu.pe",
-                    hashed_password=get_password_hash("admin123"),
-                    first_name="Admin",
-                    last_name="UTEC",
-                    university_id=utec.id,
-                    student_id="ADMIN001",
-                    role="admin",
-                    is_verified=True,
-                    last_login=datetime.now()
-                )
-                db.add(admin)
-                db.commit()
-                print("✓ Admin user created")
+            # Create admin user if it doesn't exist (using Railway env vars)
+            admin_email = os.getenv("ADMIN_EMAIL")
+            admin_password = os.getenv("ADMIN_PASSWORD")
+            
+            if admin_email and admin_password:
+                admin = db.query(User).filter(User.email == admin_email).first()
+                if not admin:
+                    admin = User(
+                        email=admin_email,
+                        hashed_password=get_password_hash(admin_password),
+                        first_name=os.getenv("ADMIN_FIRST_NAME", "Admin"),
+                        last_name=os.getenv("ADMIN_LAST_NAME", "User"),
+                        university_id=utec.id,
+                        student_id=os.getenv("ADMIN_STUDENT_ID", "ADMIN001"),
+                        role="admin",
+                        is_verified=True,
+                        last_login=datetime.now()
+                    )
+                    db.add(admin)
+                    db.commit()
+                    print(f"✓ Admin user created: {admin_email}")
+                else:
+                    print(f"✓ Admin user already exists: {admin_email}")
+            else:
+                print("⚠️ Admin user not created - ADMIN_EMAIL and ADMIN_PASSWORD env vars required")
             
             print("✓ Database initialization complete - ready for CSV import")
         finally:

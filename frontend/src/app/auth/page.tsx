@@ -1,314 +1,493 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
-import { Calendar, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import {
+  Calendar,
+  Mail,
+  Lock,
+  User,
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Shield,
+  Zap,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+} from "lucide-react"
+import Link from "next/link"
 import { authService } from "@/services/auth"
 
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("login")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-
-  // Login form state
-  const [loginForm, setLoginForm] = useState({
-    email: "joaquinsainassalas@gmail.com",
-    password: "12345678"
-  })
-
-  // Register form state
-  const [registerForm, setRegisterForm] = useState({
-    first_name: "",
-    last_name: "",
+  const [formData, setFormData] = useState({
     email: "",
     password: "",
     confirmPassword: "",
-    student_id: "",
-    university_id: 1 // UTEC ID
+    firstName: "",
+    lastName: "",
+    studentId: "",
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }))
+    }
+  }
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+
+    if (!formData.email) {
+      newErrors.email = "El correo electrónico es requerido"
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Ingresa un correo electrónico válido"
+    }
+
+    if (!formData.password) {
+      newErrors.password = "La contraseña es requerida"
+    } else if (formData.password.length < 6) {
+      newErrors.password = "La contraseña debe tener al menos 6 caracteres"
+    }
+
+    if (activeTab === "register") {
+      if (!formData.firstName) {
+        newErrors.firstName = "El nombre es requerido"
+      }
+      if (!formData.lastName) {
+        newErrors.lastName = "El apellido es requerido"
+      }
+      if (!formData.studentId) {
+        newErrors.studentId = "El código de estudiante es requerido"
+      }
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = "Confirma tu contraseña"
+      } else if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = "Las contraseñas no coinciden"
+      }
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-    setError("")
+    if (!validateForm()) return
 
+    setIsLoading(true)
     try {
-      await authService.login(loginForm)
-      window.location.href = "/"
-    } catch (err: unknown) {
-      const errorMessage = (err as any)?.response?.data?.detail || 
-                          (err as any)?.message || 
-                          "Error al iniciar sesión"
-      setError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage))
+      if (activeTab === "login") {
+        await authService.login({
+          email: formData.email,
+          password: formData.password
+        })
+      } else {
+        await authService.register({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          student_id: formData.studentId,
+          university_id: 1 // UTEC ID
+        })
+      }
+      window.location.href = "/dashboard"
+    } catch (error) {
+      console.error("Auth error:", error)
+      setErrors({ general: "Error en la autenticación. Intenta nuevamente." })
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
-
-    // Validate passwords match
-    if (registerForm.password !== registerForm.confirmPassword) {
-      setError("Las contraseñas no coinciden")
-      setIsLoading(false)
-      return
-    }
-
-    // Validate password length
-    if (registerForm.password.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres")
-      setIsLoading(false)
-      return
-    }
-
-    try {
-      await authService.register({
-        first_name: registerForm.first_name,
-        last_name: registerForm.last_name,
-        email: registerForm.email,
-        password: registerForm.password,
-        student_id: registerForm.student_id,
-        university_id: registerForm.university_id
-      })
-      window.location.href = "/"
-    } catch (err: unknown) {
-      const errorMessage = (err as any)?.response?.data?.detail || 
-                          (err as any)?.message || 
-                          "Error al crear cuenta"
-      setError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage))
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const goBackToLanding = () => {
-    window.location.href = "/landing"
-  }
+  const benefits = [
+    {
+      icon: Zap,
+      title: "Acceso Instantáneo",
+      description: "Comienza a crear horarios inmediatamente",
+    },
+    {
+      icon: Shield,
+      title: "Datos Seguros",
+      description: "Tu información está protegida con encriptación",
+    },
+    {
+      icon: CheckCircle,
+      title: "Sincronización",
+      description: "Accede desde cualquier dispositivo",
+    },
+  ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 dark:from-slate-950 dark:via-purple-950 dark:to-slate-950 flex items-center justify-center p-8">
-      <div className="w-full max-w-md">
-        {/* Back to Landing Button */}
-        <Button
-          variant="ghost"
-          onClick={goBackToLanding}
-          className="mb-6 text-purple-200 hover:text-white hover:bg-purple-500/20"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Volver a selección de universidad
-        </Button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        {/* Left Side - Branding & Info */}
+        <div className="space-y-8">
+          <div>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-white hover:text-cyan-300 transition-colors mb-8"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Volver al inicio
+            </Link>
 
-        <Card className="w-full bg-card/80 backdrop-blur-sm border-border shadow-xl">
-          <CardHeader className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg mx-auto mb-4 transform hover:scale-105 transition-transform duration-200">
-              <Calendar className="w-8 h-8 text-white" />
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-cyan-600 to-teal-700 rounded-xl flex items-center justify-center shadow-lg">
+                <Calendar className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">Schedule Maker</h1>
+                <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 mt-1">Portal Académico</Badge>
+              </div>
             </div>
-            <CardTitle className="text-2xl text-foreground">Schedule Maker</CardTitle>
-            <CardDescription>Accede o crea tu cuenta para UTEC</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login" className="transition-all duration-200">
-                  Iniciar Sesión
-                </TabsTrigger>
-                <TabsTrigger value="register" className="transition-all duration-200">
-                  Registrarse
-                </TabsTrigger>
-              </TabsList>
 
-              <TabsContent value="login" className="space-y-4 animate-in slide-in-from-left duration-300">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <label htmlFor="login-email" className="text-sm font-medium text-foreground">
-                      Email
-                    </label>
-                    <Input
-                      id="login-email"
-                      type="email"
-                      value={loginForm.email}
-                      onChange={(e) => setLoginForm({...loginForm, email: e.target.value})}
-                      required
-                      className="bg-background border-border text-foreground"
-                      placeholder="tu.email@utec.edu.pe"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="login-password" className="text-sm font-medium text-foreground">
-                      Contraseña
-                    </label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      value={loginForm.password}
-                      onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
-                      required
-                      className="bg-background border-border text-foreground"
-                      placeholder="••••••••"
-                    />
-                  </div>
-                  {error && activeTab === "login" && (
-                    <div className="text-red-400 text-sm bg-red-500/10 p-3 rounded-md border border-red-500/20 animate-in fade-in duration-300">
-                      {error}
+            <h2 className="text-4xl font-bold text-white mb-4">
+              Bienvenido a tu
+              <span className="bg-gradient-to-r from-cyan-400 to-teal-400 bg-clip-text text-transparent">
+                {" "}
+                Futuro Académico
+              </span>
+            </h2>
+            <p className="text-xl text-gray-300 mb-8">
+              Únete a miles de estudiantes que ya optimizan su tiempo con nuestra plataforma inteligente.
+            </p>
+          </div>
+
+          <div className="space-y-6">
+            {benefits.map((benefit, index) => (
+              <div
+                key={index}
+                className="flex items-start gap-4 animate-in slide-in-from-left duration-500"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-teal-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <benefit.icon className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold mb-1">{benefit.title}</h3>
+                  <p className="text-gray-400 text-sm">{benefit.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-gradient-to-r from-cyan-500/20 to-teal-500/20 rounded-2xl p-6 border border-cyan-500/30 backdrop-blur-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <CheckCircle className="w-5 h-5 text-green-400" />
+              <span className="text-white font-semibold">Cuenta Verificada</span>
+            </div>
+            <p className="text-gray-300 text-sm">
+              Tu cuenta será verificada automáticamente con tu correo institucional para garantizar la seguridad.
+            </p>
+          </div>
+        </div>
+
+        {/* Right Side - Auth Form */}
+        <div className="w-full max-w-md mx-auto">
+          <Card className="bg-card/95 backdrop-blur-sm border-border shadow-2xl">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl text-foreground">
+                {activeTab === "login" ? "Iniciar Sesión" : "Crear Cuenta"}
+              </CardTitle>
+              <CardDescription className="text-muted-foreground">
+                {activeTab === "login" ? "Ingresa a tu cuenta de Schedule Maker" : "Crea tu cuenta para comenzar"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
+                  <TabsTrigger value="register">Registrarse</TabsTrigger>
+                </TabsList>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <TabsContent value="login" className="space-y-4 mt-0">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Correo Electrónico</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="tu.correo@universidad.edu.pe"
+                          value={formData.email}
+                          onChange={(e) => handleInputChange("email", e.target.value)}
+                          className={`pl-10 ${errors.email ? "border-red-500" : ""}`}
+                        />
+                      </div>
+                      {errors.email && (
+                        <div className="flex items-center gap-1 text-red-500 text-sm">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.email}
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg" 
+
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Contraseña</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Tu contraseña"
+                          value={formData.password}
+                          onChange={(e) => handleInputChange("password", e.target.value)}
+                          className={`pl-10 pr-10 ${errors.password ? "border-red-500" : ""}`}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                      {errors.password && (
+                        <div className="flex items-center gap-1 text-red-500 text-sm">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.password}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" className="rounded" />
+                        <span className="text-muted-foreground">Recordarme</span>
+                      </label>
+                      <a href="#" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+                        ¿Olvidaste tu contraseña?
+                      </a>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="register" className="space-y-4 mt-0">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName">Nombre</Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                          <Input
+                            id="firstName"
+                            type="text"
+                            placeholder="Juan"
+                            value={formData.firstName}
+                            onChange={(e) => handleInputChange("firstName", e.target.value)}
+                            className={`pl-10 ${errors.firstName ? "border-red-500" : ""}`}
+                          />
+                        </div>
+                        {errors.firstName && (
+                          <div className="flex items-center gap-1 text-red-500 text-sm">
+                            <AlertCircle className="w-3 h-3" />
+                            {errors.firstName}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">Apellido</Label>
+                        <Input
+                          id="lastName"
+                          type="text"
+                          placeholder="Pérez"
+                          value={formData.lastName}
+                          onChange={(e) => handleInputChange("lastName", e.target.value)}
+                          className={errors.lastName ? "border-red-500" : ""}
+                        />
+                        {errors.lastName && (
+                          <div className="flex items-center gap-1 text-red-500 text-sm">
+                            <AlertCircle className="w-3 h-3" />
+                            {errors.lastName}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="studentId">Código de Estudiante</Label>
+                      <Input
+                        id="studentId"
+                        type="text"
+                        placeholder="202012345"
+                        value={formData.studentId}
+                        onChange={(e) => handleInputChange("studentId", e.target.value)}
+                        className={errors.studentId ? "border-red-500" : ""}
+                      />
+                      {errors.studentId && (
+                        <div className="flex items-center gap-1 text-red-500 text-sm">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.studentId}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Correo Electrónico</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="tu.correo@universidad.edu.pe"
+                          value={formData.email}
+                          onChange={(e) => handleInputChange("email", e.target.value)}
+                          className={`pl-10 ${errors.email ? "border-red-500" : ""}`}
+                        />
+                      </div>
+                      {errors.email && (
+                        <div className="flex items-center gap-1 text-red-500 text-sm">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.email}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Contraseña</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Mínimo 6 caracteres"
+                          value={formData.password}
+                          onChange={(e) => handleInputChange("password", e.target.value)}
+                          className={`pl-10 pr-10 ${errors.password ? "border-red-500" : ""}`}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                      {errors.password && (
+                        <div className="flex items-center gap-1 text-red-500 text-sm">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.password}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                        <Input
+                          id="confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="Repite tu contraseña"
+                          value={formData.confirmPassword}
+                          onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                          className={`pl-10 pr-10 ${errors.confirmPassword ? "border-red-500" : ""}`}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                      {errors.confirmPassword && (
+                        <div className="flex items-center gap-1 text-red-500 text-sm">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.confirmPassword}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-start gap-2 text-sm">
+                      <input type="checkbox" className="rounded mt-0.5" required />
+                      <span className="text-muted-foreground">
+                        Acepto los{" "}
+                        <a href="#" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+                          términos y condiciones
+                        </a>{" "}
+                        y la{" "}
+                        <a href="#" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+                          política de privacidad
+                        </a>
+                      </span>
+                    </div>
+                  </TabsContent>
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white font-semibold py-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
                     disabled={isLoading}
                   >
-                    {isLoading && activeTab === "login" ? (
-                      <span className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Iniciando sesión...
-                      </span>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {activeTab === "login" ? "Iniciando sesión..." : "Creando cuenta..."}
+                      </>
                     ) : (
-                      "Iniciar Sesión"
+                      <>{activeTab === "login" ? "Iniciar Sesión" : "Crear Cuenta"}</>
                     )}
                   </Button>
                 </form>
-              </TabsContent>
 
-              <TabsContent value="register" className="space-y-4 animate-in slide-in-from-right duration-300">
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label htmlFor="register-first-name" className="text-sm font-medium text-foreground">
-                        Nombre
-                      </label>
-                      <Input
-                        id="register-first-name"
-                        type="text"
-                        value={registerForm.first_name}
-                        onChange={(e) => setRegisterForm({...registerForm, first_name: e.target.value})}
-                        required
-                        className="bg-background border-border text-foreground"
-                        placeholder="Juan"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="register-last-name" className="text-sm font-medium text-foreground">
-                        Apellido
-                      </label>
-                      <Input
-                        id="register-last-name"
-                        type="text"
-                        value={registerForm.last_name}
-                        onChange={(e) => setRegisterForm({...registerForm, last_name: e.target.value})}
-                        required
-                        className="bg-background border-border text-foreground"
-                        placeholder="Pérez"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="register-student-id" className="text-sm font-medium text-foreground">
-                      Código de Estudiante
-                    </label>
-                    <Input
-                      id="register-student-id"
-                      type="text"
-                      value={registerForm.student_id}
-                      onChange={(e) => setRegisterForm({...registerForm, student_id: e.target.value})}
-                      required
-                      className="bg-background border-border text-foreground"
-                      placeholder="201910123"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="register-email" className="text-sm font-medium text-foreground">
-                      Email
-                    </label>
-                    <Input
-                      id="register-email"
-                      type="email"
-                      value={registerForm.email}
-                      onChange={(e) => setRegisterForm({...registerForm, email: e.target.value})}
-                      required
-                      className="bg-background border-border text-foreground"
-                      placeholder="tu.email@utec.edu.pe"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="register-password" className="text-sm font-medium text-foreground">
-                      Contraseña
-                    </label>
-                    <Input
-                      id="register-password"
-                      type="password"
-                      value={registerForm.password}
-                      onChange={(e) => setRegisterForm({...registerForm, password: e.target.value})}
-                      required
-                      minLength={8}
-                      className="bg-background border-border text-foreground"
-                      placeholder="••••••••"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Mínimo 8 caracteres
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="register-confirm-password" className="text-sm font-medium text-foreground">
-                      Confirmar Contraseña
-                    </label>
-                    <Input
-                      id="register-confirm-password"
-                      type="password"
-                      value={registerForm.confirmPassword}
-                      onChange={(e) => setRegisterForm({...registerForm, confirmPassword: e.target.value})}
-                      required
-                      className="bg-background border-border text-foreground"
-                      placeholder="••••••••"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="register-university" className="text-sm font-medium text-foreground">
-                      Universidad
-                    </label>
-                    <Input
-                      id="register-university"
-                      type="text"
-                      value="UTEC"
-                      disabled
-                      className="bg-muted border-border text-foreground"
-                    />
-                  </div>
-                  {error && activeTab === "register" && (
-                    <div className="text-red-400 text-sm bg-red-500/10 p-3 rounded-md border border-red-500/20 animate-in fade-in duration-300">
-                      {error}
-                    </div>
-                  )}
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg" 
-                    disabled={isLoading}
-                  >
-                    {isLoading && activeTab === "register" ? (
-                      <span className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Creando cuenta...
-                      </span>
-                    ) : (
-                      "Crear Cuenta"
-                    )}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+                <div className="mt-6 text-center text-sm text-muted-foreground">
+                  <p>
+                    {activeTab === "login" ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab(activeTab === "login" ? "register" : "login")}
+                      className="text-cyan-400 hover:text-cyan-300 transition-colors font-semibold"
+                    >
+                      {activeTab === "login" ? "Regístrate aquí" : "Inicia sesión"}
+                    </button>
+                  </p>
+                </div>
+              </Tabs>
+            </CardContent>
+          </Card>
 
-        {/* Footer */}
-        <div className="text-center mt-6 text-purple-300/70">
-          <p className="text-sm">
-            ¿Problemas con tu cuenta? Contacta al soporte técnico
-          </p>
+          <div className="mt-6 text-center">
+            <p className="text-gray-400 text-sm">
+              ¿Necesitas ayuda?{" "}
+              <a href="#" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+                Contacta soporte
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -30,7 +30,7 @@ python-multipart
 python-dateutil
 pytz
 faker
-# pandas  # Commented out - causes import issues in production
+pandas
 
 # File handling
 aiofiles

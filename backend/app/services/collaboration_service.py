@@ -23,8 +23,9 @@ class CollaborationService:
     
     @staticmethod
     def generate_share_token() -> str:
-        """Generate a unique share token"""
-        return secrets.token_urlsafe(32)
+        """Generate a unique 8-character share token"""
+        # 36^8 = ~2.8 trillion combinations (A-Z, 0-9)
+        return ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
     
     @staticmethod
     def create_collaborative_session(

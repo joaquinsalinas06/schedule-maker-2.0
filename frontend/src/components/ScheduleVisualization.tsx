@@ -40,6 +40,7 @@ interface ScheduleVisualizationProps {
     selected_courses_count: number
   }
   onAddToFavorites?: (schedule: ScheduleCombination) => void
+  onRemoveFromFavorites?: (combinationId: string) => void
   onBackToSelection?: () => void
   showBackButton?: boolean
   favoritedCombinations?: Set<string>
@@ -164,7 +165,7 @@ const courseColors = [
   { bg: 'rgba(6, 182, 212, 0.9)', text: '#fff', name: 'cyan' },
 ]
 
-export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackToSelection, showBackButton = false, favoritedCombinations = new Set() }: ScheduleVisualizationProps) {
+export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemoveFromFavorites, onBackToSelection, showBackButton = false, favoritedCombinations = new Set() }: ScheduleVisualizationProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [currentScheduleIndex, setCurrentScheduleIndex] = useState(0)
@@ -525,9 +526,15 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
     link.click()
   }
 
-  const addToFavorites = () => {
+  const toggleFavorite = () => {
     const currentSchedule = combinations[currentScheduleIndex]
-    if (currentSchedule && onAddToFavorites) {
+    if (!currentSchedule) return
+    
+    const isFavorited = favoritedCombinations.has(currentSchedule.combination_id)
+    
+    if (isFavorited && onRemoveFromFavorites) {
+      onRemoveFromFavorites(currentSchedule.combination_id)
+    } else if (!isFavorited && onAddToFavorites) {
       onAddToFavorites(currentSchedule)
     }
   }
@@ -621,10 +628,10 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
               <Download className="w-4 h-4 mr-1" />
               Descargar
             </Button>
-            {onAddToFavorites && (
+            {(onAddToFavorites || onRemoveFromFavorites) && (
               <Button
                 size="sm"
-                onClick={addToFavorites}
+                onClick={toggleFavorite}
                 variant={favoritedCombinations.has(combinations[currentScheduleIndex]?.combination_id) ? "default" : "outline"}
                 className={
                   favoritedCombinations.has(combinations[currentScheduleIndex]?.combination_id)
@@ -633,7 +640,7 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onBackTo
                 }
               >
                 <Heart className={`w-4 h-4 mr-1 ${favoritedCombinations.has(combinations[currentScheduleIndex]?.combination_id) ? "fill-current" : ""}`} />
-                {favoritedCombinations.has(combinations[currentScheduleIndex]?.combination_id) ? "Favorito" : "Agregar a Favoritos"}
+                {favoritedCombinations.has(combinations[currentScheduleIndex]?.combination_id) ? "Quitar de Favoritos" : "Agregar a Favoritos"}
               </Button>
             )}
           </div>

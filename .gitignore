@@ -54,6 +54,10 @@ venv.bak/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.admin
+.env.secrets
+*.env.admin
+*.env.secrets
 
 # Node.js
 node_modules/

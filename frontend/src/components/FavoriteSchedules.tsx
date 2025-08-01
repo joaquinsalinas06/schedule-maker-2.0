@@ -14,6 +14,8 @@ import {
   Download,
   Share2
 } from "lucide-react"
+import { Session } from "@/types"
+import html2canvas from 'html2canvas'
 
 // Define the interfaces here since we might not have them in types yet
 interface CourseSection {
@@ -24,7 +26,7 @@ interface CourseSection {
   section_number: string
   credits: number
   professor: string
-  sessions: any[]
+  sessions: Session[]
 }
 
 interface ScheduleCombination {
@@ -47,13 +49,15 @@ interface FavoriteSchedulesProps {
   onRemove: (id: string) => void
   onView: (schedule: ScheduleCombination) => void
   onEdit: (id: string, name: string, notes?: string) => void
+  onShare?: (schedule: FavoriteSchedule) => void
 }
 
 export function FavoriteSchedules({
   favorites,
   onRemove,
   onView,
-  onEdit
+  onEdit,
+  onShare
 }: FavoriteSchedulesProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
@@ -80,73 +84,218 @@ export function FavoriteSchedules({
     setEditNotes('')
   }
 
-  const downloadSchedule = (favorite: FavoriteSchedule) => {
-    // This would create a downloadable version of the schedule
-    const data = JSON.stringify(favorite, null, 2)
-    const blob = new Blob([data], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${favorite.name.replace(/\s+/g, '_')}.json`
-    link.click()
-    URL.revokeObjectURL(url)
-  }
+  const downloadSchedule = async (favorite: FavoriteSchedule) => {
+    // Create a downloadable image of the schedule
+    const scheduleData = createScheduleHTML(favorite);
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = scheduleData;
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.top = '-9999px';
+    tempDiv.style.background = 'transparent';
+    tempDiv.style.padding = '0';
+    tempDiv.style.width = '900px';
+    document.body.appendChild(tempDiv);
 
-  const shareSchedule = async (favorite: FavoriteSchedule) => {
     try {
-      // Create a share record on the backend
-      const response = await fetch('http://localhost:8001/collaboration/shares', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          schedule_data: favorite.combination,
-          title: favorite.name,
-          description: favorite.notes || `Horario compartido: ${favorite.name}`,
-          is_public: true
-        })
-      });
+      // Use html2canvas to generate image
+      const canvas = await html2canvas(tempDiv);
 
-      if (response.ok) {
-        const shareData = await response.json();
-        const shareCode = shareData.share_code;
-        const shareUrl = `${window.location.origin}/compare?code=${shareCode}`;
-        
-        // Copy to clipboard
-        await navigator.clipboard.writeText(shareUrl);
-        
-        alert(`¡Horario compartido! 
-        
-Código de comparación: ${shareCode}
-Link copiado al portapapeles: ${shareUrl}
-
-Comparte este código o link con otros estudiantes para comparar horarios.`);
-      } else {
-        throw new Error('Failed to create share');
-      }
+      // Convert canvas to blob and download
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${favorite.name.replace(/\s+/g, '_')}.png`;
+          link.click();
+          URL.revokeObjectURL(url);
+        }
+      }, 'image/png');
     } catch (error) {
-      console.error('Error sharing schedule:', error);
-      
-      // Fallback: create a simple share code from the favorite ID
-      const shareCode = `FAV_${favorite.id.slice(-8).toUpperCase()}`;
-      const shareUrl = `${window.location.origin}/compare?code=${shareCode}`;
-      
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        alert(`Código de comparación: ${shareCode}
-Link copiado al portapapeles: ${shareUrl}
-
-Comparte este código con otros estudiantes para comparar horarios.`);
-      } catch (clipError) {
-        alert(`Código de comparación: ${shareCode}
-Link: ${shareUrl}
-
-Copia este código o link para compartir con otros estudiantes.`);
-      }
+      console.error('Failed to generate image, falling back to text:', error);
+      // Fallback to text-based download
+      createScheduleTextDownload(favorite);
+    } finally {
+      document.body.removeChild(tempDiv);
     }
   }
+
+  const createScheduleHTML = (favorite: FavoriteSchedule) => {
+    return `
+      <div style="
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+        padding: 30px; 
+        width: 900px; 
+        min-height: 600px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        border-radius: 12px;
+      ">
+        <div style="
+          background: white; 
+          padding: 30px; 
+          border-radius: 8px; 
+          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        ">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="
+              color: #2d3748; 
+              margin: 0 0 10px 0; 
+              font-size: 28px; 
+              font-weight: 600;
+              text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            ">${favorite.name}</h1>
+            <div style="
+              display: inline-flex; 
+              gap: 30px; 
+              background: #f7fafc; 
+              padding: 15px 25px; 
+              border-radius: 25px;
+              border: 2px solid #e2e8f0;
+            ">
+              <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #667eea;">${favorite.combination.total_credits}</div>
+                <div style="font-size: 12px; color: #718096; text-transform: uppercase; letter-spacing: 1px;">Credits</div>
+              </div>
+              <div style="text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #764ba2;">${favorite.combination.courses.length}</div>
+                <div style="font-size: 12px; color: #718096; text-transform: uppercase; letter-spacing: 1px;">Courses</div>
+              </div>
+            </div>
+          </div>
+          
+          <table style="
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 25px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+          ">
+            <thead>
+              <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Course</th>
+                <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Section</th>
+                <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Professor</th>
+                <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Credits</th>
+                <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Schedule</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${favorite.combination.courses.map((course, index) => `
+                <tr style="background: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #e2e8f0;">
+                  <td style="padding: 15px 12px; vertical-align: top;">
+                    <div style="font-weight: 600; color: #2d3748; font-size: 14px; margin-bottom: 4px;">${course.course_code}</div>
+                    <div style="color: #718096; font-size: 12px; line-height: 1.4;">${course.course_name}</div>
+                  </td>
+                  <td style="padding: 15px 12px; vertical-align: top;">
+                    <div style="
+                      background: #e6fffa; 
+                      color: #234e52; 
+                      padding: 4px 8px; 
+                      border-radius: 12px; 
+                      font-size: 12px; 
+                      font-weight: 600;
+                      display: inline-block;
+                    ">${course.section_number}</div>
+                  </td>
+                  <td style="padding: 15px 12px; color: #4a5568; font-size: 13px; vertical-align: top;">${course.professor}</td>
+                  <td style="padding: 15px 12px; vertical-align: top;">
+                    <div style="
+                      background: #fed7d7; 
+                      color: #742a2a; 
+                      padding: 4px 8px; 
+                      border-radius: 12px; 
+                      font-size: 12px; 
+                      font-weight: 600;
+                      display: inline-block;
+                    ">${course.credits}</div>
+                  </td>
+                  <td style="padding: 15px 12px; font-size: 12px; line-height: 1.6; vertical-align: top;">
+                    ${course.sessions?.map(session => {
+                      const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                      const dayName = dayNames[session.day_of_week] || 'N/A';
+                      return `
+                        <div style="
+                          margin-bottom: 6px; 
+                          padding: 6px 10px; 
+                          background: #edf2f7; 
+                          border-radius: 6px;
+                          color: #4a5568;
+                        ">
+                          <strong style="color: #2d3748;">${dayName}:</strong> ${session.start_time}-${session.end_time}<br>
+                          <span style="color: #718096; font-size: 11px;">📍 ${session.classroom}</span>
+                        </div>
+                      `;
+                    }).join('') || '<span style="color: #a0aec0;">N/A</span>'}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <div style="
+            margin-top: 30px; 
+            text-align: center; 
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+          ">
+            <div style="color: #4a5568; font-size: 13px; margin-bottom: 5px;">
+              📅 Generated on ${new Date().toLocaleDateString('es-ES', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </div>
+            <div style="color: #718096; font-size: 11px;">
+              Schedule Maker 2.0 - UTEC
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const createScheduleTextDownload = (favorite: FavoriteSchedule) => {
+    // Fallback: create a simple text-based download since we don't have html2canvas
+    const scheduleText = `
+${favorite.name}
+${'='.repeat(favorite.name.length)}
+
+Total Credits: ${favorite.combination.total_credits}
+Number of Courses: ${favorite.combination.courses.length}
+Created: ${new Date(favorite.created_at).toLocaleDateString()}
+
+COURSES:
+${favorite.combination.courses.map((course, index) => `
+${index + 1}. ${course.course_code}: ${course.course_name}
+   Section: ${course.section_number}
+   Professor: ${course.professor}
+   Credits: ${course.credits}
+   Schedule: ${course.sessions?.map(session => {
+     const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+     const dayName = dayNames[session.day_of_week] || 'N/A';
+     return `${dayName} ${session.start_time}-${session.end_time} (${session.classroom})`;
+   }).join(', ') || 'N/A'}
+`).join('')}
+
+Generated on ${new Date().toLocaleDateString()}
+    `.trim();
+
+    const blob = new Blob([scheduleText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${favorite.name.replace(/\s+/g, '_')}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
 
   if (favorites.length === 0) {
     return (
@@ -294,15 +443,17 @@ Copia este código o link para compartir con otros estudiantes.`);
                   <Eye className="w-3 h-3 mr-1" />
                   Ver
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => shareSchedule(favorite)}
-                  className="border-border text-foreground hover:bg-muted"
-                  title="Compartir horario para comparación"
-                >
-                  <Share2 className="w-3 h-3" />
-                </Button>
+                {onShare && (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => onShare(favorite)}
+                    className="border-border text-foreground hover:bg-muted"
+                    title="Compartir horario para comparación"
+                  >
+                    <Share2 className="w-3 h-3" />
+                  </Button>
+                )}
                 <Button 
                   size="sm" 
                   variant="outline"

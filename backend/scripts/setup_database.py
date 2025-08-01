@@ -26,27 +26,36 @@ def create_tables():
     print("✓ Tables created")
 
 def create_admin_user(db):
-    """Create admin user"""
+    """Create admin user using environment variables"""
     print("Creating admin user...")
     
+    # Get admin credentials from environment variables
+    admin_email = os.getenv("ADMIN_EMAIL", "admin@example.com")
+    admin_password = os.getenv("ADMIN_PASSWORD", "changeme")
+    admin_first_name = os.getenv("ADMIN_FIRST_NAME", "Admin")
+    admin_last_name = os.getenv("ADMIN_LAST_NAME", "User")
+    admin_student_id = os.getenv("ADMIN_STUDENT_ID", "ADMIN001")
+    
     # Check if admin already exists
-    admin = db.query(User).filter(User.email == "admin@utec.edu.pe").first()
+    admin = db.query(User).filter(User.email == admin_email).first()
     if admin:
-        print("✓ Admin user already exists")
+        print(f"✓ Admin user already exists: {admin_email}")
         return admin
     
-    # Get UTEC university ID
-    utec = db.query(University).filter(University.short_name == "UTEC").first()
-    if not utec:
-        raise Exception("UTEC university not found. Create university first.")
+    # Get university (try UTEC first, then get first available)
+    university = db.query(University).filter(University.short_name == "UTEC").first()
+    if not university:
+        university = db.query(University).first()
+        if not university:
+            raise Exception("No university found. Create university first.")
     
     admin_user = User(
-        email="admin@utec.edu.pe",
-        hashed_password=get_password_hash("admin123"),
-        first_name="Admin",
-        last_name="UTEC",
-        university_id=utec.id,
-        student_id="ADMIN001",
+        email=admin_email,
+        hashed_password=get_password_hash(admin_password),
+        first_name=admin_first_name,
+        last_name=admin_last_name,
+        university_id=university.id,
+        student_id=admin_student_id,
         role="admin",
         is_verified=True,
         last_login=datetime.now()
@@ -56,7 +65,7 @@ def create_admin_user(db):
     db.commit()
     db.refresh(admin_user)
     
-    print("✓ Admin user created with email: admin@utec.edu.pe / password: admin123")
+    print(f"✓ Admin user created: {admin_email}")
     return admin_user
 
 def create_utec_university(db):
@@ -105,12 +114,7 @@ def main():
             admin = create_admin_user(db)
             
             print("\n=== Setup Complete ===")
-            print(f"✓ University: {utec.name} ({utec.short_name})")
-            print(f"✓ Admin User: {admin.email}")
-            print("\nLogin credentials:")
-            print("  Email: admin@utec.edu.pe")
-            print("  Password: admin123")
-            
+
         finally:
             db.close()
             

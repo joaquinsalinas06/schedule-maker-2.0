@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Grid3X3,
   Users,
+  Star,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,14 +22,34 @@ import { AutocompleteInput } from "@/components/ui/autocomplete-input"
 import { useAutocomplete } from "@/hooks/useAutocomplete"
 import { authService } from "@/services/auth"
 import { apiService } from "@/services/api"
-import { Course, SelectedSection, Filter } from "@/types"
+import { Course, SelectedSection, Filter, ScheduleResponse, Section, Session } from "@/types"
 import { ScheduleVisualization } from "@/components/ScheduleVisualization"
 import { FavoriteSchedules } from "@/components/FavoriteSchedules"
+
+// Local type definitions to handle component interface conflicts
+type LocalScheduleCombination = {
+  combination_id: number;
+  sections: Section[];
+  total_credits: number;
+  conflicts: unknown[];
+}
+
+type LocalFavoriteSchedule = {
+  id: string;
+  name: string;
+  combination: any; // Component expects different structure
+  created_at: string;
+  notes?: string;
+}
 import { SessionManager } from '@/components/collaboration/SessionManager'
-import { CollaborativeScheduleBuilder } from '@/components/collaboration/CollaborativeScheduleBuilder'
+import { EnhancedCollaborativeBuilder } from '@/components/collaboration/EnhancedCollaborativeBuilder'
+import { SharedScheduleWrapper } from '@/components/collaboration/SharedScheduleWrapper'
+import { IntegratedScheduleComparison } from '@/components/collaboration/IntegratedScheduleComparison'
 import { useCollaborationStore } from '@/stores/collaborationStore'
+// import { CollaborationAPI } from '@/services/collaborationAPI' // Temporarily disabled
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BarChart3, Share, ArrowLeft } from 'lucide-react'
+import { toast } from '@/hooks/use-toast'
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState("generate")
@@ -43,15 +64,14 @@ export default function Dashboard() {
   const [scheduleSearchResults, setScheduleSearchResults] = useState<Course[]>([])
   const [scheduleSearchLoading, setScheduleSearchLoading] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
   const [displayPage, setDisplayPage] = useState(1)
   const [resultsPerPage] = useState(10)
-  const [sectionPopup, setSectionPopup] = useState<{courseId: number, course: any} | null>(null)
-  const [generatedSchedules, setGeneratedSchedules] = useState<any>(null)
+  const [sectionPopup, setSectionPopup] = useState<{courseId: number, course: Course} | null>(null)
+  const [generatedSchedules, setGeneratedSchedules] = useState<ScheduleResponse | null>(null)
   const [filters, setFilters] = useState<Filter>({
     university: "UTEC", // User's university - will be dynamic later
     department: "",
-    semester: "ciclo-1",
+    semester: "",
     schedule: "",
     modality: "",
   })
@@ -73,18 +93,15 @@ export default function Dashboard() {
   // Collaboration states
   const { currentSession } = useCollaborationStore()
   const [collaborationTab, setCollaborationTab] = useState('sessions')
-  const [compareCode, setCompareCode] = useState('')
   
   const [scheduleFilters, setScheduleFilters] = useState({
     department: "",
-    semester: "ciclo-1",
   })
   
   // Favorite schedule management states
-  const [favoriteSchedules, setFavoriteSchedules] = useState<any[]>([])
+  const [favoriteSchedules, setFavoriteSchedules] = useState<LocalFavoriteSchedule[]>([])
   const [favoritedCombinations, setFavoritedCombinations] = useState<Set<string>>(new Set())
-  const [isCardFlipped, setIsCardFlipped] = useState(false)
-  const [viewingFavoriteSchedule, setViewingFavoriteSchedule] = useState<any>(null)
+  const [viewingFavoriteSchedule, setViewingFavoriteSchedule] = useState<LocalFavoriteSchedule | null>(null)
   const [collapsedCourses, setCollapsedCourses] = useState<Set<string>>(new Set())
 
   // Helper function to group sections by course
@@ -101,7 +118,7 @@ export default function Dashboard() {
       }
       acc[courseCode].sections.push({ ...section, index })
       return acc
-    }, {} as Record<string, { courseName: string, courseCode: string, credits: number, sections: Array<any & { index: number }> }>)
+    }, {} as Record<string, { courseName: string, courseCode: string, credits: number, sections: Array<SelectedSection & { index: number }> }>)
     
     return Object.values(grouped)
   }
@@ -123,24 +140,28 @@ export default function Dashboard() {
       title: "Generar Horarios",
       shortTitle: "Generar",
       icon: Calendar,
+      color: "from-cyan-500 to-teal-600",
     },
     {
       id: "schedules",
       title: "Ver Horarios",
       shortTitle: "Horarios",
       icon: Grid3X3,
+      color: "from-fuchsia-500 to-pink-600",
     },
     {
       id: "my-schedules",
       title: "Mis Horarios",
-      shortTitle: "Mis Horarios", 
-      icon: BookOpen,
+      shortTitle: "Favoritos", 
+      icon: Star,
+      color: "from-amber-500 to-orange-600",
     },
     {
       id: "collaboration",
       title: "Colaboración",
       shortTitle: "Colaborar",
       icon: Users,
+      color: "from-green-500 to-emerald-600",
     },
   ]
 
@@ -158,11 +179,10 @@ export default function Dashboard() {
     setAutocompleteQuery(searchQuery)
   }, [searchQuery, setAutocompleteQuery])
 
-  const handleSearch = async (page: number = 1) => {
+  const handleSearch = async () => {
     if (!searchQuery.trim() && !filters.university && !filters.department) return
     
     setIsLoading(true)
-    setCurrentPage(page)
     setDisplayPage(1) // Reset display pagination on new search
     try {
       // Use autocomplete endpoint for faster results
@@ -172,7 +192,7 @@ export default function Dashboard() {
         20
       )
       setSearchResults(response || [])
-    } catch (error) {
+    } catch {
       setSearchResults([])
     } finally {
       setIsLoading(false)
@@ -192,14 +212,12 @@ export default function Dashboard() {
         q: scheduleSearchQuery.trim(),
         university: filters.university, // Use user's university automatically
         department: scheduleFilters.department || undefined,
-        semester: scheduleFilters.semester || undefined,
         size: 20
       }
       
       const response = await apiService.searchCourses(params)
       setScheduleSearchResults(response || [])
-    } catch (error) {
-
+    } catch {
       setScheduleSearchResults([])
     } finally {
       setScheduleSearchLoading(false)
@@ -239,16 +257,14 @@ export default function Dashboard() {
     setIsLoading(true)
     try {
       const request = {
-        selected_sections: selectedSections.map(s => s.sectionId),
-        semester: filters.semester
+        selected_sections: selectedSections.map(s => s.sectionId)
       }
       
       const response = await apiService.generateSchedules(request)
       setGeneratedSchedules(response.data)
       setActiveSection('schedules') // Switch to schedules view
-      setIsCardFlipped(true) // Flip to show schedules instead of switching sections
       setViewingFavoriteSchedule(null) // Clear any favorite being viewed
-    } catch (error) {
+    } catch {
     } finally {
       setIsLoading(false)
     }
@@ -265,12 +281,12 @@ export default function Dashboard() {
       notes: ''
     }
     setFavoriteSchedules(prev => [...prev, newFavorite])
-    setFavoritedCombinations(prev => new Set([...prev, schedule.combination_id]))
+    setFavoritedCombinations(prev => new Set([...prev, schedule.combination_id.toString()]))
     
     // Store in localStorage for persistence
     const updatedFavorites = [...favoriteSchedules, newFavorite]
     localStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites))
-    localStorage.setItem('favoritedCombinations', JSON.stringify([...favoritedCombinations, schedule.combination_id]))
+    localStorage.setItem('favoritedCombinations', JSON.stringify([...favoritedCombinations, schedule.combination_id.toString()]))
   }
 
   const removeFavorite = (id: string) => {
@@ -278,7 +294,7 @@ export default function Dashboard() {
     if (favorite) {
       setFavoritedCombinations(prev => {
         const newSet = new Set(prev)
-        newSet.delete(favorite.combination.combination_id)
+        newSet.delete(favorite.combination.combination_id.toString())
         return newSet
       })
     }
@@ -289,6 +305,31 @@ export default function Dashboard() {
     localStorage.setItem('favoritedCombinations', JSON.stringify([...favoritedCombinations]))
   }
 
+  const removeFromFavoritesByCombinationId = (combinationId: string) => {
+    // Find the favorite by combination_id instead of by id
+    const favorite = favoriteSchedules.find(fav => 
+      fav.combination.combination_id?.toString() === combinationId
+    )
+    
+    if (favorite) {
+      // Remove from favorited combinations set
+      setFavoritedCombinations(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(combinationId)
+        return newSet
+      })
+      
+      // Remove from favorites array
+      const updatedFavorites = favoriteSchedules.filter(fav => fav.id !== favorite.id)
+      setFavoriteSchedules(updatedFavorites)
+      
+      // Update localStorage
+      localStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites))
+      const updatedCombinations = Array.from(favoritedCombinations).filter(id => id !== combinationId)
+      localStorage.setItem('favoritedCombinations', JSON.stringify(updatedCombinations))
+    }
+  }
+
   const editFavorite = (id: string, name: string, notes?: string) => {
     const updatedFavorites = favoriteSchedules.map(fav => 
       fav.id === id ? { ...fav, name, notes } : fav
@@ -297,10 +338,66 @@ export default function Dashboard() {
     localStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites))
   }
 
+  const shareSchedule = async (favoriteSchedule: LocalFavoriteSchedule) => {
+    try {
+      // Temporary implementation without backend - generate a simple share code
+      const shareCode = `SCHED_${favoriteSchedule.id.slice(-8).toUpperCase()}`;
+      const shareableLink = `${window.location.origin}/compare?code=${shareCode}`;
+      
+      // Store in localStorage for demo purposes
+      const sharedSchedules = JSON.parse(localStorage.getItem('sharedSchedules') || '{}');
+      sharedSchedules[shareCode] = {
+        schedule: favoriteSchedule,
+        shareCode,
+        createdAt: new Date().toISOString(),
+        permissions: 'view'
+      };
+      localStorage.setItem('sharedSchedules', JSON.stringify(sharedSchedules));
+      
+      // Copy to clipboard
+      await navigator.clipboard.writeText(shareableLink);
+      
+      toast({
+        title: "Schedule Shared!",
+        description: `Share code: ${shareCode}\nLink copied to clipboard.`,
+      });
+
+      return { share_token: shareCode };
+    } catch (error: any) {
+      console.error('Failed to share schedule:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to share schedule",
+        variant: "destructive",
+      });
+    }
+  }
+
   // Check if user is authenticated (only run on client side)
   useEffect(() => {
     if (typeof window !== 'undefined' && !authService.isAuthenticated()) {
-      window.location.href = '/landing'
+      window.location.href = '/'
+    }
+  }, [])
+
+  // Handle shared schedule URL parameters via URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const code = urlParams.get('code')
+      console.log('=== DASHBOARD URL PARAMS ===')
+      console.log('URL:', window.location.href)
+      console.log('Search:', window.location.search)
+      console.log('Code:', code)
+      console.log('Code length:', code?.length)
+      console.log('==========================')
+      
+      if (code && code.length === 8) {
+        console.log('Switching to collaboration tab with code:', code)
+        // Switch to collaboration section and shared tab
+        setActiveSection('collaborate')
+        setCollaborationTab('shared')
+      }
     }
   }, [])
 
@@ -329,8 +426,8 @@ export default function Dashboard() {
       if (savedFavorites) {
         try {
           setFavoriteSchedules(JSON.parse(savedFavorites))
-        } catch (error) {
-          console.error('Error loading saved favorites:', error)
+        } catch {
+          console.error('Error loading saved favorites')
         }
       }
       
@@ -338,15 +435,15 @@ export default function Dashboard() {
         try {
           const combinations = JSON.parse(savedCombinations)
           setFavoritedCombinations(new Set(combinations))
-        } catch (error) {
-          console.error('Error loading saved combinations:', error)
+        } catch {
+          console.error('Error loading saved combinations')
         }
       }
     }
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 dark:from-slate-950 dark:via-purple-950 dark:to-slate-950">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 dark:from-slate-950 dark:via-purple-950 dark:to-slate-950">
       <div className="flex relative">
         {/* Mobile overlay */}
         {isMobile && mobileMenuOpen && (
@@ -373,7 +470,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               {(!sidebarCollapsed || isMobile) && (
                 <div className="flex items-center gap-3 animate-in slide-in-from-left duration-300">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-200">
+                  <div className="w-12 h-12 bg-gradient-to-br from-cyan-600 to-teal-700 rounded-xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-200">
                     <Calendar className="w-7 h-7 text-white" />
                   </div>
                   <div>
@@ -413,7 +510,7 @@ export default function Dashboard() {
                     }}
                     className={`w-full p-4 rounded-xl text-left transition-all duration-300 transform hover:scale-[1.02] group animate-in slide-in-from-left duration-300 ${
                       activeSection === section.id
-                        ? "bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg shadow-purple-500/25"
+                        ? `bg-gradient-to-r ${section.color} text-white shadow-lg shadow-cyan-500/25`
                         : "hover:bg-accent text-foreground hover:shadow-md"
                     }`}
                     style={{ animationDelay: `${index * 100}ms` }}
@@ -422,7 +519,7 @@ export default function Dashboard() {
                     <div className="flex items-center gap-4">
                       <Icon
                         className={`${sidebarCollapsed ? "w-6 h-6" : "w-5 h-5"} transition-all duration-300 ${
-                          activeSection === section.id ? "text-white" : "text-muted-foreground group-hover:text-purple-600"
+                          activeSection === section.id ? "text-white" : "text-muted-foreground group-hover:text-cyan-600"
                         }`}
                       />
                       {(!sidebarCollapsed || isMobile) && (
@@ -435,7 +532,7 @@ export default function Dashboard() {
                           className={`w-4 h-4 transition-all duration-300 ${
                             activeSection === section.id
                               ? "text-white rotate-90"
-                              : "text-muted-foreground group-hover:text-purple-600 group-hover:translate-x-1"
+                              : "text-muted-foreground group-hover:text-cyan-600 group-hover:translate-x-1"
                           }`}
                         />
                       )}
@@ -451,7 +548,7 @@ export default function Dashboard() {
             <Button
               variant="ghost"
               onClick={() => authService.logout()}
-              className="w-full justify-start gap-3 text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
+              className="w-full justify-start gap-3 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
             >
               <LogOut className="w-4 h-4" />
               {(!sidebarCollapsed || isMobile) && "Cerrar Sesión"}
@@ -472,7 +569,7 @@ export default function Dashboard() {
                 <Menu className="w-5 h-5" />
               </Button>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-indigo-700 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-br from-cyan-600 to-teal-700 rounded-lg flex items-center justify-center">
                   <Calendar className="w-5 h-5 text-white" />
                 </div>
                 <span className="font-semibold text-foreground">Schedule Maker</span>
@@ -493,13 +590,39 @@ export default function Dashboard() {
         <div className={`flex-1 flex flex-col ${isMobile ? 'pt-16' : ''}`}>
           {activeSection === "generate" && (
             <div className="flex-1 p-4 sm:p-6 lg:p-8">
+              {/* Header with stats */}
+              <div className="mb-6 animate-in fade-in slide-in-from-top duration-500">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h1 className="text-3xl font-bold text-foreground mb-2">Generar Horarios</h1>
+                    <p className="text-muted-foreground">
+                      Encuentra y selecciona las secciones perfectas para tu horario ideal
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-cyan-400">{selectedSections.length}</div>
+                      <div className="text-xs text-muted-foreground">Secciones</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-emerald-400">{totalCreditsSum}</div>
+                      <div className="text-xs text-muted-foreground">Créditos</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-400">{Object.keys(totalCredits).length}</div>
+                      <div className="text-xs text-muted-foreground">Cursos</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 h-full">
                 {/* Search and Filters - Left Columns */}
                 <div className="lg:col-span-3 space-y-4 sm:space-y-6">
                   <Card className="bg-card/80 backdrop-blur-sm border-border shadow-xl">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-foreground">
-                        <Search className="w-5 h-5 text-purple-500" />
+                        <Search className="w-5 h-5 text-cyan-500" />
                         Buscar Cursos
                       </CardTitle>
                       <CardDescription className="text-muted-foreground">
@@ -507,7 +630,7 @@ export default function Dashboard() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
                         <select
                           value={filters.department}
                           onChange={(e) => setFilters({...filters, department: e.target.value})}
@@ -528,33 +651,6 @@ export default function Dashboard() {
                           <option value="HH">Humanidades</option>
                           <option value="CC">Ciencias</option>
                         </select>
-                        
-                        <select
-                          value={filters.semester}
-                          onChange={(e) => setFilters({...filters, semester: e.target.value})}
-                          className="px-3 py-2 border rounded-md text-sm"
-                        >
-                          <option value="ciclo-1">Ciclo 1</option>
-                          <option value="ciclo-2">Ciclo 2</option>
-                          <option value="ciclo-3">Ciclo 3</option>
-                          <option value="ciclo-4">Ciclo 4</option>
-                          <option value="ciclo-5">Ciclo 5</option>
-                          <option value="ciclo-6">Ciclo 6</option>
-                          <option value="ciclo-7">Ciclo 7</option>
-                          <option value="ciclo-8">Ciclo 8</option>
-                          <option value="electivo">Electivos</option>
-                        </select>
-                        
-                        <select
-                          value={filters.modality}
-                          onChange={(e) => setFilters({...filters, modality: e.target.value})}
-                          className="px-3 py-2 border rounded-md text-sm"
-                        >
-                          <option value="">Modalidad</option>
-                          <option value="presencial">Presencial</option>
-                          <option value="virtual">Virtual</option>
-                          <option value="hibrido">Híbrido</option>
-                        </select>
                       </div>
 
                       <div className="flex gap-2">
@@ -571,7 +667,7 @@ export default function Dashboard() {
                       </div>
                       
                       <div className="text-sm text-muted-foreground">
-                        Buscando en: <span className="font-medium text-purple-600">{filters.university}</span>
+                        Buscando en: <span className="font-medium text-cyan-600">{filters.university}</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -580,7 +676,7 @@ export default function Dashboard() {
                   <div className="space-y-4">
                     {(autocompleteLoading || isLoading) && (
                       <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin h-8 w-8 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+                        <div className="animate-spin h-8 w-8 border-2 border-cyan-500 border-t-transparent rounded-full"></div>
                         <span className="ml-2 text-muted-foreground">Buscando cursos...</span>
                       </div>
                     )}
@@ -594,7 +690,7 @@ export default function Dashboard() {
                     {searchResults && searchResults.length > 0 && !(autocompleteLoading || isLoading) ? (
                       <>
                         {/* Course Cards - No header needed */}
-                        <div className="max-h-[600px] overflow-y-auto space-y-4 pr-2 scrollbar-thin scrollbar-thumb-purple-500 scrollbar-track-transparent">
+                        <div className="max-h-[600px] overflow-y-auto space-y-4 pr-2 scrollbar-thin scrollbar-thumb-cyan-500 scrollbar-track-transparent">
                           {searchResults
                             .slice((displayPage - 1) * resultsPerPage, displayPage * resultsPerPage)
                             .map((course, courseIndex) => (
@@ -621,7 +717,7 @@ export default function Dashboard() {
 
                                           setSectionPopup({courseId: course.id, course});
                                         }}
-                                        className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+                                        className="bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0 transition-all duration-200 hover:scale-105 hover:shadow-lg"
                                       >
                                         <Plus className="w-4 h-4 mr-1 transition-transform duration-200 group-hover:rotate-90" />
                                         Seleccionar Secciones
@@ -656,7 +752,6 @@ export default function Dashboard() {
                         <BookOpen className="w-5 h-5" />
                         Secciones Seleccionadas ({selectedSections.length})
                       </CardTitle>
-                      <CardDescription>Total: {totalCreditsSum} créditos</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
@@ -745,7 +840,7 @@ export default function Dashboard() {
                         
                         {selectedSections.length > 0 && (
                           <Button 
-                            className="w-full mt-4 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg animate-in slide-in-from-bottom duration-500" 
+                            className="w-full mt-4 bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg animate-in slide-in-from-bottom duration-500" 
                             size="lg"
                             onClick={handleGenerateSchedules}
                             disabled={isLoading}
@@ -789,7 +884,7 @@ export default function Dashboard() {
                         </div>
                       </CardHeader>
                       <CardContent className="p-0">
-                        <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500 scrollbar-track-transparent">
+                        <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-500 scrollbar-track-transparent">
                           <div className="p-6 space-y-4">
                             <div className="flex justify-between items-center">
                               <h4 className="font-medium text-foreground">Selecciona las secciones que te interesan:</h4>
@@ -797,14 +892,14 @@ export default function Dashboard() {
                                 {selectedSections.filter(s => s.courseCode === sectionPopup.course.code).length} de {sectionPopup.course.sections?.length || 0} seleccionadas
                               </div>
                             </div>
-                            {sectionPopup.course.sections?.map((section: any) => {
+                            {sectionPopup.course.sections?.map((section: Section) => {
                               const isSelected = selectedSections.some(s => s.sectionId === section.id);
                               const selectedIndex = selectedSections.findIndex(s => s.sectionId === section.id);
                               
                               return (
                                 <div key={section.id} className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-200 ${
                                   isSelected 
-                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' 
+                                    ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20' 
                                     : 'border-border bg-muted/30 hover:bg-muted/50'
                                 }`}>
                                   <div className="flex-1">
@@ -813,19 +908,22 @@ export default function Dashboard() {
                                       Prof. {section.professor} • {section.enrolled}/{section.capacity} estudiantes
                                     </div>
                                     <div className="text-xs text-muted-foreground mt-2">
-                                      {section.sessions?.map((session: any, idx: number) => (
+                                      {section.sessions?.map((session, idx: number) => (
                                         <div key={idx} className="inline-block mr-3 mb-1">
                                           <span className={`px-2 py-1 rounded text-xs ${
                                             isSelected 
-                                              ? 'bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200'
-                                              : 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
+                                              ? 'bg-cyan-200 dark:bg-cyan-800 text-cyan-800 dark:text-cyan-200'
+                                              : 'bg-cyan-100 dark:bg-cyan-900 text-cyan-800 dark:text-cyan-200'
                                           }`}>
                                             {(() => {
                                               const dayMap: Record<string, string> = {
                                                 'Monday': 'Lun', 'Tuesday': 'Mar', 'Wednesday': 'Mié', 
                                                 'Thursday': 'Jue', 'Friday': 'Vie', 'Saturday': 'Sáb', 'Sunday': 'Dom'
                                               };
-                                              return dayMap[session.day] || session.day;
+                                              // Handle different possible day formats
+                                              const dayValue = (session as any).day || (session as Session).day_of_week;
+                                              const dayKey = typeof dayValue === 'string' ? dayValue : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayValue] || 'Monday';
+                                              return dayMap[dayKey as keyof typeof dayMap] || dayValue;
                                             })()} {session.start_time?.slice(0,5)}-{session.end_time?.slice(0,5)}
                                           </span>
                                         </div>
@@ -834,7 +932,7 @@ export default function Dashboard() {
                                   </div>
                                   <div className="flex items-center gap-2">
                                     {isSelected && (
-                                      <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                                      <span className="text-xs text-cyan-600 dark:text-cyan-400 font-medium">
                                         ✓ Seleccionada
                                       </span>
                                     )}
@@ -843,7 +941,7 @@ export default function Dashboard() {
                                       variant={isSelected ? "destructive" : "default"}
                                       className={isSelected ? 
                                         "bg-red-500 hover:bg-red-600 text-white border-0" :
-                                        "bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0"
+                                        "bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0"
                                       }
                                       onClick={() => {
                                         if (isSelected) {
@@ -879,7 +977,7 @@ export default function Dashboard() {
                           </div>
                           <Button
                             onClick={() => setSectionPopup(null)}
-                            className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0"
+                            className="bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0"
                           >
                             Listo
                           </Button>
@@ -902,12 +1000,16 @@ export default function Dashboard() {
                   <div className="lg:col-span-3 space-y-4 sm:space-y-6">
                     {/* Canvas */}
                     <ScheduleVisualization 
-                      scheduleData={viewingFavoriteSchedule ? {
-                        combinations: [viewingFavoriteSchedule],
+                      scheduleData={(viewingFavoriteSchedule ? {
+                        combinations: [viewingFavoriteSchedule.combination],
                         total_combinations: 1,
-                        selected_courses_count: viewingFavoriteSchedule.courses.length
-                      } : generatedSchedules} 
+                        selected_courses_count: viewingFavoriteSchedule.combination.sections?.length || 0
+                      } : generatedSchedules ? {
+                        ...generatedSchedules,
+                        selected_courses_count: generatedSchedules.combinations?.length || 0
+                      } : null!) as any} 
                       onAddToFavorites={addToFavorites}
+                      onRemoveFromFavorites={removeFromFavoritesByCombinationId}
                       favoritedCombinations={favoritedCombinations}
                       showBackButton={true}
                       onBackToSelection={() => {
@@ -927,7 +1029,7 @@ export default function Dashboard() {
                     <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
                       <CardContent className="p-4 space-y-3">
                         <div className="flex items-center gap-2 mb-2">
-                          <Search className="w-4 h-4 text-purple-500" />
+                          <Search className="w-4 h-4 text-cyan-500" />
                           <span className="text-sm font-medium text-foreground">Buscar Cursos</span>
                         </div>
                         
@@ -958,29 +1060,13 @@ export default function Dashboard() {
                             <option value="MT">Mecatrónica</option>
                             <option value="HH">Humanidades</option>
                           </select>
-                          
-                          <select
-                            value={scheduleFilters.semester}
-                            onChange={(e) => setScheduleFilters({...scheduleFilters, semester: e.target.value})}
-                            className="px-2 py-1 border rounded text-xs"
-                          >
-                            <option value="ciclo-1">Ciclo 1</option>
-                            <option value="ciclo-2">Ciclo 2</option>
-                            <option value="ciclo-3">Ciclo 3</option>
-                            <option value="ciclo-4">Ciclo 4</option>
-                            <option value="ciclo-5">Ciclo 5</option>
-                            <option value="ciclo-6">Ciclo 6</option>
-                            <option value="ciclo-7">Ciclo 7</option>
-                            <option value="ciclo-8">Ciclo 8</option>
-                            <option value="electivo">Electivos</option>
-                          </select>
                         </div>
                         
                         <Button 
                           onClick={handleScheduleSearch} 
                           disabled={scheduleSearchLoading}
                           size="sm"
-                          className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white text-xs transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+                          className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white text-xs transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
                         >
                           {scheduleSearchLoading ? (
                             <span className="flex items-center gap-1 justify-center">
@@ -993,7 +1079,7 @@ export default function Dashboard() {
                         </Button>
                         
                         <div className="text-xs text-muted-foreground text-center">
-                          En: <span className="font-medium text-purple-600">{filters.university}</span>
+                          En: <span className="font-medium text-cyan-600">{filters.university}</span>
                         </div>
                       </CardContent>
                     </Card>
@@ -1035,7 +1121,7 @@ export default function Dashboard() {
                                   <Button
                                     size="sm"
                                     onClick={() => setSectionPopup({courseId: course.id, course})}
-                                    className="h-6 px-2 text-xs bg-purple-500 hover:bg-purple-600 text-white transition-all duration-200 hover:scale-110 hover:shadow-md"
+                                    className="h-6 px-2 text-xs bg-cyan-500 hover:bg-cyan-600 text-white transition-all duration-200 hover:scale-110 hover:shadow-md"
                                   >
                                     <span className="transform transition-transform duration-200 group-hover:rotate-90">+</span>
                                   </Button>
@@ -1059,7 +1145,6 @@ export default function Dashboard() {
                           <BookOpen className="w-4 h-4" />
                           Secciones Seleccionadas ({selectedSections.length})
                         </CardTitle>
-                        <CardDescription className="text-sm">Total: {totalCreditsSum} créditos</CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
@@ -1148,7 +1233,7 @@ export default function Dashboard() {
                           
                           {selectedSections.length > 0 && (
                             <Button 
-                              className="w-full mt-4 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg animate-in slide-in-from-bottom duration-500" 
+                              className="w-full mt-4 bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg animate-in slide-in-from-bottom duration-500" 
                               size="lg"
                               onClick={handleGenerateSchedules}
                               disabled={isLoading}
@@ -1193,7 +1278,7 @@ export default function Dashboard() {
                         </div>
                       </CardHeader>
                       <CardContent className="p-0">
-                        <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500 scrollbar-track-transparent">
+                        <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-500 scrollbar-track-transparent">
                           <div className="p-6 space-y-4">
                             <div className="flex justify-between items-center">
                               <h4 className="font-medium text-foreground">Selecciona las secciones que te interesan:</h4>
@@ -1201,14 +1286,14 @@ export default function Dashboard() {
                                 {selectedSections.filter(s => s.courseCode === sectionPopup.course.code).length} de {sectionPopup.course.sections?.length || 0} seleccionadas
                               </div>
                             </div>
-                            {sectionPopup.course.sections?.map((section: any) => {
+                            {sectionPopup.course.sections?.map((section: Section) => {
                               const isSelected = selectedSections.some(s => s.sectionId === section.id);
                               const selectedIndex = selectedSections.findIndex(s => s.sectionId === section.id);
                               
                               return (
                                 <div key={section.id} className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-200 ${
                                   isSelected 
-                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' 
+                                    ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20' 
                                     : 'border-border bg-muted/30 hover:bg-muted/50'
                                 }`}>
                                   <div className="flex-1">
@@ -1217,19 +1302,22 @@ export default function Dashboard() {
                                       Prof. {section.professor} • {section.enrolled}/{section.capacity} estudiantes
                                     </div>
                                     <div className="text-xs text-muted-foreground mt-2">
-                                      {section.sessions?.map((session: any, idx: number) => (
+                                      {section.sessions?.map((session, idx: number) => (
                                         <div key={idx} className="inline-block mr-3 mb-1">
                                           <span className={`px-2 py-1 rounded text-xs ${
                                             isSelected 
-                                              ? 'bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200'
-                                              : 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
+                                              ? 'bg-cyan-200 dark:bg-cyan-800 text-cyan-800 dark:text-cyan-200'
+                                              : 'bg-cyan-100 dark:bg-cyan-900 text-cyan-800 dark:text-cyan-200'
                                           }`}>
                                             {(() => {
                                               const dayMap: Record<string, string> = {
                                                 'Monday': 'Lun', 'Tuesday': 'Mar', 'Wednesday': 'Mié', 
                                                 'Thursday': 'Jue', 'Friday': 'Vie', 'Saturday': 'Sáb', 'Sunday': 'Dom'
                                               };
-                                              return dayMap[session.day] || session.day;
+                                              // Handle different possible day formats
+                                              const dayValue = (session as any).day || (session as Session).day_of_week;
+                                              const dayKey = typeof dayValue === 'string' ? dayValue : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayValue] || 'Monday';
+                                              return dayMap[dayKey as keyof typeof dayMap] || dayValue;
                                             })()} {session.start_time?.slice(0,5)}-{session.end_time?.slice(0,5)}
                                           </span>
                                         </div>
@@ -1238,7 +1326,7 @@ export default function Dashboard() {
                                   </div>
                                   <div className="flex items-center gap-2">
                                     {isSelected && (
-                                      <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                                      <span className="text-xs text-cyan-600 dark:text-cyan-400 font-medium">
                                         ✓ Seleccionada
                                       </span>
                                     )}
@@ -1247,7 +1335,7 @@ export default function Dashboard() {
                                       variant={isSelected ? "destructive" : "default"}
                                       className={isSelected ? 
                                         "bg-red-500 hover:bg-red-600 text-white border-0" :
-                                        "bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0"
+                                        "bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0"
                                       }
                                       onClick={() => {
                                         if (isSelected) {
@@ -1283,7 +1371,7 @@ export default function Dashboard() {
                           </div>
                           <Button
                             onClick={() => setSectionPopup(null)}
-                            className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0"
+                            className="bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0"
                           >
                             Listo
                           </Button>
@@ -1317,8 +1405,16 @@ export default function Dashboard() {
                 favorites={favoriteSchedules}
                 onEdit={editFavorite}
                 onRemove={removeFavorite}
-                onView={(schedule) => {
-                  setViewingFavoriteSchedule(schedule)
+                onShare={shareSchedule}
+                onView={(combination) => {
+                  // Create a temporary LocalFavoriteSchedule object for viewing
+                  const tempFavorite: LocalFavoriteSchedule = {
+                    id: 'temp',
+                    name: 'Horario Favorito',
+                    combination: combination,
+                    created_at: new Date().toISOString()
+                  }
+                  setViewingFavoriteSchedule(tempFavorite)
                   setActiveSection("schedules")
                 }}
               />
@@ -1344,7 +1440,7 @@ export default function Dashboard() {
                       Volver a Sesiones
                     </Button>
                   </div>
-                  <CollaborativeScheduleBuilder />
+                  <EnhancedCollaborativeBuilder />
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -1380,68 +1476,11 @@ export default function Dashboard() {
                     </TabsContent>
 
                     <TabsContent value="shared" className="mt-6">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Horarios Compartidos</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-center py-12 text-muted-foreground">
-                            <Share className="h-12 w-12 mx-auto mb-4" />
-                            <h3 className="text-lg font-semibold mb-2">Comparte tus Horarios</h3>
-                            <p>Comparte tus horarios con compañeros para obtener comentarios y colaborar</p>
-                          </div>
-                        </CardContent>
-                      </Card>
+                      <SharedScheduleWrapper />
                     </TabsContent>
 
                     <TabsContent value="compare" className="mt-6">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Comparación de Horarios</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="text-center py-8 text-muted-foreground">
-                            <BarChart3 className="h-12 w-12 mx-auto mb-4" />
-                            <h3 className="text-lg font-semibold mb-2">Compara Horarios</h3>
-                            <p className="mb-4">Compara múltiples horarios lado a lado para encontrar la mejor opción</p>
-                          </div>
-                          
-                          <div className="space-y-4">
-                            <div>
-                              <h4 className="font-medium mb-2">Comparar con código compartido</h4>
-                              <div className="flex gap-2">
-                                <Input
-                                  placeholder="Ingresa el código del horario compartido"
-                                  value={compareCode}
-                                  onChange={(e) => setCompareCode(e.target.value)}
-                                />
-                                <Button 
-                                  onClick={() => {
-                                    if (compareCode.trim()) {
-                                      window.open(`/compare?code=${compareCode.trim()}`, '_blank')
-                                    }
-                                  }}
-                                  disabled={!compareCode.trim()}
-                                >
-                                  Comparar
-                                </Button>
-                              </div>
-                            </div>
-                            
-                            <div className="border-t pt-4">
-                              <h4 className="font-medium mb-2">O abre el comparador directamente</h4>
-                              <Button 
-                                variant="outline" 
-                                onClick={() => window.open('/compare', '_blank')}
-                                className="w-full"
-                              >
-                                <BarChart3 className="h-4 w-4 mr-2" />
-                                Abrir Comparador de Horarios
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                      <IntegratedScheduleComparison />
                     </TabsContent>
 
                     <TabsContent value="history" className="mt-6">

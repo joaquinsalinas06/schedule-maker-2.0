@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCollaborationStore, CollaborativeSession } from '@/stores/collaborationStore';
-import { CollaborationAPI } from '@/services/collaborationAPI';
+// import { CollaborationAPI } from '@/services/collaborationAPI'; // Temporarily disabled
 import { websocketService } from '@/services/websocketService';
 import { CreateSessionDialog, JoinSessionDialog } from './CreateJoinSession';
 import { 
@@ -35,8 +35,10 @@ export function SessionManager() {
 
   const loadSessions = async () => {
     try {
-      const userSessions = await CollaborationAPI.getUserSessions();
-      setSessions(userSessions);
+      // Temporarily disabled due to auth issues
+      // const userSessions = await CollaborationAPI.getUserSessions();
+      // setSessions(userSessions);
+      setSessions([]); // Temporary empty array
     } catch (error: any) {
       console.error('Failed to load sessions:', error);
       toast({

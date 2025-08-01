@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -88,11 +88,56 @@ async def get_user_sessions(
 # Schedule Sharing
 @router.post("/share", response_model=ScheduleShareResponse)
 async def share_schedule(
-    share_data: ScheduleShareCreate,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Share a schedule with another user or publicly"""
+    
+    # Debug logging for share request
+    try:
+        body = await request.body()
+        body_str = body.decode('utf-8')
+        content_type = request.headers.get('content-type', '')
+        
+        print(f"=== SHARE SCHEDULE DEBUG ===")
+        print(f"Content-Type: {content_type}")
+        print(f"Raw body: {body_str}")
+        print(f"===========================")
+        
+        # Parse the request data
+        if 'application/json' in content_type:
+            import json
+            json_data = json.loads(body_str)
+            print(f"Parsing as JSON...")
+        else:
+            from urllib.parse import parse_qs
+            print(f"Parsing as form data...")
+            parsed_data = parse_qs(body_str)
+            json_data = {key: values[0] if values else None for key, values in parsed_data.items()}
+        
+        print(f"=== PARSED SHARE DATA ===")
+        for key, value in json_data.items():
+            print(f"{key}: {value} (type: {type(value)})")
+        print(f"=========================")
+        
+        # Try to create the model
+        share_data = ScheduleShareCreate(**json_data)
+        print(f"=== SHARE MODEL SUCCESS ===")
+        print(f"schedule_id: {share_data.schedule_id}")
+        print(f"shared_with: {share_data.shared_with}")
+        print(f"permissions: {share_data.permissions}")
+        print(f"expires_hours: {share_data.expires_hours}")
+        print(f"===========================")
+        
+    except Exception as e:
+        print(f"=== ERROR PARSING SHARE REQUEST ===")
+        print(f"Error: {e}")
+        print(f"Error type: {type(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        print(f"===================================")
+        raise HTTPException(status_code=422, detail=f"Invalid share request: {e}")
     
     share = CollaborationService.share_schedule(
         db=db,
@@ -105,7 +150,7 @@ async def share_schedule(
     
     return share
 
-@router.get("/shared/{share_token}", response_model=SharedScheduleAccess)
+@router.get("/shared/{share_token}")
 async def access_shared_schedule(
     share_token: str,
     current_user: User = Depends(get_current_user),
@@ -113,12 +158,100 @@ async def access_shared_schedule(
 ):
     """Access a shared schedule using share token"""
     
+    print(f"=== ACCESSING SHARED SCHEDULE ===")
+    print(f"Share token: {share_token}")
+    print(f"User ID: {current_user.id}")
+    
     result = CollaborationService.get_shared_schedule(db, share_token, current_user.id)
     
+    print(f"=== COLLABORATION SERVICE RESULT ===")
+    print(f"Result keys: {list(result.keys())}")
+    print(f"Schedule: {result['schedule']}")
+    print(f"Schedule type: {type(result['schedule'])}")
+    if result['schedule']:
+        print(f"Schedule ID: {result['schedule'].id}")
+        print(f"Schedule name: {result['schedule'].name}")
+        print(f"Schedule description: {result['schedule'].description}")
+        print(f"Schedule semester: {result['schedule'].semester}")
+        print(f"Schedule total_credits: {result['schedule'].total_credits}")
+        print(f"Schedule sessions: {result['schedule'].schedule_sessions}")
+    print(f"Share: {result['share']}")
+    if result['share']:
+        print(f"Share shared_by: {result['share'].shared_by}")
+    print(f"====================================")
+    
+    # Get the sharer user info
+    sharer = db.query(User).filter(User.id == result["share"].shared_by).first()
+    
+    # Build the combination data structure expected by frontend
+    schedule = result["schedule"]
+    
+    # Get the schedule sessions with course details
+    courses = []
+    if schedule.schedule_sessions:
+        from app.models.session import Session
+        from app.models.section import Section  
+        from app.models.course import Course
+        
+        for schedule_session in schedule.schedule_sessions:
+            session = db.query(Session).filter(Session.id == schedule_session.session_id).first()
+            if session:
+                section = db.query(Section).filter(Section.id == session.section_id).first()
+                if section:
+                    course = db.query(Course).filter(Course.id == section.course_id).first()
+                    if course:
+                        # Get all sessions for this section
+                        section_sessions = db.query(Session).filter(Session.section_id == section.id).all()
+                        session_data = []
+                        for sess in section_sessions:
+                            session_data.append({
+                                "day_of_week": sess.day_of_week,
+                                "start_time": sess.start_time,
+                                "end_time": sess.end_time,
+                                "classroom": sess.classroom
+                            })
+                        
+                        courses.append({
+                            "course_code": course.code,
+                            "course_name": course.name,
+                            "section_number": section.section_number,
+                            "credits": course.credits,
+                            "professor": section.professor,
+                            "sessions": session_data
+                        })
+    
+    # Remove duplicates (same course might have multiple sessions)
+    unique_courses = []
+    seen_sections = set()
+    for course in courses:
+        section_key = f"{course['course_code']}-{course['section_number']}"
+        if section_key not in seen_sections:
+            seen_sections.add(section_key)
+            unique_courses.append(course)
+    
+    combination_data = {
+        "courses": unique_courses,
+        "total_credits": schedule.total_credits or sum(course["credits"] for course in unique_courses)
+    }
+    
+    print(f"=== BUILT COMBINATION DATA ===")
+    print(f"Total courses: {len(unique_courses)}")
+    print(f"Total credits: {combination_data['total_credits']}")
+    print(f"=============================")
+    
     return {
-        "schedule": result["schedule"],
+        "schedule": {
+            "id": schedule.id,
+            "name": schedule.name,
+            "description": schedule.description,
+            "combination": combination_data,
+            "total_credits": schedule.total_credits
+        },
         "permissions": result["permissions"],
-        "shared_by": result["share"].sharer
+        "shared_by": {
+            "id": sharer.id if sharer else None,
+            "name": f"{sharer.first_name} {sharer.last_name}" if sharer else "Unknown User"
+        }
     }
 
 @router.get("/shared", response_model=List[ScheduleShareResponse])

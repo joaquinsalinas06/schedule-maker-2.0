@@ -26,7 +26,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/landing';
+      window.location.href = '/';
     }
     return Promise.reject(error);
   }
@@ -60,7 +60,7 @@ export const authService = {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('selectedUniversity');
-    window.location.href = '/landing';
+    window.location.href = '/';
   },
 
   getCurrentUser: (): User | null => {

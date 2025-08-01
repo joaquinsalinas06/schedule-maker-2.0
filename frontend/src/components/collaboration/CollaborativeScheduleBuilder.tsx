@@ -12,6 +12,7 @@ import { websocketService } from '@/services/websocketService';
 import { apiService } from '@/services/api';
 import { ScheduleVisualization } from '@/components/ScheduleVisualization';
 import { Course, SelectedSection } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Users, 
   UserCircle, 
@@ -29,6 +30,7 @@ import {
 
 
 export function CollaborativeScheduleBuilder() {
+  const { toast } = useToast();
   const {
     currentSession,
     isConnected,
@@ -176,7 +178,11 @@ export function CollaborativeScheduleBuilder() {
 
   const handleGenerateSchedules = async () => {
     if (selectedSections.length === 0) {
-      alert('Por favor selecciona al menos un curso para generar horarios');
+      toast({
+        title: 'Selección requerida',
+        description: 'Por favor selecciona al menos un curso para generar horarios',
+        variant: 'destructive'
+      });
       return;
     }
 
@@ -206,7 +212,11 @@ export function CollaborativeScheduleBuilder() {
         generatedSchedules: response.data 
       });
     } catch (error) {
-      alert('Error al generar horarios. Por favor intenta de nuevo.');
+      toast({
+        title: 'Error',
+        description: 'Error al generar horarios. Por favor intenta de nuevo.',
+        variant: 'destructive'
+      });
     } finally {
       setIsLoading(false);
     }

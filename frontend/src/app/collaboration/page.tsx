@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { SessionManager } from '@/components/collaboration/SessionManager';
 import { CollaborativeScheduleBuilder } from '@/components/collaboration/CollaborativeScheduleBuilder';
+import { SharedScheduleManager } from '@/components/collaboration/SharedScheduleManager';
 import { useCollaborationStore } from '@/stores/collaborationStore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,10 +15,21 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useSearchParams } from 'next/navigation';
 
-export default function CollaborationPage() {
+function CollaborationContent() {
   const { currentSession } = useCollaborationStore();
   const [activeTab, setActiveTab] = useState('sessions');
+  const searchParams = useSearchParams();
+
+  // Auto-load shared schedule if code is in URL
+  useEffect(() => {
+    const code = searchParams.get('code');
+    if (code && code.length === 8) {
+      // Switch to shared tab and auto-load the schedule
+      setActiveTab('shared');
+    }
+  }, [searchParams]);
 
   // If in a session, show the collaborative builder
   if (currentSession) {
@@ -72,18 +84,9 @@ export default function CollaborationPage() {
         </TabsContent>
 
         <TabsContent value="shared" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Shared Schedules</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <Share className="h-12 w-12 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Share Your Schedules</h3>
-                <p>Share your schedules with classmates for feedback and collaboration</p>
-              </div>
-            </CardContent>
-          </Card>
+          <SharedScheduleManager 
+            autoLoadCode={searchParams.get('code')}
+          />
         </TabsContent>
 
         <TabsContent value="compare" className="mt-6">
@@ -117,5 +120,13 @@ export default function CollaborationPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function CollaborationPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CollaborationContent />
+    </Suspense>
   );
 }
