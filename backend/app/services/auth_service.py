@@ -152,14 +152,14 @@ class AuthService:
             )
         
         # Delete old photo if exists
-        if user.profile_photo:
+        if hasattr(user, 'profile_photo') and user.profile_photo:
             await cloudinary_service.delete_profile_photo(user_id)
         
         # Upload new photo to Cloudinary
         photo_url = await cloudinary_service.upload_profile_photo(file, user_id)
         
-        # Update user profile with new photo URL
-        self.user_repo.update(user_id, {"profile_photo": photo_url})
+        # Update user profile with new photo URL (fixed: passing user object, not user_id)
+        self.user_repo.update(user, {"profile_photo": photo_url})
         
         return photo_url
 

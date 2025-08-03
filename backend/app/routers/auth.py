@@ -88,3 +88,37 @@ async def upload_profile_photo(
     
     photo_url = await auth_service.upload_profile_photo(current_user.id, file)
     return {"url": photo_url}
+
+@router.get("/cloudinary-status")
+async def check_cloudinary_status():
+    """Check if Cloudinary and moderation are working"""
+    from app.services.cloudinary_service import cloudinary_service
+    import cloudinary
+    
+    try:
+        # Test basic Cloudinary connection
+        config = cloudinary.config()
+        if not all([config.cloud_name, config.api_key, config.api_secret]):
+            return {
+                "cloudinary": "❌ Not configured",
+                "moderation": "❌ Cannot test - Cloudinary not configured"
+            }
+        
+        # Test if we can access the API
+        result = cloudinary.api.ping()
+        if result.get('status') == 'ok':
+            return {
+                "cloudinary": "✅ Connected",
+                "moderation": "🔍 Upload an image to test moderation",
+                "note": "AWS Rekognition moderation will be tested on first photo upload"
+            }
+        else:
+            return {
+                "cloudinary": "❌ Connection failed",
+                "moderation": "❌ Cannot test - Connection failed"
+            }
+    except Exception as e:
+        return {
+            "cloudinary": f"❌ Error: {str(e)}",
+            "moderation": "❌ Cannot test - Connection error"
+        }
