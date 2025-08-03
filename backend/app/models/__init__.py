@@ -6,7 +6,7 @@ from .course import Course
 from .section import Section
 from .session import Session
 from .schedule import Schedule, ScheduleSession
-from .collaboration import CollaborativeSession, SessionParticipant, ScheduleShare, ScheduleComparison, ScheduleComment
+from .collaboration import CollaborativeSession, SessionParticipant, ScheduleShare, ScheduleComparison
 
 __all__ = [
     "Base",
@@ -21,6 +21,5 @@ __all__ = [
     "CollaborativeSession",
     "SessionParticipant", 
     "ScheduleShare",
-    "ScheduleComparison",
-    "ScheduleComment"
+    "ScheduleComparison"
 ]

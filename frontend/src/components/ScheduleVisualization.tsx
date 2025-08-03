@@ -48,7 +48,6 @@ interface ScheduleVisualizationProps {
 let CANVAS_WIDTH = 1400
 let CANVAS_HEIGHT = 900
 let TOP_MARGIN = 0.15
-const SIDE_MARGIN = 0.15
 
 const getResponsiveMargins = (containerWidth: number) => {
   if (containerWidth <= MOBILE_BREAKPOINT) {
@@ -132,12 +131,9 @@ const getResponsiveFontSizes = (containerWidth: number) => {
     }
   }
 }
-const MAJOR_LINE_WIDTH = 2
-const MINOR_LINE_WIDTH = 1
 const DAY_COUNT = 6 // Monday to Saturday
 
 const weekDayStrings = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
-const weekDayChars = ["L", "M", "W", "J", "V", "S"]
 
 // Mapping from Spanish day names to array indices
 const dayNameToIndex: { [key: string]: number } = {

@@ -73,26 +73,6 @@ def create_search_terms(query: str) -> list[str]:
     
     return all_terms
 
-
-def create_search_pattern(terms: list[str]) -> str:
-    """
-    Create a SQL LIKE pattern from search terms for PostgreSQL
-    
-    Args:
-        terms: List of search terms
-        
-    Returns:
-        SQL pattern string for use with LIKE/ILIKE
-    """
-    if not terms:
-        return "%"
-    
-    # Create pattern that matches all terms in any order
-    # Each term must be present but can be anywhere in the text
-    pattern_parts = [f"%{term}%" for term in terms]
-    return "".join(pattern_parts)
-
-
 def should_perform_search(query: Optional[str], min_length: int = 3) -> bool:
     """
     Determine if a search should be performed based on query length

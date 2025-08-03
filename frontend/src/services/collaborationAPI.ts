@@ -39,10 +39,6 @@ export interface AddComparisonRequest {
   schedule_id: number;
 }
 
-export interface CommentRequest {
-  comment: string;
-  parent_comment_id?: number;
-}
 
 export class CollaborationAPI {
   // Collaborative Sessions
@@ -96,7 +92,6 @@ export class CollaborationAPI {
       combination_id: scheduleData.combination?.combination_id || `temp_${Date.now()}`,
       name: scheduleData.name,
       description: scheduleData.description || '',
-      semester: scheduleData.semester || 'ciclo-1',
       // Include the actual course data so backend can store sessions
       combination: scheduleData.combination
     };
@@ -123,19 +118,6 @@ export class CollaborationAPI {
     return response.data;
   }
 
-  // Schedule Comments
-  static async addComment(scheduleId: number, data: CommentRequest): Promise<any> {
-    const response = await apiClient.post(
-      `/collaboration/schedules/${scheduleId}/comments`, 
-      data
-    );
-    return response.data;
-  }
-
-  static async getComments(scheduleId: number): Promise<any[]> {
-    const response = await apiClient.get(`/collaboration/schedules/${scheduleId}/comments`);
-    return response.data;
-  }
 }
 
 // Hook for easier usage with React Query

@@ -34,6 +34,7 @@ pandas
 
 # File handling
 aiofiles
+cloudinary
 
 # CORS & Middleware
 starlette

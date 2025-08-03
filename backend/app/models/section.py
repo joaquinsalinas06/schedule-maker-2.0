@@ -12,7 +12,6 @@ class Section(BaseModel):
     waitlisted = Column(Integer, default=0)
     professor = Column(String(255))
     professor_email = Column(String(255))
-    semester = Column(String(20))
     
     # Relationships
     course = relationship("Course", back_populates="sections")

@@ -19,13 +19,67 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle token expiration
+// Handle token expiration with automatic refresh
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
+  async (error) => {
+    const original = error.config;
+
+    if (error.response?.status === 401 && !original._retry) {
+      if (isRefreshing) {
+        // If we're already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          original.headers.Authorization = `Bearer ${token}`;
+          return api(original);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
+      original._retry = true;
+      isRefreshing = true;
+
+      // Try to refresh the token
+      const refreshToken = localStorage.getItem('refresh_token');
+      const rememberMe = localStorage.getItem('remember_me') === 'true';
+
+      if (refreshToken && rememberMe) {
+        try {
+          const newToken = await authService.refreshToken();
+          if (newToken) {
+            processQueue(null, newToken);
+            original.headers.Authorization = `Bearer ${newToken}`;
+            return api(original);
+          }
+        } catch (refreshError) {
+          processQueue(refreshError, null);
+        } finally {
+          isRefreshing = false;
+        }
+      }
+
+      // If refresh failed or no refresh token, show expiry message and redirect
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('remember_me');
       localStorage.removeItem('favoriteSchedules');
       localStorage.removeItem('favoritedCombinations');
       
@@ -63,21 +117,31 @@ api.interceptors.response.use(
       setTimeout(() => {
         window.location.href = '/';
       }, 2000);
+      
+      isRefreshing = false;
     }
     return Promise.reject(error);
   }
 );
 
 export const authService = {
-  login: async (credentials: LoginRequest): Promise<AuthResponse> => {
+  login: async (credentials: LoginRequest & { rememberMe?: boolean }): Promise<AuthResponse> => {
     const response = await api.post('/api/auth/login', {
       email: credentials.email,
-      password: credentials.password
+      password: credentials.password,
+      remember_me: credentials.rememberMe || false
     });
     
-    // Store token and user data
+    // Store tokens and user data
     localStorage.setItem('token', response.data.access_token);
     localStorage.setItem('user', JSON.stringify(response.data.user));
+    
+    // Store refresh token if provided and remember me is enabled
+    if (response.data.refresh_token && credentials.rememberMe) {
+      // Use secure storage for refresh token
+      localStorage.setItem('refresh_token', response.data.refresh_token);
+      localStorage.setItem('remember_me', 'true');
+    }
     
     return response.data;
   },
@@ -92,9 +156,32 @@ export const authService = {
     return response.data;
   },
 
+  refreshToken: async (): Promise<string | null> => {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) return null;
+
+    try {
+      const response = await api.post('/api/auth/refresh', {
+        refresh_token: refreshToken
+      });
+      
+      // Update stored token and user
+      localStorage.setItem('token', response.data.access_token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+      return response.data.access_token;
+    } catch (error) {
+      // If refresh fails, clear all tokens and redirect to login
+      authService.logout();
+      return null;
+    }
+  },
+
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('remember_me');
     localStorage.removeItem('selectedUniversity');
     window.location.href = '/';
   },
@@ -116,7 +203,67 @@ export const authService = {
     const response = await api.get('/api/auth/me');
     localStorage.setItem('user', JSON.stringify(response.data));
     return response.data;
+  },
+
+  // Check if token is valid and refresh if needed
+  validateAndRefreshToken: async (): Promise<boolean> => {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+
+    try {
+      // Try to make a request to verify token validity
+      await api.get('/api/auth/me');
+      return true;
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        // Token is invalid, try to refresh if remember me is enabled
+        const refreshToken = localStorage.getItem('refresh_token');
+        const rememberMe = localStorage.getItem('remember_me') === 'true';
+        
+        if (refreshToken && rememberMe) {
+          const newToken = await authService.refreshToken();
+          return !!newToken;
+        }
+      }
+      return false;
+    }
+  },
+
+  // Start periodic token validation
+  startTokenValidation: () => {
+    // Check token validity every 5 minutes
+    const interval = setInterval(async () => {
+      const isValid = await authService.validateAndRefreshToken();
+      if (!isValid && authService.isAuthenticated()) {
+        // Token is invalid and couldn't be refreshed, but user thinks they're authenticated
+        authService.logout();
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+
+    // Also check on app focus/visibility change
+    const handleVisibilityChange = async () => {
+      if (!document.hidden && authService.isAuthenticated()) {
+        await authService.validateAndRefreshToken();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Return cleanup function
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  },
+
+  setUser: (user: User): void => {
+    localStorage.setItem('user', JSON.stringify(user));
   }
 };
+
+// Auto-start token validation when the module loads
+if (typeof window !== 'undefined') {
+  authService.startTokenValidation();
+}
 
 export { api };

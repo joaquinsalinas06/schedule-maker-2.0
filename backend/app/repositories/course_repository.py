@@ -14,7 +14,11 @@ class CourseRepository(BaseRepository[Course]):
         super().__init__(db, Course)
 
     def search_courses(self, query: Optional[str] = None, university_short_name: Optional[str] = None,
-                      department: Optional[str] = None, semester: Optional[str] = None, skip: int = 0, limit: int = 20) -> List[Course]:
+                      department: Optional[str] = None, professor: Optional[str] = None, 
+                      limit: int = 20) -> List[Course]:
+        """
+        Search for courses with filters based on CSV data (no semester field)
+        """
         db_query = self.db.query(Course).join(University).options(
             joinedload(Course.university),
             joinedload(Course.sections).joinedload(Section.sessions)
@@ -23,38 +27,38 @@ class CourseRepository(BaseRepository[Course]):
         if university_short_name:
             db_query = db_query.filter(University.short_name == university_short_name)
         
+        # Text search across course name, code, and professor
         if query and should_perform_search(query):
-            # Normalize the search query for accent-insensitive search
             search_terms = create_search_terms(query)
             
             if search_terms:
-                # Create search conditions for each term using accent-insensitive search
                 search_conditions = []
                 
                 for term in search_terms:
-                    # Normalize the search term to remove accents  
                     normalized_term = normalize_text(term).lower()
                     
-                    # Use PostgreSQL's TRANSLATE function to remove accents from database fields
-                    # This maps accented characters to their non-accented equivalents
-                    term_conditions = or_(
+                    # Search in course name and code
+                    course_conditions = or_(
                         func.lower(func.translate(
                             Course.name, 
                             'áéíóúñÁÉÍÓÚÑàèìòùÀÈÌÒÙâêîôûÂÊÎÔÛäëïöüÄËÏÖÜçÇ', 
                             'aeiounAEIOUaeiouAEIOUaeiouAEIOUaeiouAEIOUcC'
                         )).ilike(f"%{normalized_term}%"),
+                        func.lower(Course.code).ilike(f"%{normalized_term}%")
+                    )
+                    
+                    # Also search in professor names if sections exist
+                    professor_condition = self.db.query(Section).filter(
+                        Section.course_id == Course.id,
                         func.lower(func.translate(
-                            Course.code,
-                            'áéíóúñÁÉÍÓÚÑàèìòùÀÈÌÒÙâêîôûÂÊÎÔÛäëïöüÄËÏÖÜçÇ', 
-                            'aeiounAEIOUaeiouAEIOUaeiouAEIOUaeiouAEIOUcC'
-                        )).ilike(f"%{normalized_term}%"),
-                        func.lower(func.translate(
-                            Course.description,
+                            Section.professor,
                             'áéíóúñÁÉÍÓÚÑàèìòùÀÈÌÒÙâêîôûÂÊÎÔÛäëïöüÄËÏÖÜçÇ', 
                             'aeiounAEIOUaeiouAEIOUaeiouAEIOUaeiouAEIOUcC'
                         )).ilike(f"%{normalized_term}%")
-                    )
+                    ).exists()
                     
+                    # Combine course and professor search
+                    term_conditions = or_(course_conditions, professor_condition)
                     search_conditions.append(term_conditions)
                 
                 # All terms must match (AND condition)
@@ -63,56 +67,26 @@ class CourseRepository(BaseRepository[Course]):
                 else:
                     db_query = db_query.filter(*search_conditions)
         
+        # Department filter (based on course code prefix)
         if department:
-            db_query = db_query.filter(Course.department == department)
+            db_query = db_query.filter(Course.department == department.upper())
         
-        # TODO: Enable semester filtering once database schema is updated
-        # For now, ignore semester filter to allow search to work with real data
-        # if semester:
-        #     db_query = db_query.filter(Course.semester == semester)
+        # Professor filter (separate from general search)
+        if professor:
+            normalized_professor = normalize_text(professor).lower()
+            professor_filter = self.db.query(Section).filter(
+                Section.course_id == Course.id,
+                func.lower(func.translate(
+                    Section.professor,
+                    'áéíóúñÁÉÍÓÚÑàèìòùÀÈÌÒÙâêîôûÂÊÎÔÛäëïöüÄËÏÖÜçÇ', 
+                    'aeiounAEIOUaeiouAEIOUaeiouAEIOUaeiouAEIOUcC'
+                )).ilike(f"%{normalized_professor}%")
+            ).exists()
+            db_query = db_query.filter(professor_filter)
         
         db_query = db_query.filter(Course.is_active == True)
         
-        return db_query.offset(skip).limit(limit).all()
-
-    def get_course_with_sections(self, course_id: int) -> Optional[Course]:
-        return self.db.query(Course).filter(
-            Course.id == course_id,
-            Course.is_active == True
-        ).options(
-            joinedload(Course.sections).joinedload(Section.sessions)
-        ).first()
-
-    def get_courses_by_university(self, university_id: int, skip: int = 0, limit: int = 20) -> List[Course]:
-        return self.db.query(Course).filter(
-            Course.university_id == university_id,
-            Course.is_active == True
-        ).options(
-            joinedload(Course.university),
-            joinedload(Course.sections).joinedload(Section.sessions)
-        ).offset(skip).limit(limit).all()
-
-    def get_departments(self, university_short_name: Optional[str] = None) -> List[str]:
-        query = self.db.query(Course.department).distinct()
-        
-        if university_short_name:
-            query = query.join(University).filter(University.short_name == university_short_name)
-        
-        query = query.filter(Course.is_active == True, Course.department.isnot(None))
-        
-        return [dept[0] for dept in query.all()]
-
-    def get_by_codes(self, course_codes: List[str]) -> List[Course]:
-        return self.db.query(Course).filter(
-            Course.code.in_(course_codes),
-            Course.is_active == True
-        ).all()
-
-    def get_by_code_pattern(self, code_pattern: str) -> List[Course]:
-        return self.db.query(Course).filter(
-            Course.code.ilike(f"%{code_pattern}%"),
-            Course.is_active == True
-        ).all()
+        return db_query.limit(limit).all()
 
     def get_by_code_and_university(self, code: str, university_id: int) -> Optional[Course]:
         """Get course by code and university ID"""

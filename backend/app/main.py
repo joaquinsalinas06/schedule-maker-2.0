@@ -1,15 +1,16 @@
 import os
 import traceback
+import uvicorn
 from datetime import datetime
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables using flexible configuration
+from app.utils.config import load_environment, print_config_summary, validate_required_env_vars
+load_environment()
 
 # Database imports
 from app.database.connection import engine, get_db, SessionLocal
@@ -19,7 +20,7 @@ from app.models.user import User
 from app.utils.security import get_password_hash
 
 # Router imports
-from app.routers import auth, universities, courses, schedules, collaboration, websocket
+from app.routers import auth, courses, schedules, collaboration, websocket
 
 # Create FastAPI app
 app = FastAPI(
@@ -98,6 +99,14 @@ async def initialize_basic_data(db: Session):
 async def startup_event():
     """Initialize database and basic data on startup"""
     try:
+        # Print configuration summary for debugging
+        print_config_summary()
+        
+        # Validate required environment variables
+        missing_vars = validate_required_env_vars()
+        if missing_vars:
+            raise RuntimeError(f"Missing required environment variables: {', '.join(missing_vars)}")
+        
         # Create all database tables
         Base.metadata.create_all(bind=engine)
         
@@ -109,11 +118,12 @@ async def startup_event():
             db.close()
             
     except Exception as e:
+        print(f"❌ Startup failed: {str(e)}")
         traceback.print_exc()
+        raise
 
 # Include routers
 app.include_router(auth.router)
-app.include_router(universities.router)
 app.include_router(courses.router)
 app.include_router(schedules.router)
 app.include_router(collaboration.router)
@@ -163,5 +173,4 @@ async def root():
     }
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

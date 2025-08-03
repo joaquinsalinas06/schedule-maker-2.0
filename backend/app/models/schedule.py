@@ -8,11 +8,9 @@ class Schedule(BaseModel):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(255), nullable=False)
     description = Column(Text)
-    semester = Column(String(20))
     is_favorite = Column(Boolean, default=False)
     is_public = Column(Boolean, default=False)
     share_token = Column(String(100), unique=True)
-    total_credits = Column(Integer, default=0)
     
     # Relationships
     user = relationship("User", back_populates="schedules")

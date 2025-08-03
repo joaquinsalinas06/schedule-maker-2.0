@@ -3,15 +3,18 @@ Schedule Generator Service
 Adapted from the HTML/JS scheduler to generate all possible schedule combinations
 """
 
+import itertools
+import uuid
 from typing import List, Dict, Optional, Set
 from datetime import time, datetime
+
 from sqlalchemy.orm import Session
+
 from app.models import Course, Section, Session as SessionModel, Schedule
 from app.schemas import ScheduleResponse
 from app.repositories.course_repository import CourseRepository
 from app.repositories.section_repository import SectionRepository
 from app.repositories.session_repository import SessionRepository
-import itertools
 
 
 class CourseOption:
@@ -23,7 +26,6 @@ class CourseOption:
         self.course_code = course.code
         self.course_name = course.name
         self.section_number = section.section_number
-        self.credits = course.credits
         self.professor = section.professor
         self.sessions = sessions
         self.group = course.code  # Group by course code (same course, different sections)
@@ -71,7 +73,6 @@ class ScheduleCombination:
     
     def __init__(self, course_options: List[CourseOption]):
         self.course_options = course_options
-        self.total_credits = sum(opt.credits for opt in course_options)
         self.course_count = len(course_options)
         self.id_string = self._create_id_string()
         
@@ -107,7 +108,6 @@ class ScheduleGeneratorService:
     def generate_schedule_combinations_from_selected_sections(
         self,
         selected_section_ids: List[int],
-        semester: str = "2024-2"
     ) -> List[Dict]:
         """
         Generate combinations from user-selected sections with mandatory course requirement.
@@ -146,16 +146,6 @@ class ScheduleGeneratorService:
         return [self._combination_to_dict_with_uuid(combo) for combo in all_combinations]
     
     def _generate_mandatory_course_combinations(self, course_options: List[CourseOption]) -> List[ScheduleCombination]:
-        """
-        Generate combinations where ALL selected sections are mandatory.
-        
-        Case 1: If user selects sections from different courses -> 1 combination with all sections (if no conflicts)
-        Case 2: If user selects multiple sections from same course -> combinations of one section per course
-        
-        Example: User selects [section1_courseA, section2_courseA, section3_courseB]
-        Result: [section1_courseA + section3_courseB, section2_courseA + section3_courseB]
-        """
-        
         # Group course options by course (same course, different sections)
         course_groups = {}
         for option in course_options:
@@ -167,7 +157,6 @@ class ScheduleGeneratorService:
         unique_courses = list(course_groups.keys())
         
         # Generate all combinations where we pick one section from each course
-        import itertools
         
         all_combinations = []
         
@@ -198,12 +187,10 @@ class ScheduleGeneratorService:
     
     def _combination_to_dict_with_uuid(self, combination: ScheduleCombination) -> Dict:
         """Convert combination to dictionary format with UUID"""
-        import uuid
         
         return {
             "combination_id": str(uuid.uuid4()),  # Generate UUID for each combination
             "id_string": combination.id_string,   # Keep original for debugging
-            "total_credits": combination.total_credits,
             "course_count": combination.course_count,
             "courses": [
                 {
@@ -212,7 +199,6 @@ class ScheduleGeneratorService:
                     "course_name": opt.course_name,
                     "section_id": opt.section_id,
                     "section_number": opt.section_number,
-                    "credits": opt.credits,
                     "professor": opt.professor,
                     "sessions": [
                         {

@@ -65,18 +65,3 @@ class ScheduleComparison(BaseModel):
     user = relationship("User")
     schedule = relationship("Schedule")
 
-class ScheduleComment(BaseModel):
-    __tablename__ = "schedule_comments"
-    
-    schedule_id = Column(Integer, ForeignKey("schedules.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    comment = Column(Text, nullable=False)
-    parent_comment_id = Column(Integer, ForeignKey("schedule_comments.id"), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
-    # Relationships
-    schedule = relationship("Schedule")
-    user = relationship("User")
-    parent = relationship("ScheduleComment", remote_side="ScheduleComment.id")
-    replies = relationship("ScheduleComment", cascade="all, delete-orphan")

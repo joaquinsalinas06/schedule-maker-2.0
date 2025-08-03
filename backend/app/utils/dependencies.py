@@ -1,11 +1,18 @@
-from typing import Generator, Optional
+import logging
+from typing import Optional
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session, joinedload
+
 from app.database.connection import get_db
 from app.models import User
 from app.utils.security import SECRET_KEY, ALGORITHM
+from app.services.auth_service import AuthService
+from app.services.schedule_service import ScheduleService
+from app.services.course_service import CourseService
+from app.services.collaboration_service import CollaborationService
 
 security = HTTPBearer()
 
@@ -40,7 +47,6 @@ def get_current_active_user(current_user: User = Depends(get_current_user)) -> U
 
 async def get_current_user_websocket(token: str, db: Session) -> Optional[User]:
     """Get current user for WebSocket connections"""
-    import logging
     logger = logging.getLogger(__name__)
     
     try:
@@ -67,3 +73,16 @@ async def get_current_user_websocket(token: str, db: Session) -> Optional[User]:
     except Exception as e:
         logger.error(f"Unexpected error in WebSocket auth: {str(e)}")
         return None
+
+# Service dependencies
+def get_auth_service(db: Session = Depends(get_db)):
+    return AuthService(db)
+
+def get_schedule_service(db: Session = Depends(get_db)):
+    return ScheduleService(db)
+
+def get_course_service(db: Session = Depends(get_db)):
+    return CourseService(db)
+
+def get_collaboration_service(db: Session = Depends(get_db)):
+    return CollaborationService(db)

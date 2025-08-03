@@ -58,10 +58,12 @@ export function useAutocomplete(
       setError(null);
 
       try {
-        const results = await apiService.autocompleteCourses(
+        const results = await apiService.searchCourses(
           debouncedQuery,
           university,
-          limit
+          undefined, // department
+          undefined, // professor
+          limit // limit
         );
         setSuggestions(results);
       } catch (err) {

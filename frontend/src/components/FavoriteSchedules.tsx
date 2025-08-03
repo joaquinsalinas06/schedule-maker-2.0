@@ -14,33 +14,8 @@ import {
   Download,
   Share2
 } from "lucide-react"
-import { Session } from "@/types"
+import {ScheduleCombination, FavoriteSchedule } from "@/types"
 import html2canvas from 'html2canvas'
-
-// Define the interfaces here since we might not have them in types yet
-interface CourseSection {
-  course_id: number
-  course_code: string
-  course_name: string
-  section_id: number
-  section_number: string
-  professor: string
-  sessions: Session[]
-}
-
-interface ScheduleCombination {
-  combination_id: string
-  course_count: number
-  courses: CourseSection[]
-}
-
-interface FavoriteSchedule {
-  id: string
-  name: string
-  combination: ScheduleCombination
-  created_at: string
-  notes?: string
-}
 
 interface FavoriteSchedulesProps {
   favorites: FavoriteSchedule[]
@@ -110,7 +85,7 @@ export function FavoriteSchedules({
           URL.revokeObjectURL(url);
         }
       }, 'image/png');
-    } catch (error) {
+    } catch (_error) {
       // Failed to generate image, falling back to text
       // Fallback to text-based download
       createScheduleTextDownload(favorite);
@@ -153,11 +128,11 @@ export function FavoriteSchedules({
               border: 2px solid #e2e8f0;
             ">
               <div style="text-align: center;">
-                <div style="font-size: 24px; font-weight: bold; color: #667eea;">${favorite.combination.courses.length}</div>
+                <div style="font-size: 24px; font-weight: bold; color: #667eea;">${favorite.combination.courses?.length || favorite.combination.course_count || 0}</div>
                 <div style="font-size: 12px; color: #718096; text-transform: uppercase; letter-spacing: 1px;">Courses</div>
               </div>
               <div style="text-align: center;">
-                <div style="font-size: 24px; font-weight: bold; color: #764ba2;">${favorite.combination.courses.length}</div>
+                <div style="font-size: 24px; font-weight: bold; color: #764ba2;">${favorite.combination.courses?.length || favorite.combination.sections?.length || 0}</div>
                 <div style="font-size: 12px; color: #718096; text-transform: uppercase; letter-spacing: 1px;">Courses</div>
               </div>
             </div>
@@ -182,7 +157,7 @@ export function FavoriteSchedules({
               </tr>
             </thead>
             <tbody>
-              ${favorite.combination.courses.map((course, index) => `
+              ${(favorite.combination.courses || []).map((course, index) => `
                 <tr style="background: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #e2e8f0;">
                   <td style="padding: 15px 12px; vertical-align: top;">
                     <div style="font-weight: 600; color: #2d3748; font-size: 14px; margin-bottom: 4px;">${course.course_code}</div>
@@ -265,12 +240,12 @@ export function FavoriteSchedules({
 ${favorite.name}
 ${'='.repeat(favorite.name.length)}
 
-Total Courses: ${favorite.combination.courses.length}
-Number of Courses: ${favorite.combination.courses.length}
+Total Courses: ${favorite.combination.courses?.length || favorite.combination.sections?.length || 0}
+Number of Courses: ${favorite.combination.courses?.length || favorite.combination.sections?.length || 0}
 Created: ${new Date(favorite.created_at).toLocaleDateString()}
 
 COURSES:
-${favorite.combination.courses.map((course, index) => `
+${(favorite.combination.courses || []).map((course, index) => `
 ${index + 1}. ${course.course_code}: ${course.course_name}
    Section: ${course.section_number}
    Professor: ${course.professor}
@@ -400,11 +375,11 @@ Generated on ${new Date().toLocaleDateString()}
               <div className="flex gap-4 text-sm">
                 <div className="flex items-center gap-1">
                   <BookOpen className="w-4 h-4 text-indigo-500" />
-                  <span>{favorite.combination.courses.length} cursos</span>
+                  <span>{favorite.combination.courses?.length || favorite.combination.sections?.length || 0} cursos</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4 text-purple-500" />
-                  <span>{favorite.combination.courses.length} cursos</span>
+                  <span>{favorite.combination.courses?.length || favorite.combination.sections?.length || 0} cursos</span>
                 </div>
               </div>
 
@@ -412,14 +387,14 @@ Generated on ${new Date().toLocaleDateString()}
               <div className="space-y-2">
                 <div className="text-sm font-medium text-foreground">Cursos:</div>
                 <div className="space-y-1">
-                  {favorite.combination.courses.slice(0, 3).map((course, index) => (
+                  {(favorite.combination.courses || []).slice(0, 3).map((course, index) => (
                     <div key={index} className="text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">{course.course_code}:</span> {course.course_name}
                     </div>
                   ))}
-                  {favorite.combination.courses.length > 3 && (
+                  {(favorite.combination.courses?.length || 0) > 3 && (
                     <div className="text-xs text-muted-foreground">
-                      +{favorite.combination.courses.length - 3} cursos más
+                      +{(favorite.combination.courses?.length || 0) - 3} cursos más
                     </div>
                   )}
                 </div>

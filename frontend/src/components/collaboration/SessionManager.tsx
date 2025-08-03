@@ -274,7 +274,7 @@ export function SessionManager() {
                       size="sm"
                       onClick={() => {
                         // Navigate to comparison view
-                        window.open(`/collaboration/compare/${session.session_code}`, '_blank');
+                        window.open(`/dashboard/collaboration?code=${session.session_code}`, '_blank');
                       }}
                     >
                       <BarChart3 className="h-4 w-4" />

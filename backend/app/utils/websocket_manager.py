@@ -1,12 +1,8 @@
 import json
-import uuid
-from typing import Dict, List, Any
-from fastapi import WebSocket, WebSocketDisconnect
-from sqlalchemy.orm import Session
-from app.models.collaboration import CollaborativeSession, SessionParticipant
-from app.models.user import User
-import asyncio
 from datetime import datetime
+from typing import Dict, List, Any
+
+from fastapi import WebSocket
 
 class ConnectionManager:
     def __init__(self):

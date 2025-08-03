@@ -29,6 +29,9 @@ class UserBase(BaseModel):
     email: EmailStr
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    nickname: Optional[str] = None
+    profile_photo: Optional[str] = None
+    description: Optional[str] = None
     university_id: int
     student_id: Optional[str] = None
 
@@ -38,6 +41,15 @@ class UserCreate(UserBase):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+    remember_me: Optional[bool] = False
+
+class UserProfileUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    nickname: Optional[str] = None
+    profile_photo: Optional[str] = None
+    description: Optional[str] = None
+    student_id: Optional[str] = None
 
 class UserResponse(UserBase, BaseResponse):
     role: str
@@ -51,17 +63,19 @@ class Token(BaseModel):
 
 class AuthResponse(BaseModel):
     access_token: str
+    refresh_token: Optional[str] = None
     token_type: str
     user: UserResponse
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
 
 # Course schemas
 class CourseBase(BaseModel):
     code: str
     name: str
-    credits: Optional[int] = 3
     description: Optional[str] = None
     department: Optional[str] = None
-    level: Optional[str] = None
 
 class CourseCreate(CourseBase):
     university_id: int
@@ -90,7 +104,6 @@ class SectionBase(BaseModel):
     capacity: Optional[int] = 30
     enrolled: Optional[int] = 0
     professor: Optional[str] = None
-    semester: Optional[str] = None
 
 class SectionResponse(SectionBase, BaseResponse):
     course_id: int
@@ -104,7 +117,6 @@ class CourseWithSections(CourseResponse):
 class ScheduleBase(BaseModel):
     name: str
     description: Optional[str] = None
-    semester: Optional[str] = None
 
 class ScheduleCreate(ScheduleBase):
     pass
@@ -112,14 +124,24 @@ class ScheduleCreate(ScheduleBase):
 class ScheduleResponse(ScheduleBase, BaseResponse):
     user_id: int
     is_favorite: bool
-    total_credits: int
+
+# Schedule generation and management schemas
+class GenerateScheduleRequest(BaseModel):
+    """Request to generate all possible schedule combinations from selected sections"""
+    selected_sections: List[int]  # List of specific section IDs user wants to consider
+
+class SaveScheduleRequest(BaseModel):
+    """Request to save a schedule combination"""
+    combination_id: str
+    name: str
+    description: Optional[str] = None
+    combination: Optional[dict] = None  # Include the actual course data
 
 # Search filters
 class CourseSearchFilters(BaseModel):
     query: Optional[str] = None
     university: Optional[str] = None
     department: Optional[str] = None
-    semester: Optional[str] = None
     
 # API Response wrapper
 class APIResponse(BaseModel):
@@ -167,20 +189,15 @@ class JoinSessionRequest(BaseModel):
 
 class ScheduleShareCreate(BaseModel):
     schedule_id: int
-    shared_with: Optional[int] = None  # None means public share
-    permissions: Optional[str] = 'view'  # 'view', 'comment', 'edit'
-    expires_hours: Optional[int] = None
-
+    # Simplified: always view-only, always public, no expiration
+    
 class ScheduleShareResponse(BaseModel):
     id: int
     schedule_id: int
     shared_by: int
-    shared_with: Optional[int]
     share_token: str
-    permissions: str
-    expires_at: Optional[datetime]
-    is_active: bool
     created_at: datetime
+    views_count: Optional[int] = 0
     
     class Config:
         from_attributes = True
@@ -205,23 +222,6 @@ class ScheduleComparisonResponse(BaseModel):
     class Config:
         from_attributes = True
 
-class ScheduleCommentCreate(BaseModel):
-    comment: str
-    parent_comment_id: Optional[int] = None
-
-class ScheduleCommentResponse(BaseModel):
-    id: int
-    schedule_id: int
-    user_id: int
-    comment: str
-    parent_comment_id: Optional[int]
-    created_at: datetime
-    updated_at: Optional[datetime]
-    user: UserResponse
-    replies: List['ScheduleCommentResponse'] = []
-    
-    class Config:
-        from_attributes = True
 
 # WebSocket message schemas
 class WebSocketMessage(BaseModel):

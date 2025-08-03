@@ -38,10 +38,11 @@ export default function AuthPage() {
     firstName: "",
     lastName: "",
     studentId: "",
+    rememberMe: false,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     // Clear error when user starts typing
     if (errors[field]) {
@@ -94,7 +95,8 @@ export default function AuthPage() {
       if (activeTab === "login") {
         await authService.login({
           email: formData.email,
-          password: formData.password
+          password: formData.password,
+          rememberMe: formData.rememberMe
         })
       } else {
         await authService.register({
@@ -107,8 +109,7 @@ export default function AuthPage() {
         })
       }
       window.location.href = "/dashboard"
-    } catch (error) {
-      // Auth error
+    } catch (_error) {
       setErrors({ general: "Error en la autenticación. Intenta nuevamente." })
     } finally {
       setIsLoading(false)
@@ -275,7 +276,12 @@ export default function AuthPage() {
 
                     <div className="flex items-center justify-between text-sm">
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" className="rounded" />
+                        <input 
+                          type="checkbox" 
+                          className="rounded" 
+                          checked={formData.rememberMe}
+                          onChange={(e) => handleInputChange("rememberMe", e.target.checked)}
+                        />
                         <span className="text-muted-foreground">Recordarme</span>
                       </label>
                       <a href="#" className="text-cyan-400 hover:text-cyan-300 transition-colors">
