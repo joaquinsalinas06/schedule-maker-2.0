@@ -25,12 +25,24 @@ class CloudinaryService:
                 folder="schedule_maker/profile_photos",
                 public_id=f"user_{user_id}",  # Overwrites previous photo
                 transformation=[
-                    {"width": 400, "height": 400, "crop": "fill", "gravity": "face"},
+                    {"width": 400, "height": 400, "crop": "fill", "gravity": "center"},
                     {"quality": "auto:good"},
                     {"format": "auto"}  # Auto WebP/AVIF
                 ],
+                moderation="aws_rek",  # AWS Rekognition content moderation
                 invalidate=True  # Clear CDN cache
             )
+            
+            # Check moderation results
+            if 'moderation' in result and result['moderation']:
+                moderation_status = result['moderation'][0]['status']
+                if moderation_status == 'rejected':
+                    # Delete the uploaded image if it was rejected
+                    cloudinary.uploader.destroy(result['public_id'])
+                    raise Exception("Image rejected: Inappropriate content detected")
+                elif moderation_status == 'pending':
+                    # You might want to handle pending moderation differently
+                    pass
             
             return result['secure_url']
         

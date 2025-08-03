@@ -110,6 +110,15 @@ async def startup_event():
         # Create all database tables
         Base.metadata.create_all(bind=engine)
         
+        # Run migrations for existing databases
+        try:
+            from migrations.add_user_profile_fields import run_migration
+            run_migration()
+            print("✅ Migrations completed successfully")
+        except Exception as migration_error:
+            print(f"⚠️ Migration warning: {str(migration_error)}")
+            # Don't fail startup if migration fails (columns might already exist)
+        
         # Initialize basic data
         db = SessionLocal()
         try:
