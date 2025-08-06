@@ -326,12 +326,13 @@ export const generateScheduleImage = ({
           ctx.lineWidth = 2
           ctx.strokeRect(xPos + 4, yPos + 2, blockWidth - 8, blockHeight - 4)
 
-          // Draw text content
+          // Draw text content with better overflow protection
           ctx.fillStyle = '#ffffff'
           ctx.textAlign = 'left'
           const textX = xPos + 12
-          const textY = yPos + 16
+          const textY = yPos + 10  // Reduced from 16 to give more top margin
           const maxWidth = blockWidth - 24
+          const maxTextHeight = blockHeight - 20  // Reserve space at bottom
 
           const drawFittingText = (text: string, x: number, y: number, maxWidth: number, fontSize: number, fontWeight: string = 'normal') => {
             ctx.font = `${fontWeight} ${fontSize}px system-ui, -apple-system, sans-serif`
@@ -357,42 +358,46 @@ export const generateScheduleImage = ({
             }
             
             ctx.fillText(displayText, x, y)
-            return fontSize + 6
+            return fontSize + 4  // Reduced line spacing from 6 to 4
           }
 
           let currentY = textY
           
-          // Course code
+          // Course code - Always shown first
           ctx.fillStyle = '#ffffff'
-          const codeHeight = drawFittingText(course.course_code, textX, currentY, maxWidth, fontSizes.courseFont + 2, 'bold')
+          const codeHeight = drawFittingText(course.course_code, textX, currentY, maxWidth, fontSizes.courseFont + 1, 'bold')
           currentY += codeHeight
           
-          // Course name
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
-          const nameHeight = drawFittingText(course.course_name, textX, currentY, maxWidth, fontSizes.courseFont, 'normal')
-          currentY += nameHeight
+          // Course name - Show if we have space (most blocks should show this)
+          if (currentY + fontSizes.courseFont + 2 < yPos + maxTextHeight) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
+            const nameHeight = drawFittingText(course.course_name, textX, currentY, maxWidth, fontSizes.courseFont - 1, 'normal')
+            currentY += nameHeight
+          }
           
-          // Section
-          const sectionText = `Sección ${course.section_number}`
-          const sectionHeight = drawFittingText(sectionText, textX, currentY, maxWidth, fontSizes.courseFont - 1, 'normal')
-          currentY += sectionHeight
+          // Section - Show if we have space (should fit in most 1h blocks)
+          if (currentY + fontSizes.courseFont + 2 < yPos + maxTextHeight) {
+            const sectionText = `Sección ${course.section_number}`
+            const sectionHeight = drawFittingText(sectionText, textX, currentY, maxWidth, fontSizes.courseFont - 2, 'normal')
+            currentY += sectionHeight
+          }
           
-          // Professor (if space)
-          if (blockHeight > 70) {
+          // Professor - show if we have space
+          if (currentY + fontSizes.professorFont + 2 < yPos + maxTextHeight) {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
             const professorHeight = drawFittingText(course.professor, textX, currentY, maxWidth, fontSizes.professorFont)
             currentY += professorHeight
           }
           
-          // Time (if space)
-          if (blockHeight > 90) {
+          // Time - show if we have space and block is reasonably tall
+          if (blockHeight > 50 && currentY + fontSizes.timeFont + 2 < yPos + maxTextHeight) {
             ctx.fillStyle = '#ffffff'
-            const timeHeight = drawFittingText(`${session.start_time} - ${session.end_time}`, textX, currentY, maxWidth, fontSizes.timeFont, 'bold')
+            const timeHeight = drawFittingText(`${session.start_time} - ${session.end_time}`, textX, currentY, maxWidth, fontSizes.timeFont - 1, 'bold')
             currentY += timeHeight
           }
           
-          // Location (if space)
-          if (session.location && blockHeight > 110) {
+          // Location - show if we have space and block is tall
+          if (session.location && blockHeight > 65 && currentY + fontSizes.locationFont + 2 < yPos + maxTextHeight) {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
             const locationText = `📍 ${session.location}`
             drawFittingText(locationText, textX, currentY, maxWidth, fontSizes.locationFont)
