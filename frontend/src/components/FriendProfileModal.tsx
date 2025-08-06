@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { 
-  User,
+  User as UserIcon,
   Mail,
   Building2,
   Calendar,
@@ -23,75 +23,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { friendsAPI } from '@/services/friendsAPI';
-
-interface User {
-  id: number
-  first_name: string
-  last_name: string
-  nickname?: string
-  email: string
-  student_id?: string
-  profile_photo?: string
-  description?: string
-  university?: {
-    id: number
-    name: string
-    short_name: string
-  }
-  last_login?: string
-  stats?: {
-    friend_count: number
-    schedules_count: number
-  }
-}
-
-interface Schedule {
-  id: number
-  name: string
-  description?: string
-  created_at: string
-  is_favorite: boolean
-}
-
-interface ScheduleDetail {
-  id: number
-  name: string
-  description?: string
-  is_favorite: boolean
-  created_at: string
-  courses: Array<{
-    id: number
-    code: string
-    name: string
-    description?: string
-    department: string
-    sections: Array<{
-      id: number
-      section_number: string
-      professor?: string
-      capacity: number
-      enrolled: number
-      sessions: Array<{
-        id: number
-        session_type: string
-        day: string
-        start_time: string
-        end_time: string
-        location?: string
-        building?: string
-        room?: string
-        modality: string
-      }>
-    }>
-  }>
-}
-
-interface FriendProfileModalProps {
-  friendId: number | null;
-  isOpen: boolean;
-  onClose: () => void;
-  onViewSchedules?: (friendId: number, schedules: Schedule[]) => void;
-}
+import { User, Schedule, ScheduleDetail, FriendProfileModalProps } from '@/types';
 
 export function FriendProfileModal({ friendId, isOpen, onClose, onViewSchedules }: FriendProfileModalProps) {
   const { toast } = useToast();
@@ -102,30 +34,30 @@ export function FriendProfileModal({ friendId, isOpen, onClose, onViewSchedules 
   const [selectedScheduleDetail, setSelectedScheduleDetail] = useState<ScheduleDetail | null>(null);
   const [showScheduleDetail, setShowScheduleDetail] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && friendId) {
-      loadFriendProfile();
-    }
-  }, [isOpen, friendId]);
-
-  const loadFriendProfile = async () => {
+  const loadFriendProfile = useCallback(async () => {
     if (!friendId) return;
     
     setLoading(true);
     try {
       const response = await friendsAPI.getFriendProfile(friendId);
       setFriend(response.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "No se pudo cargar el perfil",
+        description: (error as { message?: string }).message || "No se pudo cargar el perfil",
         variant: "destructive"
       });
       onClose();
     } finally {
       setLoading(false);
     }
-  };
+  }, [friendId, toast, onClose]);
+
+  useEffect(() => {
+    if (isOpen && friendId) {
+      loadFriendProfile();
+    }
+  }, [isOpen, friendId, loadFriendProfile]);
 
   const loadFriendSchedules = async () => {
     if (!friendId) return;
@@ -137,10 +69,10 @@ export function FriendProfileModal({ friendId, isOpen, onClose, onViewSchedules 
       
       // Don't trigger onViewSchedules here - only load the schedules for display
       // onViewSchedules should only be called when user explicitly wants to compare
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "No se pudieron cargar los horarios",
+        description: (error as { message?: string }).message || "No se pudieron cargar los horarios",
         variant: "destructive"
       });
     } finally {
@@ -178,7 +110,7 @@ export function FriendProfileModal({ friendId, isOpen, onClose, onViewSchedules 
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
+            <UserIcon className="w-5 h-5" />
             Perfil de Amigo
           </DialogTitle>
           <DialogDescription>
@@ -188,15 +120,15 @@ export function FriendProfileModal({ friendId, isOpen, onClose, onViewSchedules 
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : friend ? (
           <div className="space-y-6">
             {/* Profile Header */}
-            <div className="flex items-center space-x-4 p-4 bg-gradient-to-r from-rose-900/20 to-pink-900/20 rounded-lg border border-rose-700/30">
+                        <div className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-800/80 to-gray-700/80 rounded-lg border border-gray-600/50">
               <Avatar className="w-16 h-16">
-                <AvatarImage src={friend.profile_photo} />
-                <AvatarFallback className="text-lg font-semibold bg-rose-800 text-rose-100">
+                <AvatarImage src={friend.profile_photo} alt={friend.first_name} />
+                <AvatarFallback className="text-lg font-semibold bg-gray-700 text-gray-100">
                   {getInitials(friend)}
                 </AvatarFallback>
               </Avatar>
@@ -250,7 +182,7 @@ export function FriendProfileModal({ friendId, isOpen, onClose, onViewSchedules 
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <User className="w-5 h-5" />
+                      <UserIcon className="w-5 h-5" />
                       Acerca de
                     </CardTitle>
                   </CardHeader>
@@ -322,10 +254,10 @@ export function FriendProfileModal({ friendId, isOpen, onClose, onViewSchedules 
                                   const response = await friendsAPI.getFriendScheduleDetail(friendId!, schedule.id);
                                   setSelectedScheduleDetail(response.data);
                                   setShowScheduleDetail(true);
-                                } catch (error: any) {
+                                } catch (error: unknown) {
                                   toast({
                                     title: "Error",
-                                    description: error.message || "No se pudo cargar el horario",
+                                    description: (error as { message?: string }).message || "No se pudo cargar el horario",
                                     variant: "destructive"
                                   });
                                 }
@@ -359,7 +291,7 @@ export function FriendProfileModal({ friendId, isOpen, onClose, onViewSchedules 
               {schedules.length > 0 && onViewSchedules && (
                 <Button
                   onClick={() => onViewSchedules(friendId!, schedules)}
-                  className="bg-rose-600 hover:bg-rose-700"
+                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   <Eye className="w-4 h-4 mr-2" />
                   Comparar Horarios

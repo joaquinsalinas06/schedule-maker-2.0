@@ -80,8 +80,18 @@ api.interceptors.response.use(
       localStorage.removeItem('user');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('remember_me');
-      localStorage.removeItem('favoriteSchedules');
-      localStorage.removeItem('favoritedCombinations');
+      
+      // Clear all user-specific data for security
+      try {
+        // Use secure storage cleanup
+        import('@/utils/secureStorage').then(({ SecureStorage }) => {
+          SecureStorage.clearAllUserData();
+        });
+      } catch (error) {
+        // Fallback - remove known global keys
+        localStorage.removeItem('favoriteSchedules');
+        localStorage.removeItem('favoritedCombinations');
+      }
       
       // Prevent redirect loops by checking current location
       if (window.location.pathname === '/auth' || window.location.pathname === '/login') {
@@ -186,13 +196,32 @@ export const authService = {
   },
 
   logout: () => {
+    // Clear authentication tokens and user data
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('remember_me');
     localStorage.removeItem('selectedUniversity');
-    localStorage.removeItem('favoriteSchedules');
-    localStorage.removeItem('favoritedCombinations');
+    
+    // Clear all user-specific data for security
+    try {
+      // Use secure storage cleanup instead of individual items
+      import('@/utils/secureStorage').then(({ SecureStorage }) => {
+        SecureStorage.clearAllUserData();
+      });
+      
+      // Also clear collaboration data
+      import('@/stores/collaborationStore').then(({ useCollaborationStore }) => {
+        const store = useCollaborationStore.getState();
+        store.clearUserData();
+      });
+    } catch (error) {
+      console.warn('Failed to clear user data on logout:', error);
+      // Fallback - remove known global keys
+      localStorage.removeItem('favoriteSchedules');
+      localStorage.removeItem('favoritedCombinations');
+    }
+    
     window.location.href = '/auth';
   },
 

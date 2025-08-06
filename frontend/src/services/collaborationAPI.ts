@@ -1,5 +1,16 @@
 import axios from 'axios';
-import { CollaborativeSession, ScheduleShare, ScheduleComparison } from '../stores/collaborationStore';
+import { 
+  CollaborativeSession, 
+  ScheduleShare, 
+  ScheduleComparison,
+  CreateSessionRequest,
+  JoinSessionRequest,
+  ShareScheduleRequest,
+  AddComparisonRequest,
+  CourseSelection,
+  CourseSelectionCreate,
+  GenerateSchedulesRequest
+} from '@/types/collaboration';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
 
@@ -16,60 +27,6 @@ apiClient.interceptors.request.use((config) => {
   }
   return config;
 });
-
-export interface CreateSessionRequest {
-  name: string;
-  description?: string;
-  max_participants?: number;
-  duration_hours?: number;
-}
-
-export interface JoinSessionRequest {
-  session_code: string;
-}
-
-export interface ShareScheduleRequest {
-  schedule_id: number;
-  shared_with?: number;
-  permissions?: string;
-  expires_hours?: number;
-}
-
-export interface AddComparisonRequest {
-  schedule_id: number;
-}
-
-export interface CourseSelection {
-  id?: number;
-  course_code: string;
-  course_name: string;
-  section_code: string;
-  professor?: string;
-  selection_type: 'shared' | 'individual';
-  shared_with_users: number[];
-  priority: number;
-  added_by?: number;
-  is_active?: boolean;
-  schedule_data: any;
-}
-
-export interface CourseSelectionCreate {
-  course_code: string;
-  course_name: string;
-  section_code: string;
-  professor?: string;
-  selection_type: 'shared' | 'individual';
-  shared_with_users: number[];
-  priority?: number;
-  schedule_data: any;
-}
-
-export interface GenerateSchedulesRequest {
-  session_id: number;
-  course_selections: CourseSelection[];
-  personalized_schedules?: any[];
-}
-
 
 export class CollaborationAPI {
   // Collaborative Sessions

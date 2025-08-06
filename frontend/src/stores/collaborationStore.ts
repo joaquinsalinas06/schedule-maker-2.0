@@ -1,49 +1,11 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  joined_at: string;
-}
-
-export interface CollaborativeSession {
-  id: number;
-  name: string;
-  description?: string;
-  session_code: string;
-  university_id: number;
-  created_by: number;
-  is_active: boolean;
-  max_participants: number;
-  current_schedule_data?: any;
-  expires_at?: string;
-  participants: User[];
-}
-
-export interface ScheduleShare {
-  id: number;
-  schedule_id: number;
-  shared_by: number;
-  shared_with?: number;
-  share_token: string;
-  permissions: string;
-  expires_at?: string;
-  is_active: boolean;
-  created_at: string;
-}
-
-export interface ScheduleComparison {
-  id: number;
-  session_id: number;
-  user_id: number;
-  schedule_id: number;
-  schedule: any;
-  user: User;
-  added_at: string;
-}
+import { 
+  CollaborativeSession, 
+  ScheduleShare, 
+  ScheduleComparison,
+  CollaborationUser
+} from '@/types/collaboration';
 
 interface CollaborationState {
   // Current session
@@ -66,7 +28,7 @@ interface CollaborationState {
   generatedSchedule: any;
   
   // Real-time collaboration state
-  onlineUsers: User[];
+  onlineUsers: CollaborationUser[];
   typingUsers: number[];
   cursorPositions: { [userId: number]: any };
   
@@ -94,8 +56,8 @@ interface CollaborationState {
   setGeneratedSchedule: (schedule: any) => void;
   
   // Real-time updates
-  updateOnlineUsers: (users: User[]) => void;
-  addOnlineUser: (user: User) => void;
+  updateOnlineUsers: (users: CollaborationUser[]) => void;
+  addOnlineUser: (user: CollaborationUser) => void;
   removeOnlineUser: (userId: number) => void;
   
   setTypingUsers: (userIds: number[]) => void;
@@ -111,7 +73,29 @@ interface CollaborationState {
   // Clear state
   clearSession: () => void;
   clearAll: () => void;
+  
+  // Security: Clear user-specific data on logout
+  clearUserData: () => void;
 }
+
+// Helper function to get user-specific storage key
+const getUserStorageKey = () => {
+  // Check if we're in a browser environment
+  if (typeof window === 'undefined') {
+    return 'collaboration-store-anonymous';
+  }
+  
+  try {
+    const user = localStorage.getItem('user');
+    if (user) {
+      const parsedUser = JSON.parse(user);
+      return `collaboration-store-user-${parsedUser.id}`;
+    }
+  } catch (error) {
+    console.warn('Failed to get user for storage key:', error);
+  }
+  return 'collaboration-store-anonymous';
+};
 
 export const useCollaborationStore = create<CollaborationState>()(
   devtools(
@@ -177,8 +161,8 @@ export const useCollaborationStore = create<CollaborationState>()(
       setGeneratedSchedule: (schedule: any) => set({ generatedSchedule: schedule }),
 
       // Real-time collaboration actions
-      updateOnlineUsers: (users: User[]) => set({ onlineUsers: users }),
-      addOnlineUser: (user: User) => set((state) => ({
+      updateOnlineUsers: (users: CollaborationUser[]) => set({ onlineUsers: users }),
+      addOnlineUser: (user: CollaborationUser) => set((state) => ({
         onlineUsers: [...state.onlineUsers.filter(u => u.id !== user.id), user]
       })),
       removeOnlineUser: (userId: number) => set((state) => ({
@@ -231,10 +215,52 @@ export const useCollaborationStore = create<CollaborationState>()(
         onlineUsers: [],
         typingUsers: [],
         cursorPositions: {}
-      })
+      }),
+      
+      // Security: Clear user-specific data on logout
+      clearUserData: () => {
+        // Clear all state immediately
+        set({
+          currentSession: null,
+          isConnected: false,
+          sessions: [],
+          sharedSchedules: [],
+          comparisons: [],
+          courseSelections: [],
+          generatedSchedule: null,
+          onlineUsers: [],
+          typingUsers: [],
+          cursorPositions: {}
+        });
+        
+        // Also clear any persisted data for all potential user keys
+        // This ensures complete cleanup even if switching between users
+        if (typeof window !== 'undefined') {
+          try {
+            const keysToCheck = [];
+            
+            // Check for user-specific keys that might exist
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key && key.startsWith('collaboration-store')) {
+                keysToCheck.push(key);
+              }
+            }
+            
+            // Clear all collaboration-related keys
+            keysToCheck.forEach(key => {
+              localStorage.removeItem(key);
+            });
+            
+            console.log('🧹 Cleared collaboration data for security:', keysToCheck);
+          } catch (error) {
+            console.warn('Failed to clear collaboration storage:', error);
+          }
+        }
+      }
     }),
     {
-        name: 'collaboration-store',
+        name: getUserStorageKey(), // ✅ USER-SPECIFIC STORAGE KEY
         partialize: (state) => ({
           sessions: state.sessions,
           sharedSchedules: state.sharedSchedules,

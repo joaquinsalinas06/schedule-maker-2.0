@@ -17,9 +17,8 @@ import {
   Camera,
   Save,
   X,
-  User,
+  User as UserIcon,
   FileText,
-  Building2,
   Upload
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -109,6 +108,7 @@ export function ProfileEditModal({ user, editField, isOpen, onClose, onSave }: P
       });
       onClose();
     } catch (error) {
+      console.error('Error uploading profile photo:', error)
       toast({
         title: 'Error',
         description: 'Error al subir la foto de perfil',
@@ -142,6 +142,7 @@ export function ProfileEditModal({ user, editField, isOpen, onClose, onSave }: P
       });
       onClose();
     } catch (error) {
+      console.error('Error updating profile:', error)
       toast({
         title: 'Error',
         description: 'No se pudo actualizar el perfil',
@@ -170,7 +171,7 @@ export function ProfileEditModal({ user, editField, isOpen, onClose, onSave }: P
         return {
           title: 'Editar Información Personal',
           description: 'Actualiza tu nombre y nombre de usuario',
-          icon: <User className="w-5 h-5" />,
+          icon: <UserIcon className="w-5 h-5" />,
           content: (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">

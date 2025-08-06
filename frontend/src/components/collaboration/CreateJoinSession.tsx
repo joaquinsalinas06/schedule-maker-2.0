@@ -21,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CollaborationAPI, CreateSessionRequest } from '@/services/collaborationAPI';
+import { CollaborationAPI } from '@/services/collaborationAPI';
+import { CreateSessionRequest } from '@/types/collaboration';
 import { useCollaborationStore } from '@/stores/collaborationStore';
 import { Plus, Users } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -44,7 +45,7 @@ export function CreateSessionDialog() {
     if (!formData.name.trim()) {
       toast({
         title: "Error",
-        description: "Session name is required",
+        description: "El nombre de la sesión es requerido",
         variant: "destructive",
       });
       return;
@@ -56,8 +57,8 @@ export function CreateSessionDialog() {
       addSession(session);
       
       toast({
-        title: "Success",
-        description: `Session "${session.name}" created with code: ${session.session_code}`,
+        title: "¡Éxito!",
+        description: `Sesión "${session.name}" creada con código: ${session.session_code}`,
       });
       
       setOpen(false);
@@ -70,7 +71,7 @@ export function CreateSessionDialog() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.response?.data?.detail || "Failed to create session",
+        description: error.response?.data?.detail || "No se pudo crear la sesión",
         variant: "destructive",
       });
     } finally {
@@ -83,44 +84,44 @@ export function CreateSessionDialog() {
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
-          Create Session
+          Crear Sesión
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create Collaborative Session</DialogTitle>
+          <DialogTitle>Crear Sesión Colaborativa</DialogTitle>
           <DialogDescription>
-            Create a new session to work on schedules together with classmates from your university.
+            Crea una nueva sesión para trabajar en horarios junto con compañeros de tu universidad.
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Session Name</Label>
+              <Label htmlFor="name">Nombre de la Sesión</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Fall 2024 Schedule Planning"
+                placeholder="ej., Planificación Horarios Otoño 2024"
                 required
               />
             </div>
             
             <div className="grid gap-2">
-              <Label htmlFor="description">Description (Optional)</Label>
+              <Label htmlFor="description">Descripción (Opcional)</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="What is this session for?"
+                placeholder="¿Para qué es esta sesión?"
                 rows={3}
               />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="max_participants">Max Participants</Label>
+                <Label htmlFor="max_participants">Máximo Participantes</Label>
                 <Select
                   value={formData.max_participants?.toString()}
                   onValueChange={(value: string) => setFormData({ ...formData, max_participants: parseInt(value) })}
@@ -131,7 +132,7 @@ export function CreateSessionDialog() {
                   <SelectContent>
                     {[5, 10, 15, 20, 25, 30].map((num) => (
                       <SelectItem key={num} value={num.toString()}>
-                        {num} people
+                        {num} personas
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -139,7 +140,7 @@ export function CreateSessionDialog() {
               </div>
               
               <div className="grid gap-2">
-                <Label htmlFor="duration">Duration (Hours)</Label>
+                <Label htmlFor="duration">Duración (Horas)</Label>
                 <Select
                   value={formData.duration_hours?.toString()}
                   onValueChange={(value: string) => setFormData({ ...formData, duration_hours: parseInt(value) })}
@@ -148,12 +149,12 @@ export function CreateSessionDialog() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="6">6 hours</SelectItem>
-                    <SelectItem value="12">12 hours</SelectItem>
-                    <SelectItem value="24">24 hours</SelectItem>
-                    <SelectItem value="48">48 hours</SelectItem>
-                    <SelectItem value="72">72 hours</SelectItem>
-                    <SelectItem value="168">1 week</SelectItem>
+                    <SelectItem value="6">6 horas</SelectItem>
+                    <SelectItem value="12">12 horas</SelectItem>
+                    <SelectItem value="24">24 horas</SelectItem>
+                    <SelectItem value="48">48 horas</SelectItem>
+                    <SelectItem value="72">72 horas</SelectItem>
+                    <SelectItem value="168">1 semana</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -162,10 +163,10 @@ export function CreateSessionDialog() {
           
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Session'}
+              {loading ? 'Creando...' : 'Crear Sesión'}
             </Button>
           </DialogFooter>
         </form>
@@ -187,7 +188,7 @@ export function JoinSessionDialog() {
     if (!sessionCode.trim()) {
       toast({
         title: "Error",
-        description: "Session code is required",
+        description: "El código de sesión es requerido",
         variant: "destructive",
       });
       return;
@@ -199,8 +200,8 @@ export function JoinSessionDialog() {
       addSession(session);
       
       toast({
-        title: "Success",
-        description: `Joined session "${session.name}"`,
+        title: "¡Éxito!",
+        description: `Te uniste a la sesión "${session.name}"`,
       });
       
       setOpen(false);
@@ -208,7 +209,7 @@ export function JoinSessionDialog() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.response?.data?.detail || "Failed to join session",
+        description: error.response?.data?.detail || "No se pudo unir a la sesión",
         variant: "destructive",
       });
     } finally {
@@ -221,26 +222,26 @@ export function JoinSessionDialog() {
       <DialogTrigger asChild>
         <Button variant="outline">
           <Users className="h-4 w-4 mr-2" />
-          Join Session
+          Unirse a Sesión
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Join Collaborative Session</DialogTitle>
+          <DialogTitle>Unirse a Sesión Colaborativa</DialogTitle>
           <DialogDescription>
-            Enter the session code to join an existing collaborative session.
+            Ingresa el código de sesión para unirte a una sesión colaborativa existente.
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="sessionCode">Session Code</Label>
+              <Label htmlFor="sessionCode">Código de Sesión</Label>
               <Input
                 id="sessionCode"
                 value={sessionCode}
                 onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
-                placeholder="e.g., ABC12345"
+                placeholder="ej., ABC12345"
                 required
                 className="font-mono text-center text-lg tracking-wider"
                 maxLength={8}
@@ -250,10 +251,10 @@ export function JoinSessionDialog() {
           
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Joining...' : 'Join Session'}
+              {loading ? 'Uniéndose...' : 'Unirse a Sesión'}
             </Button>
           </DialogFooter>
         </form>

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { apiService } from "@/services/api"
+import { SecureStorage } from "@/utils/secureStorage"
 import { 
   Course, 
   SelectedSection, 
@@ -14,13 +15,37 @@ import {
   SectionPopupState,
   GroupedCourse,
   ScheduleFilters,
-  FavoriteSchedule
+  FavoriteSchedule,
+  Session as TypesSession,
+  ScheduleCombination as TypesScheduleCombination,
+  CourseSection
 } from "@/types"
 import { ScheduleVisualization } from "@/components/ScheduleVisualization"
 
 // Dashboard Components
 import { SelectedSectionsCard } from '@/components/dashboard/SelectedSectionsCard'
 import { SectionSelectionPopup } from '@/components/dashboard/SectionSelectionPopup'
+
+// Local types that match ScheduleVisualization expectations
+interface VisualizationSession {
+  session_id: number
+  session_type: string
+  day: string | number
+  start_time: string
+  end_time: string
+  location: string
+  modality: string
+}
+
+interface VisualizationCourseSection {
+  course_id: number
+  course_code: string
+  course_name: string
+  section_id: number
+  section_number: string
+  professor: string
+  sessions: VisualizationSession[]
+}
 
 export default function SchedulesPage() {
   const router = useRouter()
@@ -29,7 +54,7 @@ export default function SchedulesPage() {
   const [generatedSchedules, setGeneratedSchedules] = useState<ScheduleResponse | null>(null)
   const [viewingFavoriteSchedule, setViewingFavoriteSchedule] = useState<FavoriteSchedule | null>(null)
   const [sectionPopup, setSectionPopup] = useState<SectionPopupState | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [, setIsLoading] = useState(false)
   const [collapsedCourses, setCollapsedCourses] = useState<Set<string>>(new Set())
   
   // Search states for the compact search
@@ -49,16 +74,21 @@ export default function SchedulesPage() {
     if (typeof window !== 'undefined') {
       const savedSchedules = sessionStorage.getItem('generatedSchedules')
       const savedSelectedSections = sessionStorage.getItem('selectedSections')
-      const savedFavorites = localStorage.getItem('favoriteSchedules')
-      const savedCombinations = localStorage.getItem('favoritedCombinations')
+      const savedFavorites = SecureStorage.getItem('favoriteSchedules') // 🔒 User-specific
+      const savedCombinations = SecureStorage.getItem('favoritedCombinations') // 🔒 User-specific
       const viewingFavorite = sessionStorage.getItem('viewingFavoriteSchedule')
       
       if (savedSchedules) {
         try {
-          setGeneratedSchedules(JSON.parse(savedSchedules))
-        } catch {
-          // Error loading saved schedules
+          const parsedSchedules = JSON.parse(savedSchedules)
+          console.log('📊 Loading generatedSchedules from sessionStorage:', parsedSchedules)
+          console.log('📊 First course sessions sample:', parsedSchedules?.combinations?.[0]?.courses?.[0]?.sessions?.[0])
+          setGeneratedSchedules(parsedSchedules)
+        } catch (error) {
+          console.error('❌ Error loading saved schedules:', error)
         }
+      } else {
+        console.log('🔍 No generatedSchedules in sessionStorage')
       }
       
       if (savedSelectedSections) {
@@ -95,9 +125,11 @@ export default function SchedulesPage() {
           setViewingFavoriteSchedule(parsedFavorite)
           // Clear it after loading so it doesn't persist on refresh
           sessionStorage.removeItem('viewingFavoriteSchedule')
-        } catch {
-          // Error loading viewing favorite
+        } catch (error) {
+          console.error('❌ Error loading viewing favorite:', error)
         }
+      } else {
+        console.log('🔍 No viewingFavoriteSchedule in sessionStorage')
       }
     }
   }, [])
@@ -198,32 +230,45 @@ export default function SchedulesPage() {
       
       // Update sessionStorage
       sessionStorage.setItem('generatedSchedules', JSON.stringify(response.data))
-    } catch (_error) {
+    } catch (error) {
+      console.error('Error generating schedules:', error)
       // Handle auth errors through the axios interceptor
     } finally {
       setIsLoading(false)
     }
   }
 
+  // Wrapper to convert ScheduleVisualization's ScheduleCombination to our type
+  const addToFavoritesWrapper = (schedule: { combination_id: string; course_count: number; courses: unknown[] }) => {
+    const typedSchedule: TypesScheduleCombination = {
+      combination_id: schedule.combination_id,
+      sections: [],
+      conflicts: [],
+      course_count: schedule.course_count,
+      courses: schedule.courses as unknown as CourseSection[]
+    }
+    addToFavorites(typedSchedule)
+  }
+
   // Favorite schedule management
-  const addToFavorites = (schedule: any) => {
+  const addToFavorites = (schedule: TypesScheduleCombination) => {
     const favoriteId = `fav_${Date.now()}`
     const newFavorite: FavoriteSchedule = {
       id: favoriteId,
       name: `Horario ${favoriteSchedules.length + 1}`,
-      combination: schedule.combination || schedule,
+      combination: schedule,
       created_at: new Date().toISOString(),
       notes: ''
     }
     setFavoriteSchedules(prev => [...prev, newFavorite])
     // Handle both favorite schedule format and regular schedule format
-    const combinationId = schedule.combination?.combination_id || schedule.combination_id
+    const combinationId = schedule.combination_id
     setFavoritedCombinations(prev => new Set([...prev, combinationId.toString()]))
     
     // Store in localStorage for persistence
     const updatedFavorites = [...favoriteSchedules, newFavorite]
-    localStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites))
-    localStorage.setItem('favoritedCombinations', JSON.stringify([...favoritedCombinations, combinationId.toString()]))
+    SecureStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites)) // 🔒 User-specific
+    SecureStorage.setItem('favoritedCombinations', JSON.stringify([...favoritedCombinations, combinationId.toString()])) // 🔒 User-specific
   }
 
   const removeFromFavoritesByCombinationId = (combinationId: string) => {
@@ -245,9 +290,9 @@ export default function SchedulesPage() {
       setFavoriteSchedules(updatedFavorites)
       
       // Update localStorage
-      localStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites))
+      SecureStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites)) // 🔒 User-specific
       const updatedCombinations = Array.from(favoritedCombinations).filter(id => id !== combinationId)
-      localStorage.setItem('favoritedCombinations', JSON.stringify(updatedCombinations))
+      SecureStorage.setItem('favoritedCombinations', JSON.stringify(updatedCombinations)) // 🔒 User-specific
     }
   }
 
@@ -260,54 +305,74 @@ export default function SchedulesPage() {
           <div className="lg:col-span-3 space-y-4 sm:space-y-6">
             {/* Canvas */}
             <ScheduleVisualization 
-              scheduleName={(() => {
-                console.log('🏷️  Passing scheduleName prop:', viewingFavoriteSchedule?.name)
-                console.log('🏷️  viewingFavoriteSchedule object:', viewingFavoriteSchedule)
-                return viewingFavoriteSchedule?.name
-              })()}
+              scheduleName={viewingFavoriteSchedule?.name}
               scheduleData={(viewingFavoriteSchedule ? (() => {
                 console.log('📊 Building scheduleData for viewing favorite schedule:', viewingFavoriteSchedule);
                 
                 // Handle nested data structure
-                let courses: any[] = [];
-                let actualCombination = viewingFavoriteSchedule.combination as any;
+                let courses: VisualizationCourseSection[] = [];
+                let actualCombination = viewingFavoriteSchedule.combination as unknown;
                 
                 // Check for nested combination structure
-                if (actualCombination.combination) {
-                  actualCombination = actualCombination.combination;
+                if ((actualCombination as { combination?: unknown }).combination) {
+                  actualCombination = (actualCombination as { combination: unknown }).combination;
                 }
                 
-                if (actualCombination.courses) {
+                if ((actualCombination as { courses?: unknown[] }).courses) {
                   // New format - already has courses array
-                  courses = actualCombination.courses;
-                } else if (actualCombination.sections) {
+                  const rawCourses = (actualCombination as { courses: { course_id: number; course_code: string; course_name: string; section_id: number; section_number: string; professor: string; sessions: any[] }[] }).courses;
+                  console.log('🔍 Raw courses from favorite:', rawCourses);
+                  console.log('🔍 First course sessions:', rawCourses[0]?.sessions);
+                  
+                  courses = rawCourses.map(course => ({
+                    course_id: course.course_id,
+                    course_code: course.course_code,
+                    course_name: course.course_name,
+                    section_id: course.section_id,
+                    section_number: course.section_number,
+                    professor: course.professor,
+                    sessions: (course.sessions || []).map((session: any) => ({
+                      session_id: session.id || session.session_id || 0,
+                      session_type: session.session_type || 'Unknown',
+                      day: session.day_of_week || session.day || 'Monday',
+                      start_time: session.start_time || '08:00',
+                      end_time: session.end_time || '09:00',
+                      location: session.classroom || session.location || 'TBA',
+                      modality: 'Presencial'
+                    }))
+                  }));
+                  
+                  console.log('🔍 Transformed courses:', courses);
+                  console.log('🔍 First transformed course sessions:', courses[0]?.sessions);
+                } else if ((actualCombination as { sections?: unknown[] }).sections) {
                   // Old format - transform sections to courses
-                  courses = actualCombination.sections.map((section: any) => ({
-                    course_id: section.course_id || section.course?.id,
-                    course_code: section.course?.code || 'N/A',
-                    course_name: section.course?.name || 'Unknown Course',
+                  const sections = (actualCombination as { sections: { id: number; course_code: string; course_name: string; section_number?: string; professor?: string; sessions?: TypesSession[] }[] }).sections;
+                  courses = sections.map((section) => ({
+                    course_id: section.id,
+                    course_code: section.course_code,
+                    course_name: section.course_name,
                     section_id: section.id,
                     section_number: section.section_number || 'N/A',
                     professor: section.professor || 'TBA',
-                    sessions: section.sessions?.map((session: any) => ({
-                      session_id: session.id || Math.random(),
-                      session_type: session.session_type || 'Lecture',
-                      day: session.day_of_week || 1,
-                      start_time: session.start_time || '08:00',
-                      end_time: session.end_time || '09:00', 
-                      location: session.classroom || 'TBA',
+                    sessions: (section.sessions || []).map((session) => ({
+                      session_id: session.id,
+                      session_type: session.session_type,
+                      day: session.day_of_week,
+                      start_time: session.start_time,
+                      end_time: session.end_time, 
+                      location: session.classroom,
                       modality: 'Presencial'
-                    })) || []
+                    }))
                   }));
                 }
                 
                 const scheduleData = {
                   combinations: [{
-                    combination_id: actualCombination.combination_id || 'temp',
+                    combination_id: ((actualCombination as { combination_id?: string | number }).combination_id || 'temp').toString(),
                     course_count: courses.length,
                     courses: courses,
-                    sections: actualCombination.sections || [], // Keep original sections for compatibility
-                    conflicts: actualCombination.conflicts || []
+                    sections: (actualCombination as { sections?: unknown[] }).sections || [], // Keep original sections for compatibility
+                    conflicts: (actualCombination as { conflicts?: unknown[] }).conflicts || []
                   }],
                   total_combinations: 1,
                   selected_courses_count: courses.length
@@ -315,22 +380,49 @@ export default function SchedulesPage() {
                 
                 console.log('Transformed schedule data:', scheduleData);
                 return scheduleData;
-            })() : generatedSchedules ? {
+            })() : generatedSchedules ? (() => {
+                console.log('📈 Raw generatedSchedules data:', generatedSchedules);
+                const transformedData = {
                 ...generatedSchedules,
+                combinations: generatedSchedules.combinations.map(combination => ({
+                  ...combination,
+                  combination_id: combination.combination_id.toString(),
+                  course_count: combination.course_count || combination.courses?.length || 0,
+                  courses: (combination.courses || []).map(course => ({
+                    course_id: course.course_id,
+                    course_code: course.course_code,
+                    course_name: course.course_name,
+                    section_id: course.section_id,
+                    section_number: course.section_number,
+                    professor: course.professor,
+                    sessions: course.sessions.map((session: any) => ({
+                      session_id: session.session_id || session.id,
+                      session_type: session.session_type,
+                      day: session.day || session.day_of_week,  // Handle both formats
+                      start_time: session.start_time,
+                      end_time: session.end_time,
+                      location: session.location || session.classroom,  // Handle both formats
+                      modality: session.modality || 'Presencial'
+                    }))
+                  }))
+                })),
                 selected_courses_count: generatedSchedules.combinations?.[0]?.courses?.length || 0
-              } : null!) as any}
-              onAddToFavorites={viewingFavoriteSchedule ? undefined : addToFavorites}
+              };
+              console.log('📈 Transformed session sample:', transformedData.combinations[0]?.courses[0]?.sessions[0]);
+              return transformedData;
+              })() : null!)}
+              onAddToFavorites={viewingFavoriteSchedule ? undefined : addToFavoritesWrapper}
               onRemoveFromFavorites={viewingFavoriteSchedule ? (id) => {
                 // Remove the favorite schedule entirely
                 const updatedFavorites = favoriteSchedules.filter(fav => fav.id !== viewingFavoriteSchedule.id)
                 setFavoriteSchedules(updatedFavorites)
-                localStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites))
+                SecureStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites)) // 🔒 User-specific
                 
                 // Remove from favoritedCombinations set
                 const newFavoritedCombinations = new Set(favoritedCombinations)
                 newFavoritedCombinations.delete(id)
                 setFavoritedCombinations(newFavoritedCombinations)
-                localStorage.setItem('favoritedCombinations', JSON.stringify([...newFavoritedCombinations]))
+                SecureStorage.setItem('favoritedCombinations', JSON.stringify([...newFavoritedCombinations])) // 🔒 User-specific
                 
                 // Go back to my schedules
                 setViewingFavoriteSchedule(null)
@@ -469,13 +561,13 @@ export default function SchedulesPage() {
               selectedSections={viewingFavoriteSchedule ? 
                 // When viewing favorite, convert courses back to selected sections format
                 (() => {
-                  let actualCombination = viewingFavoriteSchedule.combination as any;
-                  if (actualCombination.combination) {
-                    actualCombination = actualCombination.combination;
+                  let actualCombination = viewingFavoriteSchedule.combination as unknown;
+                  if ((actualCombination as { combination?: unknown }).combination) {
+                    actualCombination = (actualCombination as { combination: unknown }).combination;
                   }
                   
-                  if (actualCombination.courses) {
-                    return actualCombination.courses.map((course: any, index: number) => ({
+                  if ((actualCombination as { courses?: unknown[] }).courses) {
+                    return ((actualCombination as { courses: { section_id: number; course_code: string; course_name: string; section_number: string; professor: string; sessions: TypesSession[] }[] }).courses).map((course) => ({
                       sectionId: course.section_id,
                       courseCode: course.course_code,
                       courseName: course.course_name,
@@ -491,13 +583,13 @@ export default function SchedulesPage() {
               groupSectionsByCourse={viewingFavoriteSchedule ? 
                 // Custom grouping for favorite schedule
                 () => {
-                  let actualCombination = viewingFavoriteSchedule.combination as any;
-                  if (actualCombination.combination) {
-                    actualCombination = actualCombination.combination;
+                  let actualCombination = viewingFavoriteSchedule.combination as unknown;
+                  if ((actualCombination as { combination?: unknown }).combination) {
+                    actualCombination = (actualCombination as { combination: unknown }).combination;
                   }
                   
-                  if (actualCombination.courses) {
-                    return actualCombination.courses.map((course: any, index: number) => ({
+                  if ((actualCombination as { courses?: unknown[] }).courses) {
+                    return ((actualCombination as { courses: { section_id: number; course_code: string; course_name: string; section_number: string; professor: string; sessions: TypesSession[] }[] }).courses).map((course, courseIndex) => ({
                       courseName: course.course_name,
                       courseCode: course.course_code,
                       sections: [{
@@ -507,7 +599,7 @@ export default function SchedulesPage() {
                         sectionCode: course.section_number,
                         professor: course.professor,
                         sessions: course.sessions || [],
-                        index: index
+                        index: courseIndex
                       }]
                     }));
                   }

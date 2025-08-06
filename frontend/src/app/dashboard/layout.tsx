@@ -2,13 +2,17 @@
 
 import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Calendar, Grid3X3, Users, Star, User, UserPlus } from "lucide-react"
+import { Calendar, Grid3X3, Users, Star, UserPlus } from "lucide-react"
 import { authService } from "@/services/auth"
 import { SidebarSection } from "@/types"
+import { useFirstTimeUser } from "@/hooks/useFirstTimeUser"
+import { useUserSessionSecurity } from "@/hooks/useUserSessionSecurity"
 
 // Dashboard Components
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar'
 import { MobileHeader } from '@/components/dashboard/MobileHeader'
+import { FirstTimeUserPopup } from '@/components/dashboard/FirstTimeUserPopup'
+import { HelpButton } from '@/components/dashboard/HelpButton'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -18,11 +22,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
   
+  // Security: Monitor user session changes to prevent data bleeding
+  useUserSessionSecurity()
+  
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [authLoading, setAuthLoading] = useState(true)
   const [pageLoading, setPageLoading] = useState(false)
+  // First time user popup logic
+  const { isFirstTime, isLoading: firstTimeLoading, markAsVisited } = useFirstTimeUser()
 
   const sidebarSections: SidebarSection[] = [
     {
@@ -53,7 +62,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: Users,
       color: "from-green-500 to-emerald-600",
     },
-
+        {
+      id: "friends",
+      title: "Mis Amigos",
+      shortTitle: "Amigos",
+      icon: UserPlus,
+      color: "from-rose-500 to-pink-600",
+    },
   ]
 
   // Get current active section from pathname
@@ -113,8 +128,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Show simple loading if checking auth
-  if (authLoading) {
+  // Show simple loading if checking auth or first time user status
+  if (authLoading || firstTimeLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -167,8 +182,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             )}
           </div>
         </div>
+
+        {/* Help Button - Fixed position */}
+        <div className="fixed bottom-6 right-6 z-40">
+          <HelpButton />
+        </div>
       </div>
 
+      {/* First Time User Popup */}
+      {isFirstTime && (
+        <FirstTimeUserPopup onClose={markAsVisited} />
+      )}
     </div>
   )
 }

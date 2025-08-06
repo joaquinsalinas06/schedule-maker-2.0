@@ -1,40 +1,7 @@
 import { authService } from './auth'
+import { User, FriendRequest, FriendRequestsResponse } from '@/types/user'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-
-interface User {
-  id: number
-  first_name: string
-  last_name: string
-  nickname?: string
-  email: string
-  student_id?: string
-  profile_photo?: string
-  university?: {
-    id: number
-    name: string
-    short_name: string
-  }
-  friendship_status?: string
-  last_login?: string
-  stats?: {
-    friend_count: number
-    schedules_count: number
-  }
-}
-
-interface FriendRequest {
-  id: number
-  sender?: User
-  receiver?: User
-  message?: string
-  created_at: string
-}
-
-interface FriendRequestsResponse {
-  received: FriendRequest[]
-  sent: FriendRequest[]
-}
 
 class FriendsAPI {
   private getAuthHeaders() {

@@ -155,7 +155,8 @@ export default function GeneratePage() {
       
       // Navigate to schedules page
       router.push('/dashboard/schedules')
-    } catch (_error) {
+    } catch (error) {
+      console.error('Error generating schedules:', error)
       // Handle auth errors through the axios interceptor
     } finally {
       setIsLoading(false)

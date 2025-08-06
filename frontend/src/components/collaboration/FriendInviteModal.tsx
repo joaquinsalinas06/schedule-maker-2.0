@@ -65,7 +65,8 @@ export function FriendInviteModal({ isOpen, onClose, sessionCode, sessionName, o
     try {
       const response = await friendsAPI.getFriendsList();
       setFriends(response.data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('Error loading friends:', error)
       toast({
         title: "Error",
         description: "No se pudieron cargar los amigos",
@@ -136,6 +137,7 @@ export function FriendInviteModal({ isOpen, onClose, sessionCode, sessionName, o
       setSelectedFriends(new Set());
       
     } catch (error) {
+      console.error('Error sending invitations:', error)
       toast({
         title: "Error",
         description: "No se pudieron enviar las invitaciones",
@@ -173,26 +175,32 @@ export function FriendInviteModal({ isOpen, onClose, sessionCode, sessionName, o
             Invitar Amigos a la Sesión
           </DialogTitle>
           <DialogDescription>
-            Invita a tus amigos a unirse a la sesión de colaboración "{sessionName}"
+            Invita a tus amigos a unirse a la sesión de colaboración &quot;{sessionName}&quot;
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Session Info */}
-          <Card className="bg-gradient-to-r from-rose-900/20 to-pink-900/20 border-rose-700/50">
+          <Card className="bg-gradient-to-r from-gray-800/80 to-gray-700/80 border-gray-600/50">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-rose-100">{sessionName}</h3>
-                  <p className="text-sm text-rose-200">Código de sesión: <span className="font-mono font-bold text-rose-100">{sessionCode}</span></p>
+                  <h3 className="font-semibold text-gray-100">{sessionName}</h3>
+                  <p className="text-sm text-gray-300">Código de sesión: <span className="font-mono font-bold text-gray-100">{sessionCode}</span></p>
                 </div>
                 <Button
-                  size="sm"
                   variant="outline"
-                  onClick={() => navigator.clipboard.writeText(sessionCode)}
-                  className="border-rose-600 text-rose-100 hover:bg-rose-800/50 bg-rose-900/30"
+                  size="sm"
+                  className="border-gray-500 text-gray-100 hover:bg-gray-700/50 bg-gray-800/30"
+                  onClick={() => {
+                    navigator.clipboard.writeText(sessionCode);
+                    toast({
+                      title: "¡Copiado!",
+                      description: "Código de sesión copiado al portapapeles",
+                    });
+                  }}
                 >
-                  Copiar Código
+                  Copiar código
                 </Button>
               </div>
             </CardContent>
@@ -225,7 +233,7 @@ export function FriendInviteModal({ isOpen, onClose, sessionCode, sessionName, o
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
               </div>
             ) : filteredFriends.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">

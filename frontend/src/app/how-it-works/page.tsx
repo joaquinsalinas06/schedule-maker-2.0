@@ -17,21 +17,21 @@ export default function HowItWorksPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="group text-center animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
-              <div className="w-16 h-16 bg-cyan-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+              <div className="w-16 h-16 bg-cyan-500/20 border border-cyan-500/30 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
                 <span className="text-2xl font-bold text-cyan-600">1</span>
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">Selecciona tus cursos</h3>
               <p className="text-gray-300">Busca y elige los cursos que necesitas para tu ciclo académico</p>
             </div>
             <div className="group text-center animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+              <div className="w-16 h-16 bg-green-500/20 border border-green-500/30 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
                 <span className="text-2xl font-bold text-green-600">2</span>
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">Genera combinaciones</h3>
               <p className="text-gray-300">Nuestro algoritmo crea todas las combinaciones posibles sin conflictos</p>
             </div>
             <div className="group text-center animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+              <div className="w-16 h-16 bg-purple-500/20 border border-purple-500/30 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
                 <span className="text-2xl font-bold text-purple-600">3</span>
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">Elige y guarda</h3>

@@ -9,7 +9,7 @@ interface MobileHeaderProps {
   setMobileMenuOpen: (open: boolean) => void
 }
 
-export function MobileHeader({ mobileMenuOpen, setMobileMenuOpen }: MobileHeaderProps) {
+export function MobileHeader({setMobileMenuOpen }: MobileHeaderProps) {
   return (
     <div className="fixed top-0 left-0 right-0 z-30 bg-card/95 backdrop-blur-sm border-b border-border px-4 py-3 lg:hidden">
       <div className="flex items-center justify-between">

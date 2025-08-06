@@ -1,15 +1,11 @@
 "use client"
 
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Download, Calendar, Clock, Eye, EyeOff, Users, AlertTriangle, Palette } from "lucide-react"
+import { Download, Clock, Eye, EyeOff, Users, AlertTriangle, Palette } from "lucide-react"
 import { 
   ComparisonVisualizationProps, 
-  ComparisonParticipant, 
-  ComparisonConflict,
-  ScheduleCombination,
   CourseSection as TypedCourseSection,
   Session as TypedSession
 } from "@/types"
@@ -26,19 +22,6 @@ const DAY_COUNT = 6 // Monday to Saturday
 
 const weekDayStrings = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
 
-// Predefined colors for participants (excluding red which is reserved for conflicts)
-const participantColors = [
-  '#3B82F6', // Blue
-  '#F59E0B', // Orange  
-  '#10B981', // Green
-  '#8B5CF6', // Purple
-  '#F97316', // Orange
-  '#06B6D4', // Cyan
-  '#84CC16', // Lime
-  '#EC4899', // Pink
-  '#6366F1', // Indigo
-  '#14B8A6', // Teal
-]
 
 // Conflict color (red - reserved)
 const CONFLICT_COLOR = '#EF4444'
@@ -97,59 +80,16 @@ const getResponsiveFontSizes = (containerWidth: number) => {
 
 export function ScheduleComparisonVisualization({ 
   comparison, 
-  onParticipantToggle, 
-  onCombinationChange, 
-  onConflictHighlight 
+  onParticipantToggle
 }: ComparisonVisualizationProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(1400)
   const [startTime, setStartTime] = useState(7 * 60) // 7:00 AM
   const [endTime, setEndTime] = useState(22 * 60)   // 10:00 PM
-  const [highlightedConflicts, setHighlightedConflicts] = useState<Set<string>>(new Set())
+  const [highlightedConflicts] = useState<Set<string>>(new Set())
 
-  // Handle container resize
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        const width = containerRef.current.offsetWidth
-        setContainerWidth(width)
-        const dimensions = getResponsiveDimensions(width)
-        CANVAS_WIDTH = dimensions.width
-        CANVAS_HEIGHT = dimensions.height
-      }
-    }
-
-    updateDimensions()
-    window.addEventListener('resize', updateDimensions)
-    return () => window.removeEventListener('resize', updateDimensions)
-  }, [])
-
-  // Redraw when data changes
-  useEffect(() => {
-    // Debounce the drawing to prevent excessive calls
-    const timeoutId = setTimeout(() => {
-      const dimensions = getResponsiveDimensions(containerWidth)
-      CANVAS_WIDTH = dimensions.width
-      CANVAS_HEIGHT = dimensions.height
-      drawComparison()
-    }, 50) // 50ms debounce
-
-    return () => clearTimeout(timeoutId)
-  }, [comparison, startTime, endTime, containerWidth, highlightedConflicts])
-
-  const timeToMinutes = (timeStr: string): number => {
-    const [hours, minutes] = timeStr.split(':').map(Number)
-    return hours * 60 + minutes
-  }
-
-  const minutesToTime = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
-  }
-
-  const drawComparison = () => {
+  const drawComparison = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -384,6 +324,47 @@ export function ScheduleComparisonVisualization({
         })
       })
     })
+  }, [comparison, startTime, endTime, containerWidth])
+
+  // Handle container resize
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const width = containerRef.current.offsetWidth
+        setContainerWidth(width)
+        const dimensions = getResponsiveDimensions(width)
+        CANVAS_WIDTH = dimensions.width
+        CANVAS_HEIGHT = dimensions.height
+      }
+    }
+
+    updateDimensions()
+    window.addEventListener('resize', updateDimensions)
+    return () => window.removeEventListener('resize', updateDimensions)
+  }, [])
+
+  // Redraw when data changes
+  useEffect(() => {
+    // Debounce the drawing to prevent excessive calls
+    const timeoutId = setTimeout(() => {
+      const dimensions = getResponsiveDimensions(containerWidth)
+      CANVAS_WIDTH = dimensions.width
+      CANVAS_HEIGHT = dimensions.height
+      drawComparison()
+    }, 50) // 50ms debounce
+
+    return () => clearTimeout(timeoutId)
+  }, [comparison, startTime, endTime, containerWidth, highlightedConflicts, drawComparison])
+
+  const timeToMinutes = (timeStr: string): number => {
+    const [hours, minutes] = timeStr.split(':').map(Number)
+    return hours * 60 + minutes
+  }
+
+  const minutesToTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
   }
 
   const downloadComparison = () => {

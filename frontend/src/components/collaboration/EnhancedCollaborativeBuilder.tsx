@@ -6,10 +6,7 @@ import { SelectedSection, Course, SectionPopupState, Filter } from '@/types';
 import { useAutocomplete } from '@/hooks/useAutocomplete';
 import { websocketService } from '@/services/websocketService';
 
-// Sub-components
-import { CourseSearchSection } from './CourseSearchSection';
-import { CourseSelectionList } from './CourseSelectionList';
-import { ScheduleGenerationSection } from './ScheduleGenerationSection';
+// Sub-components - removed unused imports
 
 import { SectionSelectionPopup } from '@/components/dashboard/SectionSelectionPopup';
 
@@ -18,14 +15,12 @@ import {
   BookOpen, 
   Target, 
   Share2, 
-  User, 
+  User as UserIcon, 
   ChevronDown, 
   ChevronRight, 
   Calendar, 
   Clock, 
   Zap, 
-  Eye, 
-  EyeOff, 
   X 
 } from 'lucide-react';
 
@@ -33,7 +28,6 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-import { useToast } from '@/hooks/use-toast';
 
 // Additional component imports
 import { CourseSearchCard } from '@/components/dashboard/CourseSearchCard';
@@ -702,7 +696,7 @@ export function EnhancedCollaborativeBuilder() {
                   </>
                 ) : (
                   <>
-                    <User className="h-3 w-3" />
+                    <UserIcon className="h-3 w-3" />
                     Individual
                   </>
                 )}
@@ -771,7 +765,7 @@ export function EnhancedCollaborativeBuilder() {
                   </>
                 ) : (
                   <>
-                    <User className="h-3 w-3" />
+                    <UserIcon className="h-3 w-3" />
                     Individual ({getIndividualCourses().length})
                   </>
                 )}

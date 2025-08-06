@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Users, 
-  User,
+  User as UserIcon,
   X,
   ChevronDown,
   ChevronRight
@@ -100,7 +100,7 @@ export function CourseSelectionList({
                     </>
                   ) : (
                     <>
-                      <User className="w-3 h-3 mr-1" />
+                      <UserIcon className="w-3 h-3 mr-1" />
                       Individual
                     </>
                   )}

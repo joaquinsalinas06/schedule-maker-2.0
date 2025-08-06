@@ -14,13 +14,13 @@ import {
   Download,
   Share2
 } from "lucide-react"
-import {ScheduleCombination, FavoriteSchedule } from "@/types"
+import { FavoriteSchedule } from "@/types"
 import html2canvas from 'html2canvas'
 
 interface FavoriteSchedulesProps {
   favorites: FavoriteSchedule[]
   onRemove: (id: string) => void
-  onView: (schedule: any) => void
+  onView: (schedule: FavoriteSchedule) => void
   onEdit: (id: string, name: string, notes?: string) => void
   onShare?: (schedule: FavoriteSchedule) => void
 }
@@ -85,7 +85,8 @@ export function FavoriteSchedules({
           URL.revokeObjectURL(url);
         }
       }, 'image/png');
-    } catch (_error) {
+    } catch (error) {
+      console.error('Error generating schedule image:', error)
       // Failed to generate image, falling back to text
       // Fallback to text-based download
       createScheduleTextDownload(favorite);

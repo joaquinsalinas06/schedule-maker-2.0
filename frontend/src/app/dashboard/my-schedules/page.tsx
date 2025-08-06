@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { FavoriteSchedule, ShareResponse } from "@/types"
 import { FavoriteSchedules } from "@/components/FavoriteSchedules"
 import { useToast } from '@/hooks/use-toast'
+import { SecureStorage } from "@/utils/secureStorage"
 
 export default function MySchedulesPage() {
   const router = useRouter()
@@ -15,7 +16,7 @@ export default function MySchedulesPage() {
   // Load favorite schedules from localStorage on component mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedFavorites = localStorage.getItem('favoriteSchedules')
+      const savedFavorites = SecureStorage.getItem('favoriteSchedules') // 🔒 User-specific
       
       if (savedFavorites) {
         try {
@@ -36,25 +37,25 @@ export default function MySchedulesPage() {
     console.log('Favorite schedules before update:', favoriteSchedules)
     console.log('Updated favorite schedules:', updatedFavorites)
     setFavoriteSchedules(updatedFavorites)
-    localStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites))
+    SecureStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites)) // 🔒 User-specific
   }
 
   const removeFavorite = (scheduleId: string) => {
     const updatedFavorites = favoriteSchedules.filter(schedule => schedule.id !== scheduleId)
     setFavoriteSchedules(updatedFavorites)
-    localStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites))
+    SecureStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites)) // 🔒 User-specific
     
     // Also remove from favorited combinations
     const schedule = favoriteSchedules.find(s => s.id === scheduleId)
     if (schedule) {
-      const savedCombinations = localStorage.getItem('favoritedCombinations')
+      const savedCombinations = SecureStorage.getItem('favoritedCombinations') // 🔒 User-specific
       if (savedCombinations) {
         try {
           const combinations = JSON.parse(savedCombinations)
           const updatedCombinations = combinations.filter(
             (id: string) => id !== schedule.combination.combination_id?.toString()
           )
-          localStorage.setItem('favoritedCombinations', JSON.stringify(updatedCombinations))
+          SecureStorage.setItem('favoritedCombinations', JSON.stringify(updatedCombinations)) // 🔒 User-specific
         } catch {
           // Error updating combinations
         }
@@ -96,10 +97,10 @@ export default function MySchedulesPage() {
       });
 
       return { share_token: sharedSchedule.share_token };
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.response?.data?.detail || error.message || "Failed to share schedule",
+        description: error instanceof Error ? error.message : "Failed to share schedule",
         variant: "destructive",
       });
     }

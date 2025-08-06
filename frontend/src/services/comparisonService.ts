@@ -207,7 +207,7 @@ export class ComparisonService {
         // Check if sessions overlap
         if (this.sessionsOverlap(session1.session, session2.session)) {
           // Find existing conflict or create new one
-          let existingConflict = conflicts.find(conflict =>
+          const existingConflict = conflicts.find(conflict =>
             this.timeSlotMatches(conflict.timeSlot, session1.session) &&
             conflict.participants.includes(session1.participantId) &&
             conflict.participants.includes(session2.participantId)

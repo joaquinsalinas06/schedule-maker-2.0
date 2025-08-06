@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChevronLeft, ChevronRight, Download, Calendar, Clock, Heart, ArrowLeft } from "lucide-react"
@@ -173,7 +173,7 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
   const { combinations, total_combinations } = scheduleData
 
   // Calculate dynamic time limits based on actual schedule data
-  const calculateTimeLimits = () => {
+  const calculateTimeLimits = useCallback(() => {
     if (!combinations || combinations.length === 0) {
       return { minTime: 7 * 60, maxTime: 22 * 60 } // Default fallback
     }
@@ -209,14 +209,14 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
     const maxTime = Math.min(24 * 60 - 1, latestTime + bufferHour) // Don't go above 23:59
 
     return { minTime, maxTime }
-  }
+  }, [combinations])
 
   // Update time limits when schedule data changes
   useEffect(() => {
     const limits = calculateTimeLimits()
     setStartTime(limits.minTime)
     setEndTime(limits.maxTime)
-  }, [combinations])
+  }, [calculateTimeLimits])
 
   // Handle container resize and set responsive dimensions
   useEffect(() => {
@@ -238,86 +238,7 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
     }
   }, [])
 
-  useEffect(() => {
-    const dimensions = getResponsiveDimensions(containerWidth)
-    CANVAS_WIDTH = dimensions.width
-    CANVAS_HEIGHT = dimensions.height
-    drawSchedule(currentScheduleIndex)
-  }, [currentScheduleIndex, combinations, startTime, endTime, containerWidth])
-
-  // Add canvas click handler
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const handleCanvasClick = (event: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect()
-      const x = event.clientX - rect.left
-      const y = event.clientY - rect.top
-
-      // Scale coordinates to match canvas coordinate system
-      const scaleX = canvas.width / rect.width
-      const scaleY = canvas.height / rect.height
-      
-      const scaledX = x * scaleX
-      const scaledY = y * scaleY
-
-      // Find clicked course block
-      const clickedBlock = clickableBlocks.find(block => 
-        scaledX >= block.x && scaledX <= block.x + block.width &&
-        scaledY >= block.y && scaledY <= block.y + block.height
-      )
-
-      if (clickedBlock) {
-        setSelectedCourse(clickedBlock.course)
-      }
-    }
-
-    canvas.addEventListener('click', handleCanvasClick)
-    canvas.style.cursor = 'pointer'
-
-    return () => {
-      canvas.removeEventListener('click', handleCanvasClick)
-    }
-  }, [clickableBlocks])
-
-  const timeToMinutes = (timeStr: string): number => {
-    if (!timeStr || typeof timeStr !== 'string') {
-      console.warn('Invalid time string:', timeStr)
-      return 8 * 60 // Default to 8:00 AM
-    }
-    
-    const parts = timeStr.split(':')
-    if (parts.length < 2 || parts.length > 3) {
-      console.warn('Invalid time format:', timeStr)
-      return 8 * 60 // Default to 8:00 AM
-    }
-    
-    const [hours, minutes] = parts.map(Number)
-    if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours >= 24 || minutes < 0 || minutes >= 60) {
-      console.warn('Invalid time values:', timeStr)
-      return 8 * 60 // Default to 8:00 AM
-    }
-    
-    return hours * 60 + minutes
-  }
-
-  const minutesToTime = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
-  }
-
-  const getTextColor = (bgColor: string): string => {
-    const rgba = bgColor.match(/\d+/g)
-    if (!rgba) return '#000'
-    
-    const [r, g, b] = rgba.map(Number)
-    const brightness = (0.299 * r + 0.587 * g + 0.114 * b)
-    return brightness > 128 ? '#000000' : '#ffffff'
-  }
-
-  const drawSchedule = (scheduleIndex: number) => {
+  const drawSchedule = useCallback((scheduleIndex: number) => {
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -334,7 +255,6 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
 
     // Fix blurry canvas on high-DPI displays
     const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
     
     // Set the canvas size in CSS pixels
     canvas.style.width = CANVAS_WIDTH + 'px'
@@ -419,62 +339,49 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
     
     // Display schedule name (if provided) or default format  
     const displayName = scheduleName || `Horario ${scheduleIndex + 1}`
-    console.log('🎨 Displaying schedule name:', displayName, 'from scheduleName prop:', scheduleName)
-    console.log('🎨 Current schedule index:', scheduleIndex)
-    console.log('🎨 Header area dimensions:', { sideMarginOffset, headerAreaHeight, headerCenterY })
     
-    // Auto-size header text to fit available space
-    let headerFontSize = Math.max(fontSizes.titleFont + 6, 20) // Start with preferred size
-    ctx.fillStyle = '#f1f5f9' // Same white color as day headers
+    // Header title
+    ctx.fillStyle = '#f1f5f9' // Light text on dark background
+    ctx.font = `bold ${fontSizes.titleFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
     ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
+    ctx.textBaseline = 'middle' // Center vertically in the header area
+    ctx.fillText(displayName, sideMarginOffset / 2, headerCenterY - 15)
     
-    // Calculate available width (leave some padding)
-    const availableWidth = sideMarginOffset * 0.9
+    // Additional info on same line
+    const isCurrentlyFavorited = favoritedCombinations.has(schedule.combination_id.toString())
+    const favoriteText = isCurrentlyFavorited ? " ★" : ""
+    const courseCountText = `${schedule.course_count || schedule.courses?.length || 0} cursos${favoriteText}`
     
-    // Adjust font size to fit within available width
-    do {
-      ctx.font = `bold ${headerFontSize}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
-      const textWidth = ctx.measureText(displayName).width
-      if (textWidth <= availableWidth) break
-      headerFontSize -= 1
-    } while (headerFontSize > 10) // Minimum font size
+    ctx.font = `${fontSizes.infoFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+    ctx.fillStyle = '#94a3b8' // Muted light text
+    ctx.fillText(courseCountText, sideMarginOffset / 2, headerCenterY + 5)
     
-    // Center the schedule name in the header area
-    ctx.fillText(displayName, sideMarginOffset / 2, headerCenterY - 4)
+    // Reset text baseline
+    ctx.textBaseline = 'top'
     
-    // Course count below, smaller and more subtle compared to the main title
-    const infoFontSize = Math.max(fontSizes.infoFont, 9) // Keep this smaller to emphasize the title
-    ctx.font = `${infoFontSize}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
-    ctx.fillStyle = '#64748b' // More subtle than time labels to not compete with title
-    ctx.fillText(`${schedule.courses.length} cursos`, sideMarginOffset / 2, headerCenterY + 14)
-
-    // Draw day headers with dark theme styling
+    // Draw day headers
     ctx.fillStyle = '#f1f5f9'
-    ctx.font = `bold ${fontSizes.timeFont + 2}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+    ctx.font = `bold ${fontSizes.headerFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
     ctx.textAlign = 'center'
     for (let day = 0; day < DAY_COUNT; day++) {
       const xPos = sideMarginOffset + dayWidth * (day + 0.5)
       
-      // Draw subtle header background
+      // Header background with same styling
       ctx.fillStyle = '#1e293b'
-      ctx.fillRect(
-        sideMarginOffset + dayWidth * day + 1, 
-        1, 
-        dayWidth - 2, 
-        topMarginOffset - 2
-      )
+      ctx.fillRect(sideMarginOffset + dayWidth * day + 1, 1, dayWidth - 2, headerAreaHeight - 2)
       
-      // Draw day name - centered in the header area
+      // Day name
       ctx.fillStyle = '#f1f5f9'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(weekDayStrings[day], xPos, topMarginOffset / 2)
+      ctx.textBaseline = 'middle' 
+      ctx.fillText(weekDayStrings[day], xPos, headerCenterY)
+      ctx.textBaseline = 'top'
     }
 
-    // Draw vertical day lines
-    ctx.strokeStyle = '#334155'
+    // Draw grid lines
+    ctx.strokeStyle = '#334155' // Darker grid lines for dark theme
     ctx.lineWidth = 1
+    
+    // Vertical day lines
     for (let day = 1; day <= DAY_COUNT; day++) {
       const xPos = sideMarginOffset + dayWidth * day
       ctx.beginPath()
@@ -483,109 +390,135 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
       ctx.stroke()
     }
 
-    // Draw horizontal hour lines
-    ctx.strokeStyle = '#1e293b'
-    ctx.lineWidth = 1
+    // Horizontal hour lines and time labels
+    ctx.strokeStyle = '#1e293b' // Even darker horizontal lines
     ctx.font = `${fontSizes.timeFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
     ctx.textAlign = 'right'
-    ctx.fillStyle = '#94a3b8'
+    ctx.fillStyle = '#94a3b8' // Muted light text for time labels
     
     for (let hour = 0; hour <= hourCount; hour++) {
       const yPos = topMarginOffset + hourHeight * hour
       const timeMinutes = startTime + hour * 60
       
-      if (hour > 0) {
-        // Center the time label vertically in the middle of the hour slot
+      // Draw time label centered in the cell (except for the last line)
+      if (hour < hourCount) {
+        // Set text baseline to middle for proper centering
         ctx.textBaseline = 'middle'
-        ctx.fillText(minutesToTime(timeMinutes - 60), sideMarginOffset - 12, yPos - (hourHeight / 2))
+        const centerY = yPos + (hourHeight / 2)
+        ctx.fillText(minutesToTime(timeMinutes), sideMarginOffset - 12, centerY)
+        // Reset text baseline back to top
+        ctx.textBaseline = 'top'
       }
       
       ctx.beginPath()
       ctx.moveTo(0, yPos)
       ctx.lineTo(CANVAS_WIDTH, yPos)
       ctx.stroke()
-    } 
-    
-    schedule.courses?.forEach((courseSection, courseIndex) => {
-      
-      if (!courseSection || !courseSection.sessions || courseSection.sessions.length === 0) {
-        console.warn('Skipping course with no sessions:', courseSection)
-        return
-      }
+    }
 
-      const color = courseColors[courseIndex % courseColors.length]
-      
-      courseSection.sessions.forEach((session, sessionIndex) => {
-        
-        // Handle both string day names and numeric days
+    // Process schedule data
+    const scheduleCourses = schedule.courses || []
+
+    // Group courses by position in the day and check for overlaps
+    const dayBlocks: {[day: number]: {course: CourseSection, sessions: Session[], startY: number, height: number}[]} = {}
+
+    // First, collect all course sessions by day
+    scheduleCourses.forEach((course) => {
+      if (!course.sessions || course.sessions.length === 0) return
+
+      course.sessions.forEach((session) => {
         let dayIndex: number
         if (typeof session.day === 'string') {
-          // Backend is sending day as string name (e.g., "Miércoles")
           dayIndex = dayNameToIndex[session.day]
-          if (dayIndex === undefined) {
-            return
-          }
+          if (dayIndex === undefined) return
         } else {
-          // Backend is sending day as number (1=Monday, 2=Tuesday, etc.)
-          dayIndex = session.day - 1
+          dayIndex = (session.day as number) - 1
         }
 
-        if (dayIndex < 0 || dayIndex >= DAY_COUNT) {
-          return
-        }
+        if (dayIndex < 0 || dayIndex >= DAY_COUNT) return
 
         const sessionStartMinutes = timeToMinutes(session.start_time)
         const sessionEndMinutes = timeToMinutes(session.end_time)
         
-        if (sessionStartMinutes < startTime || sessionEndMinutes > endTime) {
-          return
+        // Skip sessions outside our time range
+        if (sessionStartMinutes < startTime || sessionEndMinutes > endTime) return
+
+        const startY = topMarginOffset + (hourHeight * (sessionStartMinutes - startTime) / 60)
+        const height = (sessionEndMinutes - sessionStartMinutes) * hourHeight / 60
+
+        if (!dayBlocks[dayIndex]) {
+          dayBlocks[dayIndex] = []
         }
 
+        dayBlocks[dayIndex].push({
+          course,
+          sessions: [session],
+          startY,
+          height
+        })
+      })
+    })
+
+    // Draw course blocks for each day
+    Object.keys(dayBlocks).forEach((dayStr) => {
+      const dayIndex = parseInt(dayStr)
+      const blocks = dayBlocks[dayIndex]
+      
+      // Sort blocks by start time
+      blocks.sort((a, b) => a.startY - b.startY)
+
+      blocks.forEach((block) => {
+        const course = block.course
+        const sessions = block.sessions
+        const session = sessions[0] // We have one session per block in this structure
+
+        // Calculate position
         const xPos = sideMarginOffset + dayWidth * dayIndex
-        const yPos = topMarginOffset + (hourHeight * (sessionStartMinutes - startTime) / 60)
-        const duration = (sessionEndMinutes - sessionStartMinutes) / 60
-        const blockHeight = duration * hourHeight
+        const yPos = block.startY
+        const blockHeight = block.height
+        const blockWidth = dayWidth
+        
+        // Validate coordinates
+        if (!isFinite(xPos) || !isFinite(yPos) || !isFinite(blockHeight) || blockHeight <= 0) return
 
-        // Validate coordinates before drawing
-        if (!isFinite(xPos) || !isFinite(yPos) || !isFinite(blockHeight) || blockHeight <= 0) {
-     return
-        }
+        // Get course color
+        const courseIndex = scheduleCourses.findIndex(c => c.course_code === course.course_code)
+        const color = courseColors[courseIndex % courseColors.length]
 
-    // Draw subtle shadow first
+        // Draw shadow
         ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'
-        ctx.fillRect(xPos + 6, yPos + 4, dayWidth - 8, blockHeight - 6)
+        ctx.fillRect(xPos + 6, yPos + 4, blockWidth - 8, blockHeight - 6)
 
-        // Draw course block with clean styling and rounded corners effect
+        // Draw main course block with vibrant color
         ctx.fillStyle = color.bg
-        ctx.fillRect(xPos + 4, yPos + 2, dayWidth - 8, blockHeight - 4)
+        ctx.fillRect(xPos + 4, yPos + 2, blockWidth - 8, blockHeight - 4)
 
         // Draw subtle inner highlight for depth
         ctx.fillStyle = color.bg.replace('0.9', '0.7')
-        ctx.fillRect(xPos + 4, yPos + 2, dayWidth - 8, 3)
+        ctx.fillRect(xPos + 4, yPos + 2, blockWidth - 8, 3)
 
         // Draw clean border
         ctx.strokeStyle = color.bg.replace('0.9', '1')
         ctx.lineWidth = 2
-        ctx.strokeRect(xPos + 4, yPos + 2, dayWidth - 8, blockHeight - 4)
+        ctx.strokeRect(xPos + 4, yPos + 2, blockWidth - 8, blockHeight - 4)
 
-        // Record clickable block for each session (so all sessions of a course are clickable)
+        // Store clickable block info
         newClickableBlocks.push({
-          course: courseSection,
+          course,
           x: xPos + 4,
           y: yPos + 2,
-          width: dayWidth - 8,
+          width: blockWidth - 8,
           height: blockHeight - 4
         })
 
-        // Draw course text with improved typography and proper fitting
+        // Draw course info text with improved typography
         ctx.fillStyle = '#ffffff'
-        ctx.textAlign = 'center'
-        
-        const textX = xPos + (dayWidth / 2)
-        const textY = yPos + 12
-        const maxWidth = dayWidth - 24 // Leave padding on both sides
-        
-        // Helper function to draw text that fits in the available space
+        ctx.textAlign = 'left'
+        const textX = xPos + 12
+        const textY = yPos + 16
+        const maxWidth = blockWidth - 24
+
+        // Helper function for fitting text with proper styling
         const drawFittingText = (text: string, x: number, y: number, maxWidth: number, fontSize: number, fontWeight: string = 'normal') => {
           ctx.font = `${fontWeight} ${fontSize}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
           
@@ -612,80 +545,119 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
           }
           
           ctx.fillText(displayText, x, y)
-          return fontSize + 4 // Return height used
+          return fontSize + 4 // Return line height for spacing
+        }
+
+        let currentY = textY
+        
+        // Course name (main title) - Always shown, bold and prominent
+        ctx.fillStyle = '#ffffff'
+        const nameHeight = drawFittingText(course.course_name, textX, currentY, maxWidth, fontSizes.courseFont, 'bold')
+        currentY += nameHeight + 2
+        
+        // Course code and section - Always shown as secondary info
+        const codeText = `${course.course_code} - Sec. ${course.section_number}`
+        const codeHeight = drawFittingText(codeText, textX, currentY, maxWidth, fontSizes.courseFont - 1, 'semibold')
+        currentY += codeHeight + 2
+        
+        // Professor (if there's space) - With transparency for hierarchy
+        if (blockHeight > 65) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
+          const professorHeight = drawFittingText(course.professor, textX, currentY, maxWidth, fontSizes.professorFont)
+          currentY += professorHeight + 2
         }
         
-        // Adjust text display based on block height (duration)
-        ctx.textBaseline = 'top' // Consistent baseline for all text
+        // Time (if there's space) - Bold white for emphasis
+        if (blockHeight > 85) {
+          ctx.fillStyle = '#ffffff'
+          const timeHeight = drawFittingText(`${session.start_time} - ${session.end_time}`, textX, currentY, maxWidth, fontSizes.timeFont, 'bold')
+          currentY += timeHeight + 2
+        }
         
-        if (blockHeight <= 45) {
-          // Short classes (1 hour) - show only course name, truly centered
-          const centerY = yPos + (blockHeight / 2) - (fontSizes.courseFont / 2)
-          ctx.fillStyle = '#ffffff'
-          drawFittingText(courseSection.course_name, textX, centerY, maxWidth, fontSizes.courseFont, 'bold')
-        } else {
-          // Longer classes - show full information with better centering
-          const baseLineHeight = fontSizes.courseFont + 2
-          const smallerLineHeight = fontSizes.professorFont + 2
-          
-          // Calculate actual content that will be shown
-          let totalTextHeight = baseLineHeight * 2 // Course name + code always shown
-          let linesCount = 2
-          
-          if (blockHeight > 65) {
-            totalTextHeight += smallerLineHeight // Professor
-            linesCount++
-          }
-          if (blockHeight > 85) {
-            totalTextHeight += smallerLineHeight // Time
-            linesCount++
-          }
-          if (session.location && blockHeight > 105) {
-            totalTextHeight += smallerLineHeight // Location
-            linesCount++
-          }
-          
-          // Start from true center minus half of actual total text height
-          let currentY = yPos + (blockHeight / 2) - (totalTextHeight / 2)
-          
-          // Course name (main title)
-          ctx.fillStyle = '#ffffff'
-          drawFittingText(courseSection.course_name, textX, currentY, maxWidth, fontSizes.courseFont, 'bold')
-          currentY += baseLineHeight
-          
-          // Course code and section
-          const codeText = `${courseSection.course_code} - Sec. ${courseSection.section_number}`
-          ctx.fillStyle = '#ffffff'
-          drawFittingText(codeText, textX, currentY, maxWidth, fontSizes.courseFont - 1, 'semibold')
-          currentY += baseLineHeight
-          
-          // Professor (if there's space)
-          if (blockHeight > 65) {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
-            drawFittingText(courseSection.professor, textX, currentY, maxWidth, fontSizes.professorFont)
-            currentY += smallerLineHeight
-          }
-          
-          // Time (if there's space)
-          if (blockHeight > 85) {
-            ctx.fillStyle = '#ffffff'
-            drawFittingText(`${session.start_time} - ${session.end_time}`, textX, currentY, maxWidth, fontSizes.timeFont, 'bold')
-            currentY += smallerLineHeight
-          }
-          
-          // Location (if there's space)
-          if (session.location && blockHeight > 105) {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
-            const locationText = `📍 ${session.location}`
-            drawFittingText(locationText, textX, currentY, maxWidth, fontSizes.locationFont)
-          }
+        // Location (if there's space) - With icon and subtle styling
+        if (session.location && blockHeight > 105) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
+          const locationText = `📍 ${session.location}`
+          drawFittingText(locationText, textX, currentY, maxWidth, fontSizes.locationFont)
         }
       })
     })
 
-    // Update clickable blocks state
+    // Update clickable blocks
     setClickableBlocks(newClickableBlocks)
+  }, [combinations, startTime, endTime, containerWidth, favoritedCombinations, scheduleName])
+
+  useEffect(() => {
+    const dimensions = getResponsiveDimensions(containerWidth)
+    CANVAS_WIDTH = dimensions.width
+    CANVAS_HEIGHT = dimensions.height
+    drawSchedule(currentScheduleIndex)
+  }, [currentScheduleIndex, drawSchedule, containerWidth])
+
+  // Add canvas click handler
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const handleCanvasClick = (event: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      const x = event.clientX - rect.left
+      const y = event.clientY - rect.top
+
+      // Scale coordinates to match canvas coordinate system
+      const scaleX = canvas.width / rect.width
+      const scaleY = canvas.height / rect.height
+      
+      const scaledX = x * scaleX
+      const scaledY = y * scaleY
+
+      // Find clicked course block
+      const clickedBlock = clickableBlocks.find(block => 
+        scaledX >= block.x && scaledX <= block.x + block.width &&
+        scaledY >= block.y && scaledY <= block.y + block.height
+      )
+
+      if (clickedBlock) {
+        setSelectedCourse(clickedBlock.course)
+      }
+    }
+
+    canvas.addEventListener('click', handleCanvasClick)
+    canvas.style.cursor = 'pointer'
+
+    return () => {
+      canvas.removeEventListener('click', handleCanvasClick)
+    }
+  }, [clickableBlocks])
+
+  const timeToMinutes = (timeStr: string): number => {
+    if (!timeStr || typeof timeStr !== 'string') {
+      console.warn('Invalid time string:', timeStr)
+      return 8 * 60 // Default to 8:00 AM
+    }
+    
+    const parts = timeStr.split(':')
+    if (parts.length < 2 || parts.length > 3) {
+      console.warn('Invalid time format:', timeStr)
+      return 8 * 60 // Default to 8:00 AM
+    }
+    
+    const [hours, minutes] = parts.map(Number)
+    if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours >= 24 || minutes < 0 || minutes >= 60) {
+      console.warn('Invalid time values:', timeStr)
+      return 8 * 60 // Default to 8:00 AM
+    }
+    
+    return hours * 60 + minutes
   }
+
+  const minutesToTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
+  }
+
+
 
   const downloadSchedule = () => {
     const canvas = canvasRef.current
@@ -812,8 +784,8 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
                 variant={favoritedCombinations.has(combinations[currentScheduleIndex]?.combination_id) ? "default" : "outline"}
                 className={
                   favoritedCombinations.has(combinations[currentScheduleIndex]?.combination_id)
-                    ? "bg-pink-500 text-white hover:bg-pink-600 border-0"
-                    : "border-pink-300 text-pink-600 hover:bg-pink-50 hover:text-pink-700"
+                    ? "bg-yellow-500 text-white hover:bg-yellow-600 border-0"
+                    : "border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/20 hover:text-yellow-300"
                 }
               >
                 <Heart className={`w-4 h-4 mr-1 ${favoritedCombinations.has(combinations[currentScheduleIndex]?.combination_id) ? "fill-current" : ""}`} />

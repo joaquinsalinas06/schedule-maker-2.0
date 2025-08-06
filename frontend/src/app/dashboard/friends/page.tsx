@@ -6,41 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { UserPlus, Search, Users, Bell, User, MessageSquare, Check, X, Trash2 } from "lucide-react"
+import { UserPlus, Search, Users, Bell, User as UserIcon, MessageSquare, Check, X, Trash2 } from "lucide-react"
 import { friendsAPI } from "@/services/friendsAPI"
 import { toast } from "@/hooks/use-toast"
 import { FriendProfileModal } from "@/components/FriendProfileModal"
 import { comparisonService } from "@/services/comparisonService"
 import { useRouter } from "next/navigation"
-
-interface User {
-  id: number
-  first_name: string
-  last_name: string
-  nickname?: string
-  email: string
-  student_id?: string
-  profile_photo?: string
-  university?: {
-    id: number
-    name: string
-    short_name: string
-  }
-  friendship_status?: string
-  last_login?: string
-  stats?: {
-    friend_count: number
-    schedules_count: number
-  }
-}
-
-interface FriendRequest {
-  id: number
-  sender?: User
-  receiver?: User
-  message?: string
-  created_at: string
-}
+import { User, FriendRequest } from "@/types/user"
 
 export default function FriendsPage() {
   const router = useRouter()
@@ -69,6 +41,7 @@ export default function FriendsPage() {
       const response = await friendsAPI.getFriendsList()
       setFriends(response.data)
     } catch (error) {
+      console.error('Error loading friends:', error)
       toast({
         title: "Error",
         description: "No se pudieron cargar los amigos",
@@ -121,10 +94,10 @@ export default function FriendsPage() {
             : user
         )
       )
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.response?.data?.detail || "No se pudo enviar la solicitud",
+        description: (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "No se pudo enviar la solicitud",
         variant: "destructive"
       })
     }
@@ -139,10 +112,10 @@ export default function FriendsPage() {
       })
       loadFriends()
       loadFriendRequests()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.response?.data?.detail || "No se pudo aceptar la solicitud",
+        description: (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "No se pudo aceptar la solicitud",
         variant: "destructive"
       })
     }
@@ -156,10 +129,10 @@ export default function FriendsPage() {
         description: "La solicitud ha sido rechazada"
       })
       loadFriendRequests()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.response?.data?.detail || "No se pudo rechazar la solicitud",
+        description: (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "No se pudo rechazar la solicitud",
         variant: "destructive"
       })
     }
@@ -177,10 +150,10 @@ export default function FriendsPage() {
         description: "El amigo ha sido eliminado de tu lista"
       })
       loadFriends()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.response?.data?.detail || "No se pudo eliminar el amigo",
+        description: (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "No se pudo eliminar el amigo",
         variant: "destructive"
       })
     }
@@ -226,7 +199,7 @@ export default function FriendsPage() {
           <Button 
             size="sm" 
             onClick={() => sendFriendRequest(user.id)}
-            className="bg-rose-600 hover:bg-rose-700"
+            className="bg-blue-600 hover:bg-blue-700"
           >
             <UserPlus className="h-4 w-4 mr-2" />
             Agregar
@@ -245,7 +218,7 @@ export default function FriendsPage() {
     setSelectedFriendId(null)
   }
 
-  const handleViewSchedules = async (friendId: number, schedules: any[]) => {
+  const handleViewSchedules = async (friendId: number, schedules: { id: number; name: string; description?: string; created_at: string; is_favorite: boolean }[]) => {
     try {
       // Get friend info
       const friend = friends.find(f => f.id === friendId)
@@ -360,13 +333,13 @@ export default function FriendsPage() {
               <CardContent>
                 {loading ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 ) : friends.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <UserPlus className="h-12 w-12 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No tienes amigos aún</h3>
-                    <p>Usa la pestaña "Buscar" para encontrar compañeros</p>
+                    <p>Usa la pestaña &quot;Buscar&quot; para encontrar compañeros</p>
                   </div>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -397,13 +370,13 @@ export default function FriendsPage() {
                                 variant="outline"
                                 onClick={() => openProfileModal(friend.id)}
                               >
-                                <User className="h-4 w-4" />
+                                <UserIcon className="h-4 w-4" />
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => removeFriend(friend.id)}
-                                className="text-red-600 hover:text-red-700"
+                                className="text-red-400 hover:text-red-300 border-red-500/50 hover:bg-red-500/20"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -440,7 +413,7 @@ export default function FriendsPage() {
 
                   {searchLoading ? (
                     <div className="flex items-center justify-center py-8">
-                      <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                     </div>
                   ) : searchQuery.length < 2 ? (
                     <div className="text-center py-12 text-muted-foreground">
@@ -520,7 +493,7 @@ export default function FriendsPage() {
                                   </p>
                                   {request.message && (
                                     <p className="text-xs text-muted-foreground mt-1">
-                                      "{request.message}"
+                                      &quot;{request.message}&quot;
                                     </p>
                                   )}
                                 </div>

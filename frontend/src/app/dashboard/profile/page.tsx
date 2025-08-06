@@ -5,9 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
 import { 
-  User, 
+  User as UserIcon, 
   Mail, 
   Building2, 
   IdCard, 
@@ -16,7 +15,6 @@ import {
   Camera,
   FileText,
   UserCircle,
-  MapPin
 } from "lucide-react"
 import { User as UserType } from "@/types"
 import { ProfileAPI } from "@/services/profileAPI"
@@ -82,7 +80,7 @@ export default function ProfilePage() {
         <Card className="max-w-md">
           <CardContent className="pt-6">
             <div className="text-center text-muted-foreground">
-              <User className="h-16 w-16 mx-auto mb-4 opacity-50" />
+              <UserIcon className="h-16 w-16 mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-semibold mb-2">No se pudo cargar el perfil</h3>
               <p>Inténtalo de nuevo más tarde</p>
             </div>

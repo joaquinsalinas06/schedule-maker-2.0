@@ -13,7 +13,7 @@ import {
   Calendar,
   Mail,
   Lock,
-  User,
+  User as UserIcon,
   ArrowLeft,
   Eye,
   EyeOff,
@@ -109,7 +109,8 @@ export default function AuthPage() {
         })
       }
       window.location.href = "/dashboard"
-    } catch (_error) {
+    } catch (error) {
+      console.error('Authentication error:', error)
       setErrors({ general: "Error en la autenticación. Intenta nuevamente." })
     } finally {
       setIsLoading(false)
@@ -295,7 +296,7 @@ export default function AuthPage() {
                       <div className="space-y-2">
                         <Label htmlFor="firstName">Nombre</Label>
                         <div className="relative">
-                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                          <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                           <Input
                             id="firstName"
                             type="text"

@@ -1,6 +1,6 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { Course, SectionPopupState } from "@/types"
@@ -37,7 +37,7 @@ export function CourseResultsGrid({
   
   if (autocompleteError) {
     return (
-      <div className="p-4 text-red-600 text-sm bg-red-50 rounded-md">
+      <div className="p-4 text-red-400 text-sm bg-red-900/20 border border-red-500/30 rounded-md">
         Error: {autocompleteError}
       </div>
     )

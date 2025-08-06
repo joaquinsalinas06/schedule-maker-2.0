@@ -16,7 +16,7 @@ function SharedScheduleContent() {
 
 export function SharedScheduleWrapper() {
   return (
-    <Suspense fallback={<div>Loading shared schedules...</div>}>
+    <Suspense fallback={<div>Cargando horarios compartidos...</div>}>
       <SharedScheduleContent />
     </Suspense>
   );

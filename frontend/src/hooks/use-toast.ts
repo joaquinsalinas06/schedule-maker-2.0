@@ -1,6 +1,6 @@
 export { useToast } from "@/components/ui/toast";
 
-export function toast({ title, description, variant = "default" }: {
+export function toast({ }: {
   title?: string
   description?: string
   variant?: "default" | "destructive" | "success"

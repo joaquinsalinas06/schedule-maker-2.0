@@ -3,48 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { CollaborationAPI } from '@/services/collaborationAPI';
-import { useCollaborationStore } from '@/stores/collaborationStore';
 import { ScheduleVisualization } from '@/components/ScheduleVisualization';
 import { 
-  Share2,
-  Copy,
   Eye,
-  ExternalLink,
   Calendar,
-  Clock,
-  User,
-  Link as LinkIcon,
-  Trash2,
-  Edit,
-  CheckCircle,
-  AlertCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-interface SharedSchedule {
-  id: number;
-  schedule_id: number;
-  share_token: string;
-  permissions: string;
-  expires_at?: string;
-  is_active: boolean;
-  created_at: string;
-  schedule: {
-    name: string;
-    combination: any;
-    total_courses: number;
-  };
-  views_count?: number;
-}
-
-interface ShareScheduleForm {
-  schedule_id: number;
-  permissions: 'view' | 'comment' | 'edit';
-  expires_hours?: number;
-  is_public: boolean;
-}
 
 interface SharedScheduleManagerProps {
   autoLoadCode?: string | null;
@@ -124,7 +89,7 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
     if (!token.trim()) {
       toast({
         title: "Error",
-        description: "Please enter a valid schedule code",
+        description: "Por favor ingresa un código válido de horario",
         variant: "destructive",
       });
       return;
@@ -140,14 +105,14 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
       console.log(result);
       setViewingSchedule(result);
       toast({
-        title: "Schedule Loaded",
-        description: `Viewing "${result.schedule.name}" shared by ${result.shared_by.name}`,
+        title: "Horario Cargado",
+        description: `Viendo "${result.schedule.name}" compartido por ${result.shared_by.name}`,
       });
     } catch (error: any) {
       // Failed to load shared schedule
       toast({
-        title: "Schedule Not Found",
-        description: "Please check that the code is correct.",
+        title: "Horario No Encontrado",
+        description: "Por favor verifica que el código sea correcto.",
         variant: "destructive",
       });
     }
@@ -162,16 +127,16 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Eye className="h-5 w-5" />
-            View Shared Schedule
+            Ver Horario Compartido
           </CardTitle>
           <CardDescription>
-            Enter a schedule code to view someone else's shared schedule
+            Ingresa un código de horario para ver el horario compartido de alguien más
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-2">
             <Input
-              placeholder="Enter 8-character code (e.g., A3B7K9M2)"
+              placeholder="Ingresa código de 8 caracteres (ej., A3B7K9M2)"
               value={viewScheduleToken}
               onChange={(e) => setViewScheduleToken(e.target.value.toUpperCase())}
               className="flex-1"
@@ -182,7 +147,7 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
               disabled={!viewScheduleToken.trim() || viewScheduleToken.length !== 8}
             >
               <Eye className="h-4 w-4 mr-2" />
-              View Schedule
+              Ver Horario
             </Button>
           </div>
 
@@ -194,10 +159,10 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
                     <div>
                       <CardTitle className="text-xl">{viewingSchedule.schedule.name}</CardTitle>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Shared by {viewingSchedule.shared_by.name} • {viewingSchedule.schedule.combination?.courses?.length || 0} courses
+                        Compartido por {viewingSchedule.shared_by.name} • {viewingSchedule.schedule.combination?.courses?.length || 0} materias
                       </p>
                       <div className="flex gap-2 mt-2">
-                        <Badge variant="outline">Code: {viewScheduleToken}</Badge>
+                        <Badge variant="outline">Código: {viewScheduleToken}</Badge>
                       </div>
                     </div>
                     <Button
@@ -205,7 +170,7 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
                       size="sm"
                       onClick={() => setViewingSchedule(null)}
                     >
-                      Close
+                      Cerrar
                     </Button>
                   </div>
                 </CardHeader>
@@ -219,13 +184,13 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
                             <div className="text-2xl font-bold text-cyan-400">
                               {transformedData.selected_courses_count}
                             </div>
-                            <div className="text-sm text-cyan-300">Courses</div>
+                            <div className="text-sm text-cyan-300">Materias</div>
                           </div>
                           <div className="text-center p-3 bg-purple-500/20 border border-purple-500/30 rounded-lg backdrop-blur-sm">
                             <div className="text-2xl font-bold text-purple-400">
                               {viewScheduleToken}
                             </div>
-                            <div className="text-sm text-purple-300">Share Code</div>
+                            <div className="text-sm text-purple-300">Código Compartir</div>
                           </div>
                         </div>
                         
@@ -240,7 +205,7 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">
                         <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No schedule data available</p>
+                        <p>No hay datos de horario disponibles</p>
                       </div>
                     );
                   })()}
