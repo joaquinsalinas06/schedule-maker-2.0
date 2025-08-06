@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Disable React Strict Mode to prevent double rendering during development
+  reactStrictMode: false,
+  
   // SEO and Performance optimizations
   compress: true,
   poweredByHeader: false,

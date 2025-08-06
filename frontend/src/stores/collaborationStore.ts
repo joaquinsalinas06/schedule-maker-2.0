@@ -3,9 +3,9 @@ import { devtools, persist } from 'zustand/middleware';
 import { 
   CollaborativeSession, 
   ScheduleShare, 
-  ScheduleComparison,
   CollaborationUser
 } from '@/types/collaboration';
+import { ScheduleComparison } from '@/types/comparison';
 
 interface CollaborationState {
   // Current session
@@ -20,6 +20,7 @@ interface CollaborationState {
   
   // Schedule comparisons
   comparisons: ScheduleComparison[];
+  activeComparison: ScheduleComparison | null;
   
   // Course selections for current session
   courseSelections: any[];
@@ -44,7 +45,8 @@ interface CollaborationState {
   
   setComparisons: (comparisons: ScheduleComparison[]) => void;
   addComparison: (comparison: ScheduleComparison) => void;
-  removeComparison: (comparisonId: number) => void;
+  removeComparison: (comparisonId: string) => void;
+  setActiveComparison: (comparison: ScheduleComparison | null) => void;
   
   // Course selection actions
   setCourseSelections: (selections: any[]) => void;
@@ -107,6 +109,7 @@ export const useCollaborationStore = create<CollaborationState>()(
         sessions: [],
         sharedSchedules: [],
         comparisons: [],
+        activeComparison: null,
         courseSelections: [],
         generatedSchedule: null,
         onlineUsers: [],
@@ -143,9 +146,10 @@ export const useCollaborationStore = create<CollaborationState>()(
       addComparison: (comparison: ScheduleComparison) => set((state) => ({
         comparisons: [...state.comparisons, comparison]
       })),
-      removeComparison: (comparisonId: number) => set((state) => ({
+      removeComparison: (comparisonId: string) => set((state) => ({
         comparisons: state.comparisons.filter(c => c.id !== comparisonId)
       })),
+      setActiveComparison: (comparison: ScheduleComparison | null) => set({ activeComparison: comparison }),
 
       // Course selection actions
       setCourseSelections: (selections: any[]) => set({ courseSelections: selections }),

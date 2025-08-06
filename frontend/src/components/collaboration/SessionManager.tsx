@@ -44,11 +44,27 @@ export function SessionManager() {
       // This preserves sessions across tab switches and reloads
       if (sessions.length === 0) {
         try {
-          const userSessions = await CollaborationAPI.getUserSessions();
-          setSessions(userSessions);
-          console.log('✅ Loaded sessions from API:', userSessions.length);
+          // Check if we're in comparison mode (URL has compcode)
+          const urlParams = new URLSearchParams(window.location.search);
+          const compCode = urlParams.get('compcode');
+          
+          if (compCode) {
+            // In comparison mode - don't try to load sessions from API
+            console.log('🔍 Comparison mode detected, skipping session API loading');
+          } else {
+            // Normal mode - try to load sessions from API
+            const userSessions = await CollaborationAPI.getUserSessions();
+            setSessions(userSessions);
+            console.log('✅ Loaded sessions from API:', userSessions.length);
+          }
         } catch (apiError) {
-          console.warn('⚠️ Failed to load sessions from API, keeping existing sessions:', apiError);
+          // Check if it's a 405 error (endpoint not implemented)
+          const error = apiError as any;
+          if (error.status === 405) {
+            console.log('ℹ️ User sessions endpoint not implemented yet, this is expected');
+          } else {
+            console.warn('⚠️ Failed to load sessions from API:', apiError);
+          }
           // Keep existing sessions from secure storage
           console.log('📦 Sessions already loaded from secure storage:', sessions.length);
         }
@@ -57,11 +73,8 @@ export function SessionManager() {
       }
     } catch (error) {
       console.error('❌ Error in loadSessions:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar tus sesiones",
-        variant: "destructive",
-      });
+      // Don't show error toast for API failures
+      console.log('Continuing without API session loading...');
     } finally {
       setLoading(false);
     }

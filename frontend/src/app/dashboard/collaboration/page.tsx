@@ -21,9 +21,36 @@ export default function CollaborationPage() {
   // Auto-load shared schedule if code is in URL (moved from /collaboration route)
   useEffect(() => {
     const code = searchParams.get('code');
+    const compCode = searchParams.get('compcode');
+    
+    console.log('🔍 Collaboration page params:', { code, compCode });
+    
     if (code && code.length === 8) {
       // Switch to shared tab and auto-load the schedule
+      console.log('📋 Switching to shared tab for code:', code);
       setCollaborationTab('shared');
+    } else if (compCode) {
+      // Switch to compare tab and auto-load the comparison schedule
+      console.log('🔀 Switching to compare tab for compcode:', compCode);
+      setCollaborationTab('compare');
+      
+      // Check if there's a schedule stored for comparison
+      const comparisonSchedule = sessionStorage.getItem('comparison_schedule');
+      console.log('🔍 Found comparison schedule in storage:', !!comparisonSchedule);
+      
+      if (comparisonSchedule) {
+        try {
+          const scheduleData = JSON.parse(comparisonSchedule);
+          console.log('📊 Auto-loading comparison schedule:', scheduleData);
+          // The IntegratedScheduleComparison component will handle this
+        } catch (error) {
+          console.error('❌ Error parsing comparison schedule:', error);
+        }
+      } else {
+        console.log('⚠️ No comparison schedule found in sessionStorage');
+      }
+    } else {
+      console.log('ℹ️ No special codes found, using default tab');
     }
   }, [searchParams]);
 

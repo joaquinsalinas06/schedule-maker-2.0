@@ -231,44 +231,57 @@ export function FriendProfileModal({ friendId, isOpen, onClose, onViewSchedules 
                 <CardContent>
                   {schedules.length > 0 ? (
                     <div className="space-y-2">
-                      {schedules.map((schedule) => (
-                        <div key={schedule.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                          <div className="flex-1">
-                            <p className="font-medium">{schedule.name}</p>
-                            <p className="text-sm text-muted-foreground">{schedule.description}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Creado: {formatDate(schedule.created_at)}
-                            </p>
+                      {schedules.map((schedule, index) => {
+                        // Assign different gradient colors to schedule cards
+                        const scheduleGradients = [
+                          'from-purple-900/20 to-blue-900/20 border-purple-500/30 hover:from-purple-900/30 hover:to-blue-900/30',
+                          'from-cyan-900/20 to-teal-900/20 border-cyan-500/30 hover:from-cyan-900/30 hover:to-teal-900/30',
+                          'from-emerald-900/20 to-green-900/20 border-emerald-500/30 hover:from-emerald-900/30 hover:to-green-900/30',
+                          'from-amber-900/20 to-orange-900/20 border-amber-500/30 hover:from-amber-900/30 hover:to-orange-900/30',
+                          'from-pink-900/20 to-rose-900/20 border-pink-500/30 hover:from-pink-900/30 hover:to-rose-900/30'
+                        ];
+                        const scheduleGradient = scheduleGradients[index % scheduleGradients.length];
+                        
+                        return (
+                          <div key={schedule.id} className={`flex items-center justify-between p-3 border rounded-lg bg-gradient-to-r ${scheduleGradient} transition-all duration-200`}>
+                            <div className="flex-1">
+                              <p className="font-medium text-white">{schedule.name}</p>
+                              <p className="text-sm text-gray-200">{schedule.description}</p>
+                              <p className="text-xs text-gray-300">
+                                Creado: {formatDate(schedule.created_at)}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {schedule.is_favorite && (
+                                <span className="px-2 py-1 bg-yellow-900/40 text-yellow-300 text-xs rounded-full border border-yellow-600/40">
+                                  Favorito
+                                </span>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                                onClick={async () => {
+                                  try {
+                                    const response = await friendsAPI.getFriendScheduleDetail(friendId!, schedule.id);
+                                    setSelectedScheduleDetail(response.data);
+                                    setShowScheduleDetail(true);
+                                  } catch (error: unknown) {
+                                    toast({
+                                      title: "Error",
+                                      description: (error as { message?: string }).message || "No se pudo cargar el horario",
+                                      variant: "destructive"
+                                    });
+                                  }
+                                }}
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                Ver
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {schedule.is_favorite && (
-                              <span className="px-2 py-1 bg-yellow-900/30 text-yellow-400 text-xs rounded-full border border-yellow-700/30">
-                                Favorito
-                              </span>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={async () => {
-                                try {
-                                  const response = await friendsAPI.getFriendScheduleDetail(friendId!, schedule.id);
-                                  setSelectedScheduleDetail(response.data);
-                                  setShowScheduleDetail(true);
-                                } catch (error: unknown) {
-                                  toast({
-                                    title: "Error",
-                                    description: (error as { message?: string }).message || "No se pudo cargar el horario",
-                                    variant: "destructive"
-                                  });
-                                }
-                              }}
-                            >
-                              <Eye className="w-4 h-4 mr-1" />
-                              Ver
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   ) : (
                     <div className="text-center py-6">
@@ -350,55 +363,155 @@ export function FriendProfileModal({ friendId, isOpen, onClose, onViewSchedules 
                   Cursos ({selectedScheduleDetail.courses.length})
                 </h4>
                 
-                {selectedScheduleDetail.courses.map((course) => (
-                  <Card key={course.id}>
-                    <CardHeader>
-                      <CardTitle className="text-lg text-foreground">{course.code} - {course.name}</CardTitle>
-                      {course.description && (
-                        <p className="text-sm text-muted-foreground">{course.description}</p>
-                      )}
-                    </CardHeader>
-                    <CardContent>
-                      {course.sections.map((section) => (
-                        <div key={section.id} className="mb-4 p-3 border rounded-lg bg-muted/30">
+                {selectedScheduleDetail.courses.map((course, courseIndex) => {
+                  // Assign different gradient colors based on course index  
+                  const courseGradients = [
+                    'from-purple-900/30 to-blue-900/30 border-purple-500/50',
+                    'from-cyan-900/30 to-teal-900/30 border-cyan-500/50',
+                    'from-emerald-900/30 to-green-900/30 border-emerald-500/50', 
+                    'from-amber-900/30 to-orange-900/30 border-amber-500/50',
+                    'from-pink-900/30 to-rose-900/30 border-pink-500/50',
+                    'from-indigo-900/30 to-violet-900/30 border-indigo-500/50'
+                  ];
+                  const courseGradient = courseGradients[courseIndex % courseGradients.length];
+                  
+                  return (
+                    <Card key={course.id} className={`bg-gradient-to-r ${courseGradient} border`}>
+                      <CardHeader>
+                        <CardTitle className="text-lg text-white">{course.code} - {course.name}</CardTitle>
+                        {course.description && (
+                          <p className="text-sm text-gray-200">{course.description}</p>
+                        )}
+                      </CardHeader>
+                      <CardContent>
+                        {course.sections.map((section) => (
+                        <div key={section.id} className="mb-4 p-3 border rounded-lg bg-gradient-to-r from-purple-900/20 to-blue-900/20 border-purple-500/30">
                           <div className="flex justify-between items-center mb-2">
-                            <h5 className="font-medium text-foreground">Sección {section.section_number}</h5>
-                            <div className="text-sm text-muted-foreground">
+                            <h5 className="font-medium text-purple-100">Sección {section.section_number}</h5>
+                            <div className="text-sm text-purple-300">
                               {section.enrolled}/{section.capacity} estudiantes
                             </div>
                           </div>
                           {section.professor && (
-                            <p className="text-sm text-foreground mb-2">
+                            <p className="text-sm text-purple-200 mb-2">
                               Profesor: {section.professor}
                             </p>
                           )}
                           <div className="space-y-1">
-                            {section.sessions.map((session) => (
-                              <div key={session.id} className="flex justify-between items-center text-sm p-2 bg-background border rounded">
-                                <div className="text-foreground">
-                                  <span className="font-medium">{session.session_type}</span>
-                                  <span className="mx-2">•</span>
-                                  <span>{session.day}</span>
-                                  <span className="mx-2">•</span>
-                                  <span>{session.start_time} - {session.end_time}</span>
+                            {section.sessions.map((session, sessionIndex) => {
+                              // Assign different gradient colors based on session index
+                              const gradients = [
+                                'from-cyan-900/40 to-blue-900/40 border-cyan-500/40',
+                                'from-purple-900/40 to-pink-900/40 border-purple-500/40', 
+                                'from-emerald-900/40 to-teal-900/40 border-emerald-500/40',
+                                'from-amber-900/40 to-orange-900/40 border-amber-500/40',
+                                'from-indigo-900/40 to-violet-900/40 border-indigo-500/40'
+                              ];
+                              const gradient = gradients[sessionIndex % gradients.length];
+                              
+                              return (
+                                <div key={session.id} className={`flex justify-between items-center text-sm p-3 bg-gradient-to-r ${gradient} border rounded-lg`}>
+                                  <div className="text-white">
+                                    <span className="font-medium">{session.session_type}</span>
+                                    <span className="mx-2 text-gray-300">•</span>
+                                    <span>{session.day}</span>
+                                    <span className="mx-2 text-gray-300">•</span>
+                                    <span>{session.start_time} - {session.end_time}</span>
+                                  </div>
+                                  <div className="text-gray-200">
+                                    {session.building && session.room ? 
+                                      `${session.building} - ${session.room}` : 
+                                      session.location || 'Sin ubicación'}
+                                  </div>
                                 </div>
-                                <div className="text-muted-foreground">
-                                  {session.building && session.room ? 
-                                    `${session.building} - ${session.room}` : 
-                                    session.location || 'Sin ubicación'}
-                                </div>
-                              </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         </div>
                       ))}
                     </CardContent>
                   </Card>
-                ))}
+                  )
+                })}
               </div>
 
               {/* Actions */}
               <div className="flex justify-end space-x-2 pt-4 border-t">
+                {/*<Button 
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      if (!selectedScheduleDetail || !friendId) {
+                        console.log('❌ Missing data for comparison:', { selectedScheduleDetail: !!selectedScheduleDetail, friendId });
+                        return;
+                      }
+                      
+                      console.log('🚀 Starting comparison process...');
+                      console.log('📊 Selected schedule:', selectedScheduleDetail);
+                      console.log('👤 Friend ID:', friendId);
+                      console.log('👤 Friend data:', friend);
+                      
+                      // Generate comparison code
+                      const compCode = `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                      console.log('🔑 Generated comparison code:', compCode);
+                      
+                      // Store schedule data for comparison
+                      const scheduleData = {
+                        id: selectedScheduleDetail.id,
+                        name: selectedScheduleDetail.name,
+                        description: selectedScheduleDetail.description,
+                        // Transform nested courses structure to flat CourseSection array
+                        courses: selectedScheduleDetail.courses.flatMap(course => 
+                          course.sections.map(section => ({
+                            course_id: course.id,
+                            course_code: course.code,
+                            course_name: course.name,
+                            section_id: section.id,
+                            section_number: section.section_number,
+                            professor: section.professor || 'TBD',
+                            sessions: section.sessions.map(session => ({
+                              id: session.id,
+                              session_type: session.session_type,
+                              day: session.day,
+                              start_time: session.start_time,
+                              end_time: session.end_time,
+                              location: session.location || '',
+                              building: session.building || '',
+                              room: session.room || '',
+                              modality: session.modality
+                            }))
+                          }))
+                        ),
+                        owner: friend?.first_name || friend?.email || 'Amigo',
+                        compCode: compCode
+                      };
+                      
+                      console.log('💾 Storing schedule data:', scheduleData);
+                      sessionStorage.setItem('comparison_schedule', JSON.stringify(scheduleData));
+                      
+                      // Verify storage
+                      const stored = sessionStorage.getItem('comparison_schedule');
+                      console.log('✅ Verified storage:', !!stored);
+                      
+                      // Navigate to collaboration tab with comparison code
+                      const targetUrl = `/dashboard/collaboration?compcode=${compCode}`;
+                      console.log('🔄 Navigating to:', targetUrl);
+                      window.location.href = targetUrl;
+                      
+                    } catch (error) {
+                      console.error('❌ Error in comparison process:', error);
+                      toast({
+                        title: "Error",
+                        description: "No se pudo iniciar la comparación",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
+                >
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Comparar
+                </Button>*/}
                 <Button variant="outline" onClick={() => setShowScheduleDetail(false)}>
                   <X className="w-4 h-4 mr-2" />
                   Cerrar

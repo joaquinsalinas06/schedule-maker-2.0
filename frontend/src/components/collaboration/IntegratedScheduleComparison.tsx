@@ -17,12 +17,13 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { ScheduleComparisonVisualization } from '@/components/ScheduleComparisonVisualization';
 import { comparisonService } from '@/services/comparisonService';
-import { ScheduleComparison, ComparisonParticipant } from '@/types';
+import { ScheduleComparison, ComparisonParticipant } from '@/types/comparison';
+import { useCollaborationStore } from '@/stores/collaborationStore';
 
 
 export function IntegratedScheduleComparison() {
   const { toast } = useToast();
-  const [comparison, setComparison] = useState<ScheduleComparison | null>(null);
+  const { activeComparison, setActiveComparison } = useCollaborationStore();
   const [shareCode, setShareCode] = useState('');
   const [participantName, setParticipantName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,9 +31,88 @@ export function IntegratedScheduleComparison() {
 
   // Initialize comparison on component mount
   useEffect(() => {
+    console.log('🔄 IntegratedScheduleComparison: Initializing...');
     const newComparison = comparisonService.createComparison(`Comparación ${new Date().toLocaleDateString()}`);
-    setComparison(newComparison);
-  }, []);
+    console.log('🆕 Created new comparison:', newComparison);
+    
+    // Check for auto-loaded comparison schedule (use sessionStorage to persist across re-mounts)
+    const hasLoadedKey = 'comparison_schedule_loaded';
+    const hasAlreadyLoaded = sessionStorage.getItem(hasLoadedKey);
+    const comparisonSchedule = sessionStorage.getItem('comparison_schedule');
+    
+    console.log('🔍 Checking comparison state:', { 
+      hasAlreadyLoaded: !!hasAlreadyLoaded, 
+      hasComparisonSchedule: !!comparisonSchedule 
+    });
+    
+    if (!hasAlreadyLoaded && comparisonSchedule) {
+      try {
+        const scheduleData = JSON.parse(comparisonSchedule);
+        console.log('📊 Parsed schedule data:', scheduleData);
+        
+        // Create a participant from the friend's schedule
+        const participant: ComparisonParticipant = {
+          id: `friend_${scheduleData.id}`,
+          name: scheduleData.owner,
+          color: '#8B5CF6', // Purple color for friend
+          isVisible: true,
+          schedules: [{
+            combination_id: 1,
+            sections: [], // Will be populated from courses
+            conflicts: [],
+            courses: scheduleData.courses || [],
+            course_count: scheduleData.courses?.length || 0
+          }]
+        };
+        
+        console.log('👤 Created participant:', participant);
+        
+        // Add the participant to the comparison
+        const updatedComparison = {
+          ...newComparison,
+          participants: [participant]
+        };
+        
+        console.log('📋 Updated comparison with participant:', updatedComparison);
+        console.log('📋 Participants count in updated comparison:', updatedComparison.participants.length);
+        setActiveComparison(updatedComparison);
+        
+        // Mark as loaded to prevent re-loading
+        sessionStorage.setItem(hasLoadedKey, 'true');
+        sessionStorage.removeItem('comparison_schedule');
+        
+        toast({
+          title: '¡Horario cargado!',
+          description: `Se ha cargado el horario de ${scheduleData.owner} para comparar`,
+        });
+      } catch (error) {
+        console.error('❌ Error loading comparison schedule:', error);
+        toast({
+          title: 'Error',
+          description: 'No se pudo cargar el horario para comparar',
+          variant: 'destructive'
+        });
+      }
+    } else {
+      if (hasAlreadyLoaded) {
+        console.log('ℹ️ Comparison schedule already loaded in this session');
+      } else {
+        console.log('ℹ️ No comparison schedule found in sessionStorage');
+      }
+      setActiveComparison(newComparison);
+    }
+
+    // Cleanup function to reset the loaded flag when component unmounts
+    return () => {
+      console.log('🧹 IntegratedScheduleComparison: Cleaning up...');
+      // Only clear if we're navigating away from comparison mode
+      const urlParams = new URLSearchParams(window.location.search);
+      if (!urlParams.get('compcode')) {
+        sessionStorage.removeItem('comparison_schedule_loaded');
+        console.log('🗑️ Cleared comparison loaded flag');
+      }
+    };
+  }, [toast]);
 
   const addParticipantByCode = async () => {
     const codeToUse = shareCode.trim();
@@ -43,22 +123,22 @@ export function IntegratedScheduleComparison() {
       return;
     }
 
-    if (!comparison) return;
+    if (!activeComparison) return;
 
     setLoading(true);
     setError('');
 
     try {
       const result = await comparisonService.addParticipantByCode(
-        comparison,
+        activeComparison,
         codeToUse,
         nameToUse || undefined
       );
 
       if (result.success && result.participant) {
         const updatedComparison = {
-          ...comparison,
-          participants: [...comparison.participants, result.participant]
+          ...activeComparison,
+          participants: [...activeComparison.participants, result.participant]
         };
 
         // Set default selected combination for the new participant
@@ -68,7 +148,7 @@ export function IntegratedScheduleComparison() {
           result.participant.schedules[0]?.combination_id.toString() || ''
         );
 
-        setComparison(updatedWithSelection);
+        setActiveComparison(updatedWithSelection);
         setShareCode('');
         setParticipantName('');
         
@@ -87,41 +167,41 @@ export function IntegratedScheduleComparison() {
   };
 
   const handleParticipantToggle = (participantId: string) => {
-    if (!comparison) return;
+    if (!activeComparison) return;
     
     const updatedComparison = comparisonService.toggleParticipantVisibility(
-      comparison,
+      activeComparison,
       participantId
     );
     
-    setComparison(updatedComparison);
+    setActiveComparison(updatedComparison);
   };
 
   const handleCombinationChange = (participantId: string, combinationId: string) => {
-    if (!comparison) return;
+    if (!activeComparison) return;
     
     const updatedComparison = comparisonService.setParticipantCombination(
-      comparison,
+      activeComparison,
       participantId,
       combinationId
     );
     
-    setComparison(updatedComparison);
+    setActiveComparison(updatedComparison);
   };
 
   const removeParticipant = (participantId: string) => {
-    if (!comparison) return;
+    if (!activeComparison) return;
     
     const updatedComparison = {
-      ...comparison,
-      participants: comparison.participants.filter(p => p.id !== participantId),
-      selectedCombinations: comparison.selectedCombinations.filter(sc => sc.participantId !== participantId),
+      ...activeComparison,
+      participants: activeComparison.participants.filter(p => p.id !== participantId),
+      selectedCombinations: activeComparison.selectedCombinations.filter(sc => sc.participantId !== participantId),
       updatedAt: new Date().toISOString()
     };
     
     // Recalculate conflicts after removing participant
     const finalComparison = comparisonService.detectConflicts(updatedComparison);
-    setComparison(finalComparison);
+    setActiveComparison(finalComparison);
   };
 
   const copyCurrentUrl = async () => {
@@ -140,7 +220,8 @@ export function IntegratedScheduleComparison() {
     }
   };
 
-  if (!comparison) {
+  if (!activeComparison) {
+    console.log('⏳ Comparison is null, showing loading state');
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -151,6 +232,8 @@ export function IntegratedScheduleComparison() {
     );
   }
 
+  console.log('✅ Rendering comparison with participants:', activeComparison.participants.length);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -160,14 +243,14 @@ export function IntegratedScheduleComparison() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5" />
-                Comparación de Horarios ({comparison.participants.length})
+                Comparación de Horarios ({activeComparison.participants.length})
               </CardTitle>
               <CardDescription>
                 Compara múltiples horarios con detección automática de conflictos
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              {comparison.participants.length > 0 && (
+              {activeComparison.participants.length > 0 && (
                 <Button variant="outline" size="sm" onClick={copyCurrentUrl}>
                   <Copy className="h-4 w-4 mr-2" />
                   Compartir
@@ -205,17 +288,17 @@ export function IntegratedScheduleComparison() {
       </Card>
 
       {/* Participants Management */}
-      {comparison.participants.length > 0 && (
+      {activeComparison.participants.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Palette className="h-5 w-5" />
-              Participantes ({comparison.participants.length})
+              Participantes ({activeComparison.participants.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {comparison.participants.map((participant) => (
+              {activeComparison.participants.map((participant) => (
                 <div key={participant.id} className="flex items-center justify-between p-3 border border-border rounded-lg bg-muted/30">
                   <div className="flex items-center gap-3">
                     <div 
@@ -259,7 +342,7 @@ export function IntegratedScheduleComparison() {
       )}
 
       {/* Comparison Visualization */}
-      {comparison.participants.length === 0 ? (
+      {activeComparison.participants.length === 0 ? (
         <Card>
           <CardContent className="py-12">
             <div className="text-center text-muted-foreground">
@@ -271,7 +354,7 @@ export function IntegratedScheduleComparison() {
         </Card>
       ) : (
         <ScheduleComparisonVisualization
-          comparison={comparison}
+          comparison={activeComparison}
           onParticipantToggle={handleParticipantToggle}
           onCombinationChange={handleCombinationChange}
         />
