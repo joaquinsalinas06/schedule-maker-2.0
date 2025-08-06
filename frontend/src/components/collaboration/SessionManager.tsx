@@ -169,14 +169,14 @@ export function SessionManager() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Sesiones Colaborativas</h2>
-          <p className="text-muted-foreground">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl sm:text-2xl font-bold">Sesiones Colaborativas</h2>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Trabaja en conjunto en horarios con compañeros de tu universidad
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <CreateSessionDialog />
           <JoinSessionDialog />
         </div>
@@ -186,57 +186,62 @@ export function SessionManager() {
       {currentSession && (
         <Card className="border-blue-500/30 bg-blue-500/10 backdrop-blur-sm">
           <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Play className="h-5 w-5 text-blue-600" />
-                  Sesión Actual: {currentSession.name}
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+              <div className="min-w-0 flex-1">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Play className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+                  <span className="truncate">Sesión Actual: {currentSession.name}</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   Estás actualmente conectado a esta sesión
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
                 {isConnected ? (
-                  <Badge className="bg-green-500/20 text-green-400 border border-green-500/30">Conectado</Badge>
+                  <Badge className="bg-green-500/20 text-green-400 border border-green-500/30 text-xs">Conectado</Badge>
                 ) : (
-                  <Badge variant="destructive">Desconectado</Badge>
+                  <Badge variant="destructive" className="text-xs">Desconectado</Badge>
                 )}
-                <Button 
-                  onClick={() => openInviteModal(currentSession)} 
-                  variant="outline" 
-                  size="sm"
-                  className="bg-blue-500/20 hover:bg-blue-500/30 border-blue-500/40 text-blue-300 hover:text-blue-200"
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Invitar Amigos
-                </Button>
-                <Button onClick={leaveSession} variant="outline" size="sm">
-                  Salir de Sesión
-                </Button>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button 
+                    onClick={() => openInviteModal(currentSession)} 
+                    variant="outline" 
+                    size="sm"
+                    className="bg-blue-500/20 hover:bg-blue-500/30 border-blue-500/40 text-blue-300 hover:text-blue-200 text-xs flex-1 sm:flex-initial"
+                  >
+                    <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Invitar Amigos</span>
+                    <span className="sm:hidden">Invitar</span>
+                  </Button>
+                  <Button onClick={leaveSession} variant="outline" size="sm" className="text-xs flex-1 sm:flex-initial">
+                    <span className="hidden sm:inline">Salir de Sesión</span>
+                    <span className="sm:hidden">Salir</span>
+                  </Button>
+                </div>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <Copy className="h-4 w-4" />
-                <span className="font-mono">{currentSession.session_code}</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
+              <div className="flex items-center gap-2 min-w-0">
+                <Copy className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="font-mono text-xs truncate">{currentSession.session_code}</span>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => copySessionCode(currentSession.session_code)}
+                  className="text-xs px-2 py-1 h-auto flex-shrink-0"
                 >
                   Copiar
                 </Button>
               </div>
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
+                <Users className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                 <span>{currentSession.participants.length} participantes</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span>
+              <div className="flex items-center gap-2 min-w-0">
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="truncate">
                   {currentSession.expires_at 
                     ? formatTimeRemaining(currentSession.expires_at)
                     : 'Sin expiración'
@@ -244,7 +249,7 @@ export function SessionManager() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
+                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                 <span>Máx {currentSession.max_participants} personas</span>
               </div>
             </div>
@@ -253,52 +258,54 @@ export function SessionManager() {
       )}
 
       {/* Sessions List */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {sessions.map((session) => {
           const status = getSessionStatus(session);
           const isCurrentSession = currentSession?.id === session.id;
           
           return (
             <Card key={session.id} className={isCurrentSession ? 'ring-2 ring-blue-500' : ''}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{session.name}</CardTitle>
-                    <CardDescription className="mt-1">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base sm:text-lg truncate">{session.name}</CardTitle>
+                    <CardDescription className="mt-1 text-xs sm:text-sm line-clamp-2">
                       {session.description || 'Sin descripción'}
                     </CardDescription>
                   </div>
-                  {getStatusBadge(status)}
+                  <div className="flex-shrink-0">
+                    {getStatusBadge(status)}
+                  </div>
                 </div>
               </CardHeader>
               
               <CardContent>
                 <div className="space-y-3">
                   {/* Session Info */}
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Copy className="h-4 w-4" />
-                      <span className="font-mono">{session.session_code}</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Copy className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="font-mono text-xs truncate">{session.session_code}</span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0"
+                        className="h-6 w-6 p-0 flex-shrink-0"
                         onClick={() => copySessionCode(session.session_code)}
                       >
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
+                      <Users className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                       <span>{session.participants.length}/{session.max_participants}</span>
                     </div>
                   </div>
 
                   {/* Time remaining */}
                   {session.expires_at && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      <span>{formatTimeRemaining(session.expires_at)}</span>
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground min-w-0">
+                      <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="truncate">{formatTimeRemaining(session.expires_at)}</span>
                     </div>
                   )}
 
@@ -308,15 +315,15 @@ export function SessionManager() {
                       <Button 
                         onClick={() => joinSession(session)}
                         size="sm"
-                        className="flex-1"
+                        className="flex-1 text-xs"
                       >
-                        <Play className="h-4 w-4 mr-2" />
+                        <Play className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                         Unirse
                       </Button>
                     )}
                     
                     {isCurrentSession && (
-                      <Button variant="outline" size="sm" className="flex-1" disabled>
+                      <Button variant="outline" size="sm" className="flex-1 text-xs" disabled>
                         Sesión Actual
                       </Button>
                     )}
@@ -325,11 +332,10 @@ export function SessionManager() {
                       variant="outline" 
                       size="sm"
                       onClick={() => openInviteModal(session)}
-                      className=""
+                      className="px-3"
                     >
-                      <UserPlus className="h-4 w-4 " />
+                      <UserPlus className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
-                    
                   </div>
                 </div>
               </CardContent>

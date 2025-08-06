@@ -57,46 +57,50 @@ export default function CollaborationPage() {
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8">
       {currentSession ? (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Sesión Colaborativa</h1>
-              <p className="text-muted-foreground">
+        <div className="space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold truncate">Sesión Colaborativa</h1>
+              <p className="text-muted-foreground text-sm sm:text-base truncate">
                 Colaborando en: {currentSession.name}
               </p>
             </div>
             <Button
               variant="outline"
               onClick={() => useCollaborationStore.getState().clearSession()}
+              className="text-xs sm:text-sm px-3 sm:px-4 w-full sm:w-auto"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
               Volver a Sesiones
             </Button>
           </div>
           <EnhancedCollaborativeBuilder />
         </div>
       ) : (
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold">Centro de Colaboración</h1>
-            <p className="text-muted-foreground mt-2">
+        <div className="space-y-4 sm:space-y-6">
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl font-bold">Centro de Colaboración</h1>
+            <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
               Crea, comparte y compara horarios con tus compañeros de clase
             </p>
           </div>
 
           <Tabs value={collaborationTab} onValueChange={setCollaborationTab}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="sessions" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Sesiones
+            <TabsList className="grid w-full grid-cols-3 h-12 sm:h-10">
+              <TabsTrigger value="sessions" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Sesiones</span>
+                <span className="sm:hidden">Sesiones</span>
               </TabsTrigger>
-              <TabsTrigger value="shared" className="flex items-center gap-2">
-                <Share className="h-4 w-4" />
-                Compartidos
+              <TabsTrigger value="shared" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                <Share className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Compartidos</span>
+                <span className="sm:hidden">Compartir</span>
               </TabsTrigger>
-              <TabsTrigger value="compare" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Comparar
+              <TabsTrigger value="compare" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Comparar</span>
+                <span className="sm:hidden">Comparar</span>
               </TabsTrigger>
             </TabsList>
 

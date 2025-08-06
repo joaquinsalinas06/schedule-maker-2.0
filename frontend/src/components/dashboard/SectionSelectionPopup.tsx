@@ -24,7 +24,7 @@ export function SectionSelectionPopup({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="bg-card border-border shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+      <Card className="bg-card border-border shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden mx-auto">
         <CardHeader className="border-b border-border">
           <div className="flex justify-between items-start">
             <div>
@@ -57,12 +57,12 @@ export function SectionSelectionPopup({
                 const selectedIndex = selectedSections.findIndex(s => s.sectionId === section.id);
                 
                 return (
-                  <div key={section.id} className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-200 ${
+                  <div key={section.id} className={`flex items-start gap-3 p-4 border rounded-lg transition-all duration-200 ${
                     isSelected 
                       ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20' 
                       : 'border-border bg-muted/30 hover:bg-muted/50'
                   }`}>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="font-medium text-foreground">Sección {section.section_number}</div>
                       <div className="text-sm text-muted-foreground">
                         Prof. {section.professor} • {section.enrolled}/{section.capacity} estudiantes
@@ -90,19 +90,19 @@ export function SectionSelectionPopup({
                         )) || <span className="text-muted-foreground">Sin horarios definidos</span>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col items-end gap-2 flex-shrink-0 min-w-[100px]">
                       {isSelected && (
-                        <span className="text-xs text-cyan-600 dark:text-cyan-400 font-medium">
+                        <span className="text-xs text-cyan-600 dark:text-cyan-400 font-medium whitespace-nowrap">
                           ✓ Seleccionada
                         </span>
                       )}
                       <Button
                         size="sm"
                         variant={isSelected ? "destructive" : "default"}
-                        className={isSelected ? 
+                        className={`${isSelected ? 
                           "bg-red-500 hover:bg-red-600 text-white border-0" :
                           "bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0"
-                        }
+                        } whitespace-nowrap w-full justify-center`}
                         onClick={() => {
                           if (isSelected) {
                             removeSection(selectedIndex);

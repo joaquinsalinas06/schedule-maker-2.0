@@ -10,7 +10,6 @@ import {
   Target,
   Clock,
   Smartphone,
-  Play,
   PlusCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -112,8 +111,7 @@ export default function LandingPage() {
               <span className="text-cyan-400">en minutos</span>
             </h1>
             <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-top-8 duration-700 delay-200">
-              La herramienta más usada por estudiantes para generar horarios optimizados, evitar conflictos y colaborar
-              con compañeros.
+              Genera horarios universitarios optimizados automáticamente. Selecciona tus cursos, evita conflictos de horarios y colabora con compañeros para encontrar las mejores combinaciones.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-top-8 duration-700 delay-300">
               <Link href="/auth">
@@ -125,14 +123,15 @@ export default function LandingPage() {
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-gray-700 text-gray-300 hover:bg-gray-800 px-8 py-3 text-base font-medium bg-transparent transition-colors"
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Ver demo
-              </Button>
+              <Link href="/how-it-works">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="border-gray-700 text-gray-300 hover:bg-gray-800 px-8 py-3 text-base font-medium bg-transparent transition-colors"
+                >
+                  ¿Cómo funciona?
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -142,9 +141,9 @@ export default function LandingPage() {
       <section className="py-20 px-6 bg-gray-950">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16 animate-in fade-in slide-in-from-top-8 duration-700">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Todo lo que necesitas</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">¿Cómo funciona?</h2>
             <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-              Herramientas diseñadas específicamente para estudiantes universitarios
+              Busca cursos, selecciona secciones y genera automáticamente horarios sin conflictos
             </p>
           </div>
 
@@ -234,19 +233,17 @@ export default function LandingPage() {
           <div className="text-center mt-16 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
             <h2 className="text-2xl font-bold text-white mb-4">¿Tu universidad no está en la lista?</h2>
             <p className="text-lg text-gray-300 mb-6">
-              Ayúdanos a expandirnos. Sugiere tu universidad y te notificaremos cuando esté disponible.
+              Contáctame para agregar tu universidad o reportar cualquier problema.
             </p>
             <Button
               size="lg"
               className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-              onClick={() => toast({
-                title: '¡Gracias por tu sugerencia!',
-                description: 'Nos pondremos en contacto pronto.',
-                variant: 'success'
-              })}
+              onClick={() => {
+                window.location.href = 'mailto:joaquin.salinas@utec.edu.pe?subject=Solicitud%20de%20universidad%20-%20Schedule%20Maker&body=Hola,%0A%0AMe%20gustaría%20solicitar%20que%20agreguen%20mi%20universidad%20a%20Schedule%20Maker.%0A%0AUniversidad:%20[Nombre%20de%20la%20universidad]%0AUbicación:%20[Ciudad,%20País]%0A%0A¡Gracias!'
+              }}
             >
               <PlusCircle className="w-4 h-4 mr-2" />
-              Sugerir mi universidad
+              Contactar
             </Button>
           </div>
         </div>
@@ -257,7 +254,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto text-center animate-in fade-in slide-in-from-top-8 duration-700">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Listo para crear tu horario perfecto</h2>
           <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
-            Únete a miles de estudiantes que ya han revolucionado su forma de planificar horarios
+            Comienza a generar horarios optimizados y ahorra tiempo en la planificación de tus cursos
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
             <Link href="/auth">

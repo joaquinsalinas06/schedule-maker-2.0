@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChevronLeft, ChevronRight, Download, Calendar, Clock, Heart, ArrowLeft } from "lucide-react"
+import { generateScheduleImage } from '@/utils/scheduleImageGenerator'
 
 interface Session {
   session_id: number
@@ -99,10 +100,10 @@ const getResponsiveFontSizes = (containerWidth: number) => {
       titleFont: 12,      // "Horario #" - much smaller
       infoFont: 9,        // Credits and courses info - much smaller
       headerFont: 10,
-      timeFont: 9,
-      courseFont: 8,
-      professorFont: 7,
-      locationFont: 7,
+      timeFont: 10,
+      courseFont: 10,
+      professorFont: 9,
+      locationFont: 8,
       noScheduleTitle: 16,
       noScheduleSubtitle: 11
     }
@@ -111,10 +112,10 @@ const getResponsiveFontSizes = (containerWidth: number) => {
       titleFont: 18,      // "Horario #" - much smaller
       infoFont: 14,       // Credits and courses info - much smaller
       headerFont: 12,
-      timeFont: 11,
-      courseFont: 10,
-      professorFont: 9,
-      locationFont: 8,
+      timeFont: 12,
+      courseFont: 12,
+      professorFont: 11,
+      locationFont: 10,
       noScheduleTitle: 20,
       noScheduleSubtitle: 13
     }
@@ -123,10 +124,10 @@ const getResponsiveFontSizes = (containerWidth: number) => {
       titleFont: 16,      // "Horario #" - much smaller (was 24)
       infoFont: 11,       // Credits and courses info - much smaller (was 14)
       headerFont: 13,
-      timeFont: 12,
-      courseFont: 11,
-      professorFont: 10,
-      locationFont: 9,
+      timeFont: 13,
+      courseFont: 13,
+      professorFont: 12,
+      locationFont: 11,
       noScheduleTitle: 24,
       noScheduleSubtitle: 16
     }
@@ -169,6 +170,11 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
   const [containerWidth, setContainerWidth] = useState(1400)
   const [selectedCourse, setSelectedCourse] = useState<CourseSection | null>(null)
   const [clickableBlocks, setClickableBlocks] = useState<{course: CourseSection, x: number, y: number, width: number, height: number}[]>([])
+  const [isMobile, setIsMobile] = useState(false)
+  const [scheduleImages, setScheduleImages] = useState<{[key: number]: string}>({})
+  const [imageLoading, setImageLoading] = useState(false)
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false)
+  const [modalImageUrl, setModalImageUrl] = useState<string | null>(null)
 
   const { combinations, total_combinations } = scheduleData
 
@@ -218,15 +224,20 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
     setEndTime(limits.maxTime)
   }, [calculateTimeLimits])
 
-  // Handle container resize and set responsive dimensions
+  // Handle container resize and detect mobile
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
         const width = containerRef.current.offsetWidth
         setContainerWidth(width)
-        const dimensions = getResponsiveDimensions(width)
-        CANVAS_WIDTH = dimensions.width
-        CANVAS_HEIGHT = dimensions.height
+        const mobile = width <= MOBILE_BREAKPOINT
+        setIsMobile(mobile)
+        
+        if (!mobile) {
+          const dimensions = getResponsiveDimensions(width)
+          CANVAS_WIDTH = dimensions.width
+          CANVAS_HEIGHT = dimensions.height
+        }
       }
     }
 
@@ -237,6 +248,53 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
       window.removeEventListener('resize', updateDimensions)
     }
   }, [])
+
+  // Generate images for mobile when schedule data changes
+  useEffect(() => {
+    if (isMobile && combinations.length > 0) {
+      generateImagesForMobile()
+    }
+  }, [isMobile, combinations, startTime, endTime, scheduleName, favoritedCombinations, currentScheduleIndex, scheduleImages])
+
+  const generateImagesForMobile = async () => {
+    if (!isMobile || combinations.length === 0) return
+    
+    setImageLoading(true)
+    const newImages: {[key: number]: string} = {}
+    
+    try {
+      // Generate images for current schedule and a few nearby ones for better UX
+      const scheduleIndexesToGenerate = [
+        currentScheduleIndex,
+        Math.max(0, currentScheduleIndex - 1),
+        Math.min(combinations.length - 1, currentScheduleIndex + 1)
+      ].filter((index, pos, arr) => arr.indexOf(index) === pos) // Remove duplicates
+      
+      for (const index of scheduleIndexesToGenerate) {
+        if (!scheduleImages[index]) {
+          try {
+            const result = await generateScheduleImage({
+              schedule: combinations[index],
+              width: 1400, // Fixed high-quality dimensions
+              height: 900,
+              startTime,
+              endTime,
+              scheduleName: scheduleName || `Horario ${index + 1}`,
+              isFavorited: favoritedCombinations.has(combinations[index]?.combination_id),
+              devicePixelRatio: 2
+            })
+            newImages[index] = result.dataUrl
+          } catch (error) {
+            console.error(`Failed to generate image for schedule ${index}:`, error)
+          }
+        }
+      }
+      
+      setScheduleImages(prev => ({ ...prev, ...newImages }))
+    } finally {
+      setImageLoading(false)
+    }
+  }
 
   const drawSchedule = useCallback((scheduleIndex: number) => {
     const canvas = canvasRef.current
@@ -520,7 +578,7 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
 
         // Helper function for fitting text with proper styling
         const drawFittingText = (text: string, x: number, y: number, maxWidth: number, fontSize: number, fontWeight: string = 'normal') => {
-          ctx.font = `${fontWeight} ${fontSize}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+          ctx.font = `${fontWeight} ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
           
           // Measure text and truncate if needed
           let displayText = text
@@ -545,46 +603,53 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
           }
           
           ctx.fillText(displayText, x, y)
-          return fontSize + 4 // Return line height for spacing
+          return fontSize + 6 // Return line height for spacing
         }
 
         let currentY = textY
         
-        // Course name (main title) - Always shown, bold and prominent
+        // Course code - Always shown first, compact
         ctx.fillStyle = '#ffffff'
-        const nameHeight = drawFittingText(course.course_name, textX, currentY, maxWidth, fontSizes.courseFont, 'bold')
-        currentY += nameHeight + 2
+        const codeHeight = drawFittingText(course.course_code, textX, currentY, maxWidth, fontSizes.courseFont + 2, 'bold')
+        currentY += codeHeight
         
-        // Course code and section - Always shown as secondary info
-        const codeText = `${course.course_code} - Sec. ${course.section_number}`
-        const codeHeight = drawFittingText(codeText, textX, currentY, maxWidth, fontSizes.courseFont - 1, 'semibold')
-        currentY += codeHeight + 2
+        // Course name - Always shown, but can be truncated
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
+        const nameHeight = drawFittingText(course.course_name, textX, currentY, maxWidth, fontSizes.courseFont, 'normal')
+        currentY += nameHeight
+        
+        // Section number - Always shown as secondary info
+        const sectionText = `Sección ${course.section_number}`
+        const sectionHeight = drawFittingText(sectionText, textX, currentY, maxWidth, fontSizes.courseFont - 1, 'normal')
+        currentY += sectionHeight
         
         // Professor (if there's space) - With transparency for hierarchy
-        if (blockHeight > 65) {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
+        if (blockHeight > 70) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
           const professorHeight = drawFittingText(course.professor, textX, currentY, maxWidth, fontSizes.professorFont)
-          currentY += professorHeight + 2
+          currentY += professorHeight
         }
         
         // Time (if there's space) - Bold white for emphasis
-        if (blockHeight > 85) {
+        if (blockHeight > 90) {
           ctx.fillStyle = '#ffffff'
           const timeHeight = drawFittingText(`${session.start_time} - ${session.end_time}`, textX, currentY, maxWidth, fontSizes.timeFont, 'bold')
-          currentY += timeHeight + 2
+          currentY += timeHeight
         }
         
         // Location (if there's space) - With icon and subtle styling
-        if (session.location && blockHeight > 105) {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
+        if (session.location && blockHeight > 110) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
           const locationText = `📍 ${session.location}`
           drawFittingText(locationText, textX, currentY, maxWidth, fontSizes.locationFont)
         }
       })
     })
 
-    // Update clickable blocks
-    setClickableBlocks(newClickableBlocks)
+    // Update clickable blocks - make sure component is still mounted
+    if (canvasRef.current) {
+      setClickableBlocks(newClickableBlocks)
+    }
   }, [combinations, startTime, endTime, containerWidth, favoritedCombinations, scheduleName])
 
   useEffect(() => {
@@ -604,9 +669,10 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
       const x = event.clientX - rect.left
       const y = event.clientY - rect.top
 
-      // Scale coordinates to match canvas coordinate system
-      const scaleX = canvas.width / rect.width
-      const scaleY = canvas.height / rect.height
+      // Scale coordinates to match canvas coordinate system (account for device pixel ratio)
+      const dpr = window.devicePixelRatio || 1
+      const scaleX = (canvas.width / dpr) / rect.width
+      const scaleY = (canvas.height / dpr) / rect.height
       
       const scaledX = x * scaleX
       const scaledY = y * scaleY
@@ -622,11 +688,34 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
       }
     }
 
+    const handleCanvasMouseMove = (event: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      const x = event.clientX - rect.left
+      const y = event.clientY - rect.top
+
+      // Scale coordinates to match canvas coordinate system (account for device pixel ratio)
+      const dpr = window.devicePixelRatio || 1
+      const scaleX = (canvas.width / dpr) / rect.width
+      const scaleY = (canvas.height / dpr) / rect.height
+      
+      const scaledX = x * scaleX
+      const scaledY = y * scaleY
+
+      // Check if hovering over a course block
+      const hoveredBlock = clickableBlocks.find(block => 
+        scaledX >= block.x && scaledX <= block.x + block.width &&
+        scaledY >= block.y && scaledY <= block.y + block.height
+      )
+
+      canvas.style.cursor = hoveredBlock ? 'pointer' : 'default'
+    }
+
     canvas.addEventListener('click', handleCanvasClick)
-    canvas.style.cursor = 'pointer'
+    canvas.addEventListener('mousemove', handleCanvasMouseMove)
 
     return () => {
       canvas.removeEventListener('click', handleCanvasClick)
+      canvas.removeEventListener('mousemove', handleCanvasMouseMove)
     }
   }, [clickableBlocks])
 
@@ -659,14 +748,41 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
 
 
 
-  const downloadSchedule = () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+  const downloadSchedule = async () => {
+    if (isMobile) {
+      // For mobile, generate a high-quality image and download it
+      try {
+        const currentSchedule = combinations[currentScheduleIndex]
+        if (!currentSchedule) return
+        
+        const result = await generateScheduleImage({
+          schedule: currentSchedule,
+          width: 1400,
+          height: 900,
+          startTime,
+          endTime,
+          scheduleName: scheduleName || `Horario ${currentScheduleIndex + 1}`,
+          isFavorited: favoritedCombinations.has(currentSchedule.combination_id),
+          devicePixelRatio: 2
+        })
+        
+        const link = document.createElement('a')
+        link.download = `horario_${currentScheduleIndex + 1}.png`
+        link.href = result.dataUrl
+        link.click()
+      } catch (error) {
+        console.error('Failed to generate download image:', error)
+      }
+    } else {
+      // For desktop, use canvas as before
+      const canvas = canvasRef.current
+      if (!canvas) return
 
-    const link = document.createElement('a')
-    link.download = `horario_${currentScheduleIndex + 1}.png`
-    link.href = canvas.toDataURL('image/png')
-    link.click()
+      const link = document.createElement('a')
+      link.download = `horario_${currentScheduleIndex + 1}.png`
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    }
   }
 
   const toggleFavorite = () => {
@@ -683,15 +799,45 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
   }
 
   const nextSchedule = () => {
-    setCurrentScheduleIndex(prev => 
-      prev < combinations.length - 1 ? prev + 1 : 0
-    )
+    setCurrentScheduleIndex(prev => {
+      const newIndex = prev < combinations.length - 1 ? prev + 1 : 0
+      // Pre-generate image for mobile if needed
+      if (isMobile && !scheduleImages[newIndex]) {
+        generateImageForIndex(newIndex)
+      }
+      return newIndex
+    })
   }
 
   const prevSchedule = () => {
-    setCurrentScheduleIndex(prev => 
-      prev > 0 ? prev - 1 : combinations.length - 1
-    )
+    setCurrentScheduleIndex(prev => {
+      const newIndex = prev > 0 ? prev - 1 : combinations.length - 1
+      // Pre-generate image for mobile if needed
+      if (isMobile && !scheduleImages[newIndex]) {
+        generateImageForIndex(newIndex)
+      }
+      return newIndex
+    })
+  }
+
+  const generateImageForIndex = async (index: number) => {
+    if (index < 0 || index >= combinations.length || scheduleImages[index]) return
+    
+    try {
+      const result = await generateScheduleImage({
+        schedule: combinations[index],
+        width: 1400,
+        height: 900,
+        startTime,
+        endTime,
+        scheduleName: scheduleName || `Horario ${index + 1}`,
+        isFavorited: favoritedCombinations.has(combinations[index]?.combination_id),
+        devicePixelRatio: 2
+      })
+      setScheduleImages(prev => ({ ...prev, [index]: result.dataUrl }))
+    } catch (error) {
+      console.error(`Failed to generate image for index ${index}:`, error)
+    }
   }
 
   if (!combinations || combinations.length === 0) {
@@ -784,8 +930,8 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
                 variant={favoritedCombinations.has(combinations[currentScheduleIndex]?.combination_id) ? "default" : "outline"}
                 className={
                   favoritedCombinations.has(combinations[currentScheduleIndex]?.combination_id)
-                    ? "bg-yellow-500 text-white hover:bg-yellow-600 border-0"
-                    : "border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/20 hover:text-yellow-300"
+                    ? "bg-pink-500 text-white hover:bg-pink-600 border-0"
+                    : "border-pink-500/50 text-pink-400 hover:bg-pink-500/20 hover:text-pink-300"
                 }
               >
                 <Heart className={`w-4 h-4 mr-1 ${favoritedCombinations.has(combinations[currentScheduleIndex]?.combination_id) ? "fill-current" : ""}`} />
@@ -797,23 +943,80 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* Schedule Canvas */}
-          <div ref={containerRef} className="border border-border rounded-lg bg-slate-900 p-6 shadow-inner">
-            <canvas
-              ref={canvasRef}
-              className="w-full h-auto max-w-full rounded-md shadow-sm"
-              style={{ 
-                backgroundColor: '#0f172a'
-              }}
-            />
+          {/* Schedule Display - Canvas for Desktop, Image for Mobile */}
+          <div ref={containerRef} className={`border border-border rounded-lg bg-slate-900 shadow-inner ${
+            isMobile ? 'p-0 overflow-hidden' : 'p-6'
+          }`}>
+            {isMobile ? (
+              // Mobile: Show generated image fitting container exactly
+              <div className="w-full flex items-center justify-center relative">
+                {imageLoading && !scheduleImages[currentScheduleIndex] ? (
+                  <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm">Generando horario...</p>
+                  </div>
+                ) : scheduleImages[currentScheduleIndex] ? (
+                  <div 
+                    className="w-full max-w-full overflow-hidden rounded-md cursor-pointer hover:opacity-90 transition-opacity relative"
+                    onClick={() => {
+                      setModalImageUrl(scheduleImages[currentScheduleIndex])
+                      setIsImageModalOpen(true)
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img 
+                      src={scheduleImages[currentScheduleIndex]}
+                      alt={`Horario ${currentScheduleIndex + 1}`}
+                      className="w-full h-auto max-w-full block"
+                      style={{ 
+                        backgroundColor: '#0f172a',
+                        borderRadius: '0.5rem'
+                      }}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/10">
+                      <div className="bg-black/80 text-white px-3 py-2 rounded-lg text-sm font-medium">
+                        Toca para expandir
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground p-8">
+                    <Calendar className="w-12 h-12 opacity-50" />
+                    <p className="text-sm text-center">No se pudo generar la imagen del horario</p>
+                    <Button 
+                      onClick={() => generateImageForIndex(currentScheduleIndex)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Reintentar
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Desktop: Show interactive canvas
+              <canvas
+                ref={canvasRef}
+                className="w-full h-auto max-w-full rounded-md shadow-sm"
+                style={{ 
+                  backgroundColor: '#0f172a'
+                }}
+              />
+            )}
           </div>
 
-          {/* Course Legend */}
+          {/* Course Legend - Only show interactive course details on desktop */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {combinations[currentScheduleIndex]?.courses.map((courseSection, index) => {
               const color = courseColors[index % courseColors.length]
               return (
-                <div key={`course-${courseSection.course_id}-${index}`} className="flex items-center gap-3 p-3 border border-border rounded-lg bg-muted/30">
+                <div 
+                  key={`course-${courseSection.course_id}-${index}`} 
+                  className={`flex items-center gap-3 p-3 border border-border rounded-lg bg-muted/30 ${
+                    !isMobile ? 'cursor-pointer hover:bg-muted/50 transition-colors' : ''
+                  }`}
+                  onClick={() => !isMobile && setSelectedCourse(courseSection)}
+                >
                   <div 
                     className="w-4 h-4 rounded"
                     style={{ backgroundColor: color.bg }}
@@ -833,7 +1036,7 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
               <Clock className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm text-foreground font-medium">Horario:</span>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <div className="flex flex-row gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
                 <label className="text-sm text-foreground">Desde:</label>
                 <input
@@ -857,6 +1060,69 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
         </div>
       </CardContent>
     </Card>
+
+    {/* Full-Screen Image Modal for Mobile */}
+    {isImageModalOpen && modalImageUrl && (
+      <div 
+        className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[9999] p-4"
+        onClick={() => setIsImageModalOpen(false)}
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+      >
+        <div 
+          className="relative max-w-full max-h-full overflow-auto"
+          style={{
+            /* Enable smooth scrolling and momentum on touch devices */
+            WebkitOverflowScrolling: 'touch',
+            scrollBehavior: 'smooth'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src={modalImageUrl}
+            alt={`Horario ${currentScheduleIndex + 1} - Vista expandida`}
+            className="max-w-none w-auto h-auto"
+            style={{
+              maxWidth: '95vw',
+              maxHeight: '95vh',
+              objectFit: 'contain',
+              /* Enable pinch-to-zoom on mobile browsers */
+              touchAction: 'pan-x pan-y zoom-in'
+            }}
+          />
+          
+          {/* Close button */}
+          <button
+            onClick={() => setIsImageModalOpen(false)}
+            className="absolute top-4 right-4 bg-black/80 text-white rounded-full p-3 hover:bg-black/90 transition-colors z-10"
+            aria-label="Cerrar vista expandida"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          
+          {/* Download button in modal */}
+          <button
+            onClick={downloadSchedule}
+            className="absolute bottom-4 right-4 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-4 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+          >
+            <Download className="w-5 h-5" />
+            <span className="font-medium">Descargar</span>
+          </button>
+          
+          {/* Info overlay */}
+          <div className="absolute top-4 left-4 bg-black/80 text-white px-4 py-2 rounded-lg">
+            <div className="text-sm font-medium">
+              {scheduleName || `Horario ${currentScheduleIndex + 1}`}
+            </div>
+            <div className="text-xs text-gray-300">
+              {combinations[currentScheduleIndex]?.courses.length || 0} cursos • Pellizca para hacer zoom
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Course Details Modal - Outside Card for full screen coverage */}
     {selectedCourse && (

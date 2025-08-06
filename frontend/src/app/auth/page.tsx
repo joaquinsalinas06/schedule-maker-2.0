@@ -486,15 +486,6 @@ export default function AuthPage() {
               </Tabs>
             </CardContent>
           </Card>
-
-          <div className="mt-6 text-center">
-            <p className="text-gray-400 text-sm">
-              ¿Necesitas ayuda?{" "}
-              <a href="#" className="text-cyan-400 hover:text-cyan-300 transition-colors">
-                Contacta soporte
-              </a>
-            </p>
-          </div>
         </div>
       </div>
     </div>

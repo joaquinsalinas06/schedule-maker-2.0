@@ -273,20 +273,21 @@ Generated on ${new Date().toLocaleDateString()}
   if (favorites.length === 0) {
     return (
       <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-foreground">
-            <Heart className="w-5 h-5 text-pink-500" />
-            Mis Horarios Favoritos
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 text-foreground text-base sm:text-lg">
+            <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-pink-500" />
+            <span className="hidden sm:inline">Mis Horarios Favoritos</span>
+            <span className="sm:hidden">Favoritos</span>
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm sm:text-base">
             Guarda tus horarios favoritos para acceder rápidamente
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-12 text-muted-foreground">
-            <Heart className="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <p>No tienes horarios favoritos guardados.</p>
-            <p className="text-sm mt-2">
+          <div className="text-center py-8 sm:py-12 text-muted-foreground px-4">
+            <Heart className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 opacity-50" />
+            <p className="text-sm sm:text-base">No tienes horarios favoritos guardados.</p>
+            <p className="text-xs sm:text-sm mt-2 max-w-sm mx-auto leading-relaxed">
               Ve a &quot;Generar Horarios&quot; y marca algunos como favoritos para verlos aquí.
             </p>
           </div>
@@ -296,58 +297,59 @@ Generated on ${new Date().toLocaleDateString()}
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-foreground">
-            <Heart className="w-5 h-5 text-pink-500" />
-            Mis Horarios Favoritos
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 text-foreground text-base sm:text-lg">
+            <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-pink-500" />
+            <span className="hidden sm:inline">Mis Horarios Favoritos</span>
+            <span className="sm:hidden">Favoritos</span>
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm sm:text-base">
             {favorites.length} horario{favorites.length !== 1 ? 's' : ''} guardado{favorites.length !== 1 ? 's' : ''}
           </CardDescription>
         </CardHeader>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         {favorites.map((favorite) => (
           <Card key={favorite.id} className="bg-card/80 backdrop-blur-sm border-border shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
               {editingId === favorite.id ? (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <Input
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     placeholder="Nombre del horario"
-                    className="font-semibold"
+                    className="font-semibold text-sm sm:text-base"
                   />
                   <Input
                     value={editNotes}
                     onChange={(e) => setEditNotes(e.target.value)}
                     placeholder="Notas (opcional)"
-                    className="text-sm"
+                    className="text-xs sm:text-sm"
                   />
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={saveEdit}>
+                    <Button size="sm" onClick={saveEdit} className="text-xs sm:text-sm px-2 sm:px-3">
                       Guardar
                     </Button>
-                    <Button size="sm" variant="outline" onClick={cancelEdit}>
+                    <Button size="sm" variant="outline" onClick={cancelEdit} className="text-xs sm:text-sm px-2 sm:px-3">
                       Cancelar
                     </Button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg text-foreground line-clamp-2">
+                  <div className="flex justify-between items-start gap-2">
+                    <CardTitle className="text-sm sm:text-lg text-foreground line-clamp-2 flex-1 min-w-0 break-words">
                       {favorite.name}
                     </CardTitle>
-                    <div className="flex gap-1 ml-2">
+                    <div className="flex gap-1 flex-shrink-0">
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => startEdit(favorite)}
-                        className="h-8 w-8 p-0"
+                        className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-muted/50"
                       >
                         <Edit2 className="w-3 h-3" />
                       </Button>
@@ -355,7 +357,7 @@ Generated on ${new Date().toLocaleDateString()}
                         size="sm"
                         variant="ghost"
                         onClick={() => onRemove(favorite.id)}
-                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                        className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-500/10"
                       >
                         <Trash2 className="w-3 h-3" />
                       </Button>
@@ -363,7 +365,7 @@ Generated on ${new Date().toLocaleDateString()}
                   </div>
                   
                   {favorite.notes && (
-                    <CardDescription className="text-sm line-clamp-2">
+                    <CardDescription className="text-xs sm:text-sm line-clamp-2 mt-1 sm:mt-2">
                       {favorite.notes}
                     </CardDescription>
                   )}
@@ -371,26 +373,27 @@ Generated on ${new Date().toLocaleDateString()}
               )}
             </CardHeader>
 
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 sm:space-y-4 px-3 sm:px-6 pb-3 sm:pb-6">
               {/* Schedule Stats */}
-              <div className="flex gap-4 text-sm">
+              <div className="flex gap-3 sm:gap-4 text-xs sm:text-sm">
                 <div className="flex items-center gap-1">
-                  <BookOpen className="w-4 h-4 text-indigo-500" />
-                  <span>{favorite.combination.courses?.length || favorite.combination.sections?.length || 0} cursos</span>
+                  <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-500 flex-shrink-0" />
+                  <span className="truncate">{favorite.combination.courses?.length || favorite.combination.sections?.length || 0} cursos</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4 text-purple-500" />
-                  <span>{favorite.combination.courses?.length || favorite.combination.sections?.length || 0} cursos</span>
+                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500 flex-shrink-0" />
+                  <span className="truncate">{favorite.combination.courses?.length || favorite.combination.sections?.length || 0} cursos</span>
                 </div>
               </div>
 
               {/* Course List */}
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-foreground">Cursos:</div>
-                <div className="space-y-1">
+              <div className="space-y-1 sm:space-y-2">
+                <div className="text-xs sm:text-sm font-medium text-foreground">Cursos:</div>
+                <div className="space-y-0.5 sm:space-y-1">
                   {(favorite.combination.courses || []).slice(0, 3).map((course, index) => (
                     <div key={index} className="text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">{course.course_code}:</span> {course.course_name}
+                      <span className="font-medium text-foreground">{course.course_code}:</span>{' '}
+                      <span className="break-words">{course.course_name}</span>
                     </div>
                   ))}
                   {(favorite.combination.courses?.length || 0) > 3 && (
@@ -407,34 +410,39 @@ Generated on ${new Date().toLocaleDateString()}
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 pt-2">
+              <div className="flex flex-col sm:flex-row gap-2 pt-1 sm:pt-2">
                 <Button 
                   size="sm" 
                   onClick={() => onView(favorite)}
-                  className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white"
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white text-xs sm:text-sm py-2 sm:py-1.5"
                 >
-                  <Eye className="w-3 h-3 mr-1" />
+                  <Eye className="w-3 h-3 mr-1 sm:mr-2" />
                   Ver
                 </Button>
-                {onShare && (
+                <div className="flex gap-2 sm:flex-shrink-0">
+                  {onShare && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => onShare(favorite)}
+                      className="border-border text-foreground hover:bg-muted text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-1.5 flex-1 sm:flex-initial"
+                      title="Compartir horario para comparación"
+                    >
+                      <Share2 className="w-3 h-3 sm:mr-1" />
+                      <span className="hidden sm:inline">Compartir</span>
+                    </Button>
+                  )}
                   <Button 
                     size="sm" 
                     variant="outline"
-                    onClick={() => onShare(favorite)}
-                    className="border-border text-foreground hover:bg-muted"
-                    title="Compartir horario para comparación"
+                    onClick={() => downloadSchedule(favorite)}
+                    className="border-border text-foreground hover:bg-muted text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-1.5 flex-1 sm:flex-initial"
+                    title="Descargar horario"
                   >
-                    <Share2 className="w-3 h-3" />
+                    <Download className="w-3 h-3 sm:mr-1" />
+                    <span className="hidden sm:inline">Descargar</span>
                   </Button>
-                )}
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => downloadSchedule(favorite)}
-                  className="border-border text-foreground hover:bg-muted"
-                >
-                  <Download className="w-3 h-3" />
-                </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

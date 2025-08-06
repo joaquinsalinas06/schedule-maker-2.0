@@ -165,31 +165,45 @@ export default function GeneratePage() {
 
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8">
-      {/* Header with stats */}
-      <div className="mb-6 animate-in fade-in slide-in-from-top duration-500">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Generar Horarios</h1>
-            <p className="text-muted-foreground">
+      {/* Header with stats - Mobile optimized */}
+      <div className="mb-4 sm:mb-6 animate-in fade-in slide-in-from-top duration-500">
+        <div className="flex flex-col gap-3 sm:gap-4">
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1 sm:mb-2">Generar Horarios</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Encuentra y selecciona las secciones perfectas para tu horario ideal
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-center sm:justify-end gap-6 sm:gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-cyan-400">{selectedSections.length}</div>
+              <div className="text-xl sm:text-2xl font-bold text-cyan-400">{selectedSections.length}</div>
               <div className="text-xs text-muted-foreground">Secciones</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-400">{totalCoursesCount}</div>
+              <div className="text-xl sm:text-2xl font-bold text-orange-400">{totalCoursesCount}</div>
               <div className="text-xs text-muted-foreground">Cursos</div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 h-full">
-        {/* Search and Filters - Left Columns */}
-        <div className="lg:col-span-3 space-y-4 sm:space-y-6">
+      {/* Mobile-first responsive layout */}
+      <div className="flex flex-col lg:grid lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 h-full">
+        {/* Selected Sections - Show first on mobile for quick access */}
+        <div className="lg:col-span-1 lg:order-2 space-y-4 sm:space-y-6">
+          <SelectedSectionsCard 
+            selectedSections={selectedSections}
+            groupSectionsByCourse={groupSectionsByCourse}
+            collapsedCourses={collapsedCourses}
+            toggleCourseCollapse={toggleCourseCollapse}
+            removeSection={removeSection}
+            handleGenerateSchedules={handleGenerateSchedules}
+            isLoading={isLoading}
+          />
+        </div>
+
+        {/* Search and Results - Below selected sections on mobile */}
+        <div className="lg:col-span-3 lg:order-1 space-y-4 sm:space-y-6">
           <CourseSearchCard 
             filters={filters}
             setFilters={setFilters}
@@ -209,19 +223,6 @@ export default function GeneratePage() {
             isLoading={isLoading}
             autocompleteError={autocompleteError}
             searchQuery={searchQuery}
-          />
-        </div>
-
-        {/* Selected Sections - Right Column */}
-        <div className="lg:col-span-1 space-y-4 sm:space-y-6">
-          <SelectedSectionsCard 
-            selectedSections={selectedSections}
-            groupSectionsByCourse={groupSectionsByCourse}
-            collapsedCourses={collapsedCourses}
-            toggleCourseCollapse={toggleCourseCollapse}
-            removeSection={removeSection}
-            handleGenerateSchedules={handleGenerateSchedules}
-            isLoading={isLoading}
           />
         </div>
 

@@ -175,23 +175,23 @@ export default function FriendsPage() {
     switch (user.friendship_status) {
       case 'friends':
         return (
-          <Button size="sm" variant="outline" disabled>
-            <Users className="h-4 w-4 mr-2" />
-            Amigos
+          <Button size="sm" variant="outline" disabled className="text-xs sm:text-sm px-2 sm:px-3">
+            <Users className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Amigos</span>
           </Button>
         )
       case 'request_sent':
         return (
-          <Button size="sm" variant="outline" disabled>
-            <Bell className="h-4 w-4 mr-2" />
-            Enviado
+          <Button size="sm" variant="outline" disabled className="text-xs sm:text-sm px-2 sm:px-3">
+            <Bell className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Enviado</span>
           </Button>
         )
       case 'request_received':
         return (
-          <Button size="sm" variant="outline" disabled>
-            <Bell className="h-4 w-4 mr-2" />
-            Pendiente
+          <Button size="sm" variant="outline" disabled className="text-xs sm:text-sm px-2 sm:px-3">
+            <Bell className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Pendiente</span>
           </Button>
         )
       default:
@@ -199,10 +199,11 @@ export default function FriendsPage() {
           <Button 
             size="sm" 
             onClick={() => sendFriendRequest(user.id)}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm px-2 sm:px-3"
           >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Agregar
+            <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Agregar</span>
+            <span className="sm:hidden">+</span>
           </Button>
         )
     }
@@ -301,55 +302,59 @@ export default function FriendsPage() {
 
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Centro de Amigos</h1>
-          <p className="text-muted-foreground mt-2">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="text-center sm:text-left">
+          <h1 className="text-2xl sm:text-3xl font-bold">Centro de Amigos</h1>
+          <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
             Busca y conecta con tus compañeros de universidad
           </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 bg-muted/50">
-            <TabsTrigger value="friends" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Mis Amigos ({friends.length})
+          <TabsList className="grid w-full grid-cols-3 bg-muted/50 h-12 sm:h-10">
+            <TabsTrigger value="friends" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Mis Amigos</span>
+              <span className="sm:hidden">Amigos</span>
+              <span>({friends.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="search" className="flex items-center gap-2">
-              <Search className="h-4 w-4" />
-              Buscar
+            <TabsTrigger value="search" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Search className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span>Buscar</span>
             </TabsTrigger>
-            <TabsTrigger value="requests" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Solicitudes ({friendRequests.received.length})
+            <TabsTrigger value="requests" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Solicitudes</span>
+              <span className="sm:hidden">Req.</span>
+              <span>({friendRequests.received.length})</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="friends" className="mt-6">
+          <TabsContent value="friends" className="mt-4 sm:mt-6">
             <Card className="bg-card/70">
-              <CardHeader>
-                <CardTitle>Mis Amigos</CardTitle>
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg">Mis Amigos</CardTitle>
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="flex items-center justify-center py-6 sm:py-8">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 ) : friends.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <UserPlus className="h-12 w-12 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No tienes amigos aún</h3>
-                    <p>Usa la pestaña &quot;Buscar&quot; para encontrar compañeros</p>
+                  <div className="text-center py-8 sm:py-12 text-muted-foreground">
+                    <UserPlus className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4" />
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">No tienes amigos aún</h3>
+                    <p className="text-sm sm:text-base">Usa la pestaña "Buscar" para encontrar compañeros</p>
                   </div>
                 ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {friends.map((friend) => (
                       <Card key={friend.id} className="hover:shadow-md transition-shadow bg-card/50">
-                        <CardContent className="p-4">
-                          <div className="flex items-center space-x-4">
-                            <Avatar className="h-12 w-12">
+                        <CardContent className="p-3 sm:p-4">
+                          <div className="flex items-center space-x-3 sm:space-x-4">
+                            <Avatar className="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
                               <AvatarImage src={friend.profile_photo} />
-                              <AvatarFallback>{getInitials(friend)}</AvatarFallback>
+                              <AvatarFallback className="text-xs sm:text-sm">{getInitials(friend)}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium truncate">
@@ -364,21 +369,22 @@ export default function FriendsPage() {
                                 </p>
                               )}
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-1 sm:gap-2 flex-shrink-0">
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => openProfileModal(friend.id)}
+                                className="p-2 sm:px-3"
                               >
-                                <UserIcon className="h-4 w-4" />
+                                <UserIcon className="h-3 w-3 sm:h-4 sm:w-4" />
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => removeFriend(friend.id)}
-                                className="text-red-400 hover:text-red-300 border-red-500/50 hover:bg-red-500/20"
+                                className="text-red-400 hover:text-red-300 border-red-500/50 hover:bg-red-500/20 p-2 sm:px-3"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                               </Button>
                             </div>
                           </div>
@@ -391,62 +397,64 @@ export default function FriendsPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="search" className="mt-6">
+          <TabsContent value="search" className="mt-4 sm:mt-6">
             <Card className="bg-card/70">
-              <CardHeader>
-                <CardTitle>Buscar Estudiantes</CardTitle>
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg">Buscar Estudiantes</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Buscar por nombre, email o código de estudiante..."
+                      placeholder="Buscar por nombre, email o código..."
                       value={searchQuery}
                       onChange={(e) => {
                         setSearchQuery(e.target.value)
                         searchUsers(e.target.value)
                       }}
-                      className="pl-10"
+                      className="pl-10 py-3 sm:py-2 text-base sm:text-sm"
                     />
                   </div>
 
                   {searchLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="flex items-center justify-center py-6 sm:py-8">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                     </div>
                   ) : searchQuery.length < 2 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Search className="h-12 w-12 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">Buscar Estudiantes</h3>
-                      <p>Escribe al menos 2 caracteres para buscar</p>
+                    <div className="text-center py-8 sm:py-12 text-muted-foreground">
+                      <Search className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4" />
+                      <h3 className="text-base sm:text-lg font-semibold mb-2">Buscar Estudiantes</h3>
+                      <p className="text-sm sm:text-base">Escribe al menos 2 caracteres para buscar</p>
                     </div>
                   ) : searchResults.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <h3 className="text-lg font-semibold mb-2">No se encontraron usuarios</h3>
-                      <p>Intenta con diferentes términos de búsqueda</p>
+                    <div className="text-center py-8 sm:py-12 text-muted-foreground">
+                      <h3 className="text-base sm:text-lg font-semibold mb-2">No se encontraron usuarios</h3>
+                      <p className="text-sm sm:text-base">Intenta con diferentes términos de búsqueda</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       {searchResults.map((user) => (
                         <Card key={user.id} className="hover:shadow-md transition-shadow bg-card/50">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-4">
-                                <Avatar className="h-10 w-10">
+                          <CardContent className="p-3 sm:p-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                                <Avatar className="h-10 w-10 flex-shrink-0">
                                   <AvatarImage src={user.profile_photo} />
-                                  <AvatarFallback>{getInitials(user)}</AvatarFallback>
+                                  <AvatarFallback className="text-xs">{getInitials(user)}</AvatarFallback>
                                 </Avatar>
-                                <div>
-                                  <p className="text-sm font-medium">
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium truncate">
                                     {getDisplayName(user)}
                                   </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {user.university?.short_name} • {user.student_id}
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {user.university?.short_name} {user.student_id && `• ${user.student_id}`}
                                   </p>
                                 </div>
                               </div>
-                              {getFriendshipStatusButton(user)}
+                              <div className="flex-shrink-0">
+                                {getFriendshipStatusButton(user)}
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
@@ -458,62 +466,65 @@ export default function FriendsPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="requests" className="mt-6">
-            <div className="space-y-6">
+          <TabsContent value="requests" className="mt-4 sm:mt-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Received Requests */}
               <Card className="bg-card/70">
-                <CardHeader>
-                  <CardTitle>Solicitudes Recibidas ({friendRequests.received.length})</CardTitle>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <CardTitle className="text-base sm:text-lg">Solicitudes Recibidas ({friendRequests.received.length})</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {friendRequests.received.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Bell className="h-8 w-8 mx-auto mb-2" />
-                      <p>No tienes solicitudes pendientes</p>
+                    <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                      <Bell className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2" />
+                      <p className="text-sm sm:text-base">No tienes solicitudes pendientes</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       {friendRequests.received.map((request) => (
                         <Card key={request.id} className="hover:shadow-md transition-shadow bg-card/50">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-4">
-                                <Avatar className="h-10 w-10">
+                          <CardContent className="p-3 sm:p-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                              <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                                <Avatar className="h-10 w-10 flex-shrink-0">
                                   <AvatarImage src={request.sender?.profile_photo} />
-                                  <AvatarFallback>
+                                  <AvatarFallback className="text-xs">
                                     {request.sender ? getInitials(request.sender) : 'U'}
                                   </AvatarFallback>
                                 </Avatar>
-                                <div>
-                                  <p className="text-sm font-medium">
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium truncate">
                                     {request.sender ? getDisplayName(request.sender) : 'Usuario'}
                                   </p>
                                   <p className="text-xs text-muted-foreground">
                                     {request.sender?.university?.short_name}
                                   </p>
                                   {request.message && (
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      &quot;{request.message}&quot;
+                                    <p className="text-xs text-muted-foreground mt-1 truncate">
+                                      "{request.message}"
                                     </p>
                                   )}
                                 </div>
                               </div>
-                              <div className="flex gap-2">
+                              <div className="flex gap-2 sm:flex-shrink-0">
                                 <Button
                                   size="sm"
                                   onClick={() => acceptFriendRequest(request.id)}
-                                  className="bg-green-600 hover:bg-green-700"
+                                  className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-initial text-xs sm:text-sm px-3 py-2"
                                 >
-                                  <Check className="h-4 w-4 mr-2" />
-                                  Aceptar
+                                  <Check className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                                  <span className="hidden sm:inline">Aceptar</span>
+                                  <span className="sm:hidden">✓</span>
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => rejectFriendRequest(request.id)}
+                                  className="flex-1 sm:flex-initial text-xs sm:text-sm px-3 py-2"
                                 >
-                                  <X className="h-4 w-4 mr-2" />
-                                  Rechazar
+                                  <X className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                                  <span className="hidden sm:inline">Rechazar</span>
+                                  <span className="sm:hidden">✗</span>
                                 </Button>
                               </div>
                             </div>

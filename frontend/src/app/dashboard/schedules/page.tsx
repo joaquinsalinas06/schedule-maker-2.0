@@ -300,9 +300,10 @@ export default function SchedulesPage() {
     <div className="flex-1 p-4 sm:p-6 lg:p-8">
       {(generatedSchedules || viewingFavoriteSchedule) ? (
         <>
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 h-full">
-          {/* Left Column - Canvas only (wider) */}
-          <div className="lg:col-span-3 space-y-4 sm:space-y-6">
+        {/* Mobile-first responsive layout */}
+        <div className="flex flex-col lg:grid lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 h-full">
+          {/* Main content - Canvas takes full width on mobile */}
+          <div className="lg:col-span-3 lg:order-1 space-y-4 sm:space-y-6">
             {/* Canvas */}
             <ScheduleVisualization 
               scheduleName={viewingFavoriteSchedule?.name}
@@ -441,14 +442,14 @@ export default function SchedulesPage() {
             />
           </div>
 
-          {/* Right Column - Compact Search + Selected Courses */}
-          <div className="lg:col-span-1 space-y-4">
-            {/* Compact Search */}
+          {/* Right Column - Compact Search + Selected Courses - Better mobile */}
+          <div className="lg:col-span-1 lg:order-2 space-y-3 sm:space-y-4">
+            {/* Compact Search - Mobile optimized */}
             <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Search className="w-4 h-4 text-cyan-500" />
-                  <span className="text-sm font-medium text-foreground">Buscar Cursos</span>
+              <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+                <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                  <Search className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-500" />
+                  <span className="text-xs sm:text-sm font-medium text-foreground">Buscar Cursos</span>
                 </div>
                 
                 <Input
@@ -456,14 +457,14 @@ export default function SchedulesPage() {
                   value={scheduleSearchQuery}
                   onChange={(e) => setScheduleSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleScheduleSearch()}
-                  className="text-sm"
+                  className="text-sm py-2 sm:py-1.5"
                 />
                 
                 <div className="grid grid-cols-1 gap-2">
                   <select
                     value={scheduleFilters.department}
                     onChange={(e) => setScheduleFilters({...scheduleFilters, department: e.target.value})}
-                    className="px-2 py-1 border rounded text-xs"
+                    className="w-full px-3 py-2 border rounded-md text-sm bg-background text-foreground border-input focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                   >
                     <option value="">Todas las Carreras</option>
                     <option value="CS">Ciencias de la Computación</option>
@@ -484,15 +485,15 @@ export default function SchedulesPage() {
                   onClick={handleScheduleSearch} 
                   disabled={scheduleSearchLoading}
                   size="sm"
-                  className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white text-xs transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+                  className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white text-xs transition-all duration-200 hover:scale-[1.02] hover:shadow-lg py-2 sm:py-1.5"
                 >
                   {scheduleSearchLoading ? (
                     <span className="flex items-center gap-1 justify-center">
                       <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
-                      Buscando...
+                      <span className="text-xs">Buscando...</span>
                     </span>
                   ) : (
-                    "Buscar"
+                    <span className="text-xs">Buscar</span>
                   )}
                 </Button>
                 
@@ -502,10 +503,10 @@ export default function SchedulesPage() {
               </CardContent>
             </Card>
 
-            {/* Search Results - Compact */}
+            {/* Search Results - Compact Mobile-optimized */}
             {scheduleSearchResults && scheduleSearchResults.length > 0 && (
               <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
-                <CardContent className="p-3">
+                <CardContent className="p-2 sm:p-3">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-xs text-muted-foreground">
                       {scheduleSearchResults.length} encontrados
@@ -520,26 +521,26 @@ export default function SchedulesPage() {
                     </Button>
                   </div>
                   
-                  <div className="max-h-48 overflow-y-auto space-y-2">
+                  <div className="max-h-40 sm:max-h-48 overflow-y-auto space-y-1.5 sm:space-y-2">
                     {scheduleSearchResults.slice(0, 5).map((course, index) => (
                       <div 
                         key={course.id} 
                         className="p-2 border border-border rounded bg-muted/30 hover:bg-muted/50 transition-all duration-200 animate-in slide-in-from-right"
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between items-start gap-2">
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs font-medium text-foreground truncate">
+                            <div className="text-xs font-medium text-foreground truncate leading-tight">
                               {course.name}
                             </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-xs text-muted-foreground mt-0.5">
                               {course.code}
                             </div>
                           </div>
                           <Button
                             size="sm"
                             onClick={() => setSectionPopup({courseId: course.id, course})}
-                            className="h-6 px-2 text-xs bg-cyan-500 hover:bg-cyan-600 text-white transition-all duration-200 hover:scale-110 hover:shadow-md"
+                            className="h-6 w-6 px-0 text-xs bg-cyan-500 hover:bg-cyan-600 text-white transition-all duration-200 hover:scale-110 hover:shadow-md flex-shrink-0"
                           >
                             <span className="transform transition-transform duration-200 group-hover:rotate-90">+</span>
                           </Button>
@@ -627,15 +628,21 @@ export default function SchedulesPage() {
         </>
       ) : (
         <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-foreground">Horarios Generados</CardTitle>
-            <CardDescription>Genera horarios para ver las combinaciones posibles</CardDescription>
+          <CardHeader className="text-center sm:text-left">
+            <CardTitle className="text-foreground text-lg sm:text-xl">Horarios Generados</CardTitle>
+            <CardDescription className="text-sm sm:text-base">Genera horarios para ver las combinaciones posibles</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-12 text-muted-foreground">
-              <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p>No hay horarios generados aún.</p>
-              <p className="text-sm mt-2">Ve a &quot;Generar Horarios&quot; para seleccionar cursos y crear combinaciones.</p>
+            <div className="text-center py-8 sm:py-12 text-muted-foreground px-4">
+              <Calendar className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 opacity-50" />
+              <p className="text-sm sm:text-base">No hay horarios generados aún.</p>
+              <p className="text-xs sm:text-sm mt-2 max-w-md mx-auto">Ve a "Generar Horarios" para seleccionar cursos y crear combinaciones.</p>
+              <Button 
+                onClick={() => router.push('/dashboard/generate')}
+                className="mt-4 sm:mt-6 bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white text-sm"
+              >
+                Ir a Generar Horarios
+              </Button>
             </div>
           </CardContent>
         </Card>

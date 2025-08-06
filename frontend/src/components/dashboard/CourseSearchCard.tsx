@@ -23,21 +23,22 @@ export function CourseSearchCard({
 }: CourseSearchCardProps) {
   return (
     <Card className="bg-card/80 backdrop-blur-sm border-border shadow-xl">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-foreground">
-          <Search className="w-5 h-5 text-cyan-500" />
+      <CardHeader className="pb-3 sm:pb-6">
+        <CardTitle className="flex items-center gap-2 text-foreground text-lg sm:text-xl">
+          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-500" />
           Buscar Cursos
         </CardTitle>
-        <CardDescription className="text-muted-foreground">
+        <CardDescription className="text-muted-foreground text-sm">
           Encuentra y selecciona las secciones que deseas incluir en tu horario
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
+      <CardContent className="space-y-3 sm:space-y-4">
+        {/* Mobile optimized department selector */}
+        <div className="w-full">
           <select
             value={filters.department}
             onChange={(e) => setFilters({...filters, department: e.target.value})}
-            className="px-3 py-2 border rounded-md text-sm"
+            className="w-full px-3 py-2.5 border rounded-md text-sm bg-background text-foreground border-input focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
           >
             <option value="">Todas las Carreras</option>
             <option value="CS">Ciencias de la Computación</option>
@@ -56,18 +57,21 @@ export function CourseSearchCard({
           </select>
         </div>
 
-        <div className="flex gap-2">
+        {/* Mobile optimized search input */}
+        <div className="w-full">
           <Input
-            placeholder="Buscar por nombre o código del curso... (mín 3 caracteres)"
+            placeholder="Buscar por nombre o código del curso..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch?.()}
-            className="flex-1"
+            className="w-full text-base sm:text-sm py-2.5 sm:py-2"
           />
-
+          <p className="text-xs text-muted-foreground mt-1 px-1">
+            Mínimo 3 caracteres para búsqueda automática
+          </p>
         </div>
         
-        <div className="text-sm text-muted-foreground">
+        <div className="text-xs sm:text-sm text-muted-foreground px-1">
           Buscando en: <span className="font-medium text-cyan-600">{filters.university}</span>
         </div>
       </CardContent>

@@ -12,14 +12,14 @@ export function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-950/90 backdrop-blur-sm border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <div className="w-9 h-9 bg-cyan-600 rounded-lg flex items-center justify-center animate-pulse-slow">
               <Calendar className="w-5 h-5 text-white" />
             </div>
             <div>
               <h1 className="text-lg font-semibold text-white">Schedule Maker</h1>
             </div>
-          </div>
+          </Link>
           <div className="hidden md:flex items-center gap-8">
             <Link href="/how-it-works" className="text-gray-400 hover:text-white text-sm font-medium transition-colors">
               Cómo funciona
