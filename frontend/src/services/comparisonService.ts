@@ -29,6 +29,38 @@ export class ComparisonService {
     return comparison
   }
 
+  // Add participant by friend data
+  async addParticipantByFriend(
+    comparison: ScheduleComparison,
+    friendId: number,
+    friendName: string,
+    schedules: any[]
+  ): Promise<{ success: boolean; participant?: ComparisonParticipant; error?: string }> {
+    try {
+      // Convert friend schedules to ScheduleCombination format
+      const scheduleCombinations: ScheduleCombination[] = schedules.map(schedule => ({
+        combination_id: schedule.id.toString(),
+        course_count: 0, // Will be calculated from courses
+        courses: schedule.courses || [],
+        sections: schedule.sections || [],
+        conflicts: []
+      }))
+
+      // Create participant
+      const participant: ComparisonParticipant = {
+        id: `friend_${friendId}`,
+        name: friendName,
+        color: this.getNextAvailableColor(comparison.participants),
+        schedules: scheduleCombinations,
+        isVisible: true
+      }
+
+      return { success: true, participant }
+    } catch (error) {
+      return { success: false, error: 'Error al cargar los horarios del amigo' }
+    }
+  }
+
   // Add participant by share code
   async addParticipantByCode(
     comparison: ScheduleComparison, 

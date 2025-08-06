@@ -151,6 +151,9 @@ web_modules/
 *.swo
 *~
 .claude
+CLAUDE.md
+
+ESLINT_FIXES.md
 
 # OS generated files
 .DS_Store

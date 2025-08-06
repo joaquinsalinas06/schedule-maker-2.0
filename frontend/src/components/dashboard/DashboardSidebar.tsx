@@ -41,9 +41,11 @@ export function DashboardSidebar({
 
   const getDisplayName = () => {
     if (!currentUser) return 'Usuario'
-    if (currentUser.nickname) return currentUser.nickname
-    if (currentUser.first_name && currentUser.last_name) return `${currentUser.first_name} ${currentUser.last_name}`
-    if (currentUser.first_name) return currentUser.first_name
+    if (currentUser.nickname) return currentUser.nickname.trim()
+    if (currentUser.first_name && currentUser.last_name) {
+      return `${currentUser.first_name.trim()} ${currentUser.last_name.trim()}`
+    }
+    if (currentUser.first_name) return currentUser.first_name.trim()
     return currentUser.email?.split('@')[0] || 'Usuario'
   }
 
@@ -84,7 +86,7 @@ export function DashboardSidebar({
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-foreground">Schedule Maker</h1>
-                  <p className="text-sm text-muted-foreground">Gestión Inteligente</p>
+                  <p className="text-sm text-muted-foreground">Smart Management</p>
                 </div>
               </div>
             )}

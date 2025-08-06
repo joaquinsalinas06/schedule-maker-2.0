@@ -127,10 +127,15 @@ export function ScheduleComparisonVisualization({
 
   // Redraw when data changes
   useEffect(() => {
-    const dimensions = getResponsiveDimensions(containerWidth)
-    CANVAS_WIDTH = dimensions.width
-    CANVAS_HEIGHT = dimensions.height
-    drawComparison()
+    // Debounce the drawing to prevent excessive calls
+    const timeoutId = setTimeout(() => {
+      const dimensions = getResponsiveDimensions(containerWidth)
+      CANVAS_WIDTH = dimensions.width
+      CANVAS_HEIGHT = dimensions.height
+      drawComparison()
+    }, 50) // 50ms debounce
+
+    return () => clearTimeout(timeoutId)
   }, [comparison, startTime, endTime, containerWidth, highlightedConflicts])
 
   const timeToMinutes = (timeStr: string): number => {
@@ -195,19 +200,19 @@ export function ScheduleComparisonVisualization({
     ctx.stroke()
 
     // Draw title
+    const headerY = 30
+    const infoSpacing = 16
+    
     ctx.fillStyle = '#f1f5f9'
     ctx.font = `bold ${fontSizes.titleFont}px "cascadia-code", system-ui, sans-serif`
-    ctx.textAlign = 'left'
-    ctx.fillText(`Comparación: ${comparison.name}`, 16, 12)
+    ctx.textAlign = 'center'
+    ctx.fillText(`Comparación: ${comparison.name}`, CANVAS_WIDTH / 2, headerY)
 
     // Draw stats
     const visibleParticipants = comparison.participants.filter(p => p.isVisible)
     ctx.font = `semibold ${fontSizes.infoFont}px "cascadia-code", system-ui, sans-serif`
     ctx.fillStyle = '#a855f7'
-    ctx.fillText(`${visibleParticipants.length} participantes`, 16, 12 + fontSizes.titleFont + 4)
-    
-    ctx.fillStyle = '#ef4444'
-    ctx.fillText(`${comparison.conflicts.length} conflictos`, 16, 12 + fontSizes.titleFont + fontSizes.infoFont + 8)
+    ctx.fillText(`${visibleParticipants.length} participantes • ${comparison.conflicts.length} conflictos`, CANVAS_WIDTH / 2, headerY + infoSpacing)
 
     // Draw day headers
     ctx.fillStyle = '#f1f5f9'
@@ -248,8 +253,14 @@ export function ScheduleComparisonVisualization({
       const yPos = topMarginOffset + hourHeight * hour
       const timeMinutes = startTime + hour * 60
       
-      if (hour > 0) {
-        ctx.fillText(minutesToTime(timeMinutes - 60), sideMarginOffset - 12, yPos - (hourHeight / 2) + 6)
+      // Draw time label centered in the cell (except for the last line)
+      if (hour < hourCount) {
+        // Set text baseline to middle for proper centering
+        ctx.textBaseline = 'middle'
+        const centerY = yPos + (hourHeight / 2)
+        ctx.fillText(minutesToTime(timeMinutes), sideMarginOffset - 12, centerY)
+        // Reset text baseline back to top
+        ctx.textBaseline = 'top'
       }
       
       ctx.beginPath()

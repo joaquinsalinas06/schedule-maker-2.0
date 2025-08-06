@@ -22,3 +22,8 @@ class User(BaseModel):
     # Relationships
     university = relationship("University", back_populates="users")
     schedules = relationship("Schedule", back_populates="user", cascade="all, delete-orphan")
+    
+    # Friend system relationships
+    sent_friend_requests = relationship("FriendRequest", foreign_keys="FriendRequest.sender_id", back_populates="sender", cascade="all, delete-orphan")
+    received_friend_requests = relationship("FriendRequest", foreign_keys="FriendRequest.receiver_id", back_populates="receiver", cascade="all, delete-orphan")
+    friendships = relationship("Friendship", foreign_keys="Friendship.user_id", back_populates="user", cascade="all, delete-orphan")

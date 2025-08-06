@@ -13,6 +13,7 @@ from app.services.auth_service import AuthService
 from app.services.schedule_service import ScheduleService
 from app.services.course_service import CourseService
 from app.services.collaboration_service import CollaborationService
+from app.services.friend_service import FriendService
 
 security = HTTPBearer()
 
@@ -86,3 +87,6 @@ def get_course_service(db: Session = Depends(get_db)):
 
 def get_collaboration_service(db: Session = Depends(get_db)):
     return CollaborationService(db)
+
+def get_friend_service(db: Session = Depends(get_db)):
+    return FriendService(db)

@@ -55,6 +55,7 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
   const [loading, setLoading] = useState(true);
   const [viewScheduleToken, setViewScheduleToken] = useState('');
   const [viewingSchedule, setViewingSchedule] = useState<any>(null);
+  const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
 
   useEffect(() => {
     setLoading(false); // No need to load shared schedules list anymore
@@ -62,44 +63,61 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
 
   // Auto-load schedule if code is provided
   useEffect(() => {
-    if (autoLoadCode && autoLoadCode.length === 8) {
+    if (autoLoadCode && autoLoadCode.length === 8 && !hasAutoLoaded) {
       setViewScheduleToken(autoLoadCode);
+      setHasAutoLoaded(true);
       viewSharedSchedule(autoLoadCode);
     }
-  }, [autoLoadCode]);
+  }, [autoLoadCode, hasAutoLoaded]);
   // Transform shared schedule data to ScheduleVisualization format
   const transformSharedScheduleData = (sharedSchedule: any) => {
+    console.log('🔄 Transforming shared schedule data:', sharedSchedule);
+    
     if (!sharedSchedule?.schedule?.combination?.courses) {
+      console.log('❌ No courses found in shared schedule data');
       return null;
     }
 
-    const courses = sharedSchedule.schedule.combination.courses.map((course: any, index: number) => ({
-      course_id: index + 1, // Use index as ID since we don't have actual course_id
-      course_code: course.course_code,
-      course_name: course.course_name,
-      section_id: index + 1, // Use index as section ID
-      section_number: course.section_number,
-      professor: course.professor,
-      sessions: course.sessions?.map((session: any, sessionIndex: number) => ({
-        session_id: sessionIndex + 1,
-        session_type: "TEORÍA", // Default session type
-        day: session.day_of_week, // This should now be a number
-        start_time: session.start_time,
-        end_time: session.end_time,
-        location: session.classroom || "TBA",
-        modality: "Presencial"
-      })) || []
-    }));
+    const courses = sharedSchedule.schedule.combination.courses.map((course: any, index: number) => {
+      console.log('📚 Processing course:', course);
+      
+      return {
+        course_id: course.course_id || index + 1,
+        course_code: course.course_code,
+        course_name: course.course_name,
+        section_id: course.section_id || index + 1,
+        section_number: course.section_number,
+        professor: course.professor,
+        sessions: course.sessions?.map((session: any, sessionIndex: number) => {
+          console.log('🕐 Processing session:', session);
+          
+          return {
+            session_id: session.session_id || sessionIndex + 1,
+            session_type: session.session_type || "TEORÍA",
+            day: session.day_of_week || session.day, // Handle both formats
+            start_time: session.start_time,
+            end_time: session.end_time,
+            location: session.classroom || session.location || "TBA",
+            modality: session.modality || "Presencial"
+          };
+        }) || []
+      };
+    });
 
-    return {
+    const transformedData = {
       combinations: [{
         combination_id: "shared",
         course_count: courses.length,
-        courses: courses
+        courses: courses,
+        sections: [], // Keep empty for compatibility
+        conflicts: [] // Keep empty for compatibility
       }],
       total_combinations: 1,
       selected_courses_count: courses.length
     };
+    
+    console.log('✅ Transformed schedule data:', transformedData);
+    return transformedData;
   };
 
   const viewSharedSchedule = async (token: string) => {
@@ -109,6 +127,11 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
         description: "Please enter a valid schedule code",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Don't load if already loading this token
+    if (viewingSchedule?.share_token === token) {
       return;
     }
 
@@ -130,17 +153,6 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
     }
   };
 
-  useEffect(() => {
-    setLoading(false); // No need to load shared schedules list anymore
-  }, []);
-
-  // Auto-load schedule if code is provided
-  useEffect(() => {
-    if (autoLoadCode && autoLoadCode.length === 8) {
-      setViewScheduleToken(autoLoadCode);
-      viewSharedSchedule(autoLoadCode);
-    }
-  }, [autoLoadCode]);
 
 
   return (
@@ -185,7 +197,6 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
                         Shared by {viewingSchedule.shared_by.name} • {viewingSchedule.schedule.combination?.courses?.length || 0} courses
                       </p>
                       <div className="flex gap-2 mt-2">
-                        <Badge variant="secondary">View Only</Badge>
                         <Badge variant="outline">Code: {viewScheduleToken}</Badge>
                       </div>
                     </div>
@@ -203,35 +214,28 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
                     const transformedData = transformSharedScheduleData(viewingSchedule);
                     return transformedData ? (
                       <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                          <div className="text-center p-3 bg-blue-50 rounded-lg">
-                            <div className="text-2xl font-bold text-blue-600">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div className="text-center p-3 bg-cyan-500/20 border border-cyan-500/30 rounded-lg backdrop-blur-sm">
+                            <div className="text-2xl font-bold text-cyan-400">
                               {transformedData.selected_courses_count}
                             </div>
-                            <div className="text-sm text-blue-600">Courses</div>
+                            <div className="text-sm text-cyan-300">Courses</div>
                           </div>
-                          <div className="text-center p-3 bg-green-50 rounded-lg">
-                            <div className="text-2xl font-bold text-green-600">
-                              View Only
-                            </div>
-                            <div className="text-sm text-green-600">Permission</div>
-                          </div>
-                          <div className="text-center p-3 bg-purple-50 rounded-lg">
-                            <div className="text-2xl font-bold text-purple-600">
+                          <div className="text-center p-3 bg-purple-500/20 border border-purple-500/30 rounded-lg backdrop-blur-sm">
+                            <div className="text-2xl font-bold text-purple-400">
                               {viewScheduleToken}
                             </div>
-                            <div className="text-sm text-purple-600">Share Code</div>
+                            <div className="text-sm text-purple-300">Share Code</div>
                           </div>
                         </div>
                         
                         {/* Schedule Canvas Visualization */}
-                        <div className="border rounded-lg p-4 bg-gray-50">
-                          <h4 className="font-semibold text-lg mb-4">Schedule Visualization</h4>
                           <ScheduleVisualization 
+                            scheduleName={viewingSchedule.schedule.name}
                             scheduleData={transformedData}
                             showBackButton={false}
                           />
-                        </div>
+
                       </div>
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">

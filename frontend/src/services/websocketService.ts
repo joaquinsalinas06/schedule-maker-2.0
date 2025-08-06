@@ -16,6 +16,18 @@ class WebSocketService {
   private token: string | null = null;
 
   connect(sessionCode: string, token: string): void {
+    // Prevent multiple connections to the same session
+    if (this.ws && this.ws.readyState === WebSocket.OPEN && this.sessionCode === sessionCode) {
+      console.log('🔌 WebSocket already connected to session:', sessionCode);
+      return;
+    }
+    
+    // Close existing connection if different session
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      console.log('🔌 Closing existing WebSocket connection');
+      this.ws.close();
+    }
+    
     this.sessionCode = sessionCode;
     this.token = token;
     
@@ -24,7 +36,7 @@ class WebSocketService {
     const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     const wsUrl = `${cleanBaseUrl}/ws/collaborate/${sessionCode}?token=${encodeURIComponent(token)}`;
     
-    // WebSocket connecting
+    console.log('🔌 Connecting WebSocket to session:', sessionCode);
     
     try {
       this.ws = new WebSocket(wsUrl);
@@ -158,6 +170,27 @@ class WebSocketService {
         // Handle course removal
         break;
 
+      case 'course_selections_update':
+        // Handle course selections update from other participants
+        if (message.data?.course_selections) {
+          store.updateCourseSelections(message.data.course_selections);
+        }
+        break;
+
+      case 'course_selection_add':
+        // Handle course selection addition from other participants
+        if (message.data?.course_selection) {
+          store.addCourseSelection(message.data.course_selection);
+        }
+        break;
+
+      case 'course_selection_remove':
+        // Handle course selection removal from other participants
+        if (typeof message.data?.index === 'number') {
+          store.removeCourseSelection(message.data.index);
+        }
+        break;
+
       case 'cursor_update':
         if (message.user_id && message.data) {
           store.updateCursorPosition(message.user_id, message.data.position);
@@ -183,6 +216,14 @@ class WebSocketService {
       case 'comparison_update':
         if (message.data) {
           // Handle comparison updates
+        }
+        break;
+
+      case 'schedule_generation_complete':
+        if (message.data?.personalized_schedules) {
+          // Handle schedule generation completion
+          console.log('Received personalized schedules:', message.data.personalized_schedules);
+          // Could trigger a notification or update UI state
         }
         break;
 
@@ -221,6 +262,30 @@ class WebSocketService {
     });
   }
 
+  sendCourseSelectionUpdate(courseSelections: any[]): void {
+    this.sendMessage({
+      type: 'course_selections_update',
+      data: { course_selections: courseSelections },
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  sendCourseSelectionAdd(courseSelection: any): void {
+    this.sendMessage({
+      type: 'course_selection_add',
+      data: { course_selection: courseSelection },
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  sendCourseSelectionRemove(courseSelectionIndex: number): void {
+    this.sendMessage({
+      type: 'course_selection_remove',
+      data: { index: courseSelectionIndex },
+      timestamp: new Date().toISOString()
+    });
+  }
+
   sendCursorPosition(position: any): void {
     this.sendMessage({
       type: 'cursor_position',
@@ -245,17 +310,30 @@ class WebSocketService {
     });
   }
 
+  sendScheduleGeneration(personalizedSchedules: any[]): void {
+    this.sendMessage({
+      type: 'schedule_generation_complete',
+      data: { personalized_schedules: personalizedSchedules },
+      timestamp: new Date().toISOString()
+    });
+  }
+
   disconnect(): void {
     if (this.ws) {
       this.ws.close(1000, 'User disconnected');
       this.ws = null;
     }
     useCollaborationStore.getState().setIsConnected(false);
-    useCollaborationStore.getState().clearSession();
+    // Don't clear the session - keep it so user can rejoin later
+    // useCollaborationStore.getState().clearSession();
   }
 
   isConnected(): boolean {
     return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+  }
+  
+  isConnectedToSession(sessionCode: string): boolean {
+    return this.isConnected() && this.sessionCode === sessionCode;
   }
 }
 

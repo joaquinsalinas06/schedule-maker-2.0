@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Calendar, Grid3X3, Users, Star, User } from "lucide-react"
+import { Calendar, Grid3X3, Users, Star, User, UserPlus } from "lucide-react"
 import { authService } from "@/services/auth"
 import { SidebarSection } from "@/types"
 
@@ -53,13 +53,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: Users,
       color: "from-green-500 to-emerald-600",
     },
-    {
-      id: "profile",
-      title: "Mi Perfil",
-      shortTitle: "Perfil",
-      icon: User,
-      color: "from-purple-500 to-violet-600",
-    },
+
   ]
 
   // Get current active section from pathname
@@ -72,7 +66,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   // Handle navigation between sections with loading state
   const setActiveSection = (sectionId: string) => {
-    setPageLoading(true)
+    // Only show loading if we're actually changing sections
+    const currentSection = getActiveSection()
+    if (currentSection !== sectionId) {
+      setPageLoading(true)
+      
+      // Set a timeout to prevent stuck loading state
+      setTimeout(() => {
+        setPageLoading(false)
+      }, 1000) // Maximum 1 second loading
+    }
     router.push(`/dashboard/${sectionId}`)
   }
 

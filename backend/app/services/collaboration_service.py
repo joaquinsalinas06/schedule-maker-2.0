@@ -135,8 +135,7 @@ class CollaborationService:
         # Check if user is participant
         participant = self.participant_repo.get_by_session_and_user(
             session.id,
-            user_id,
-            active_only=True
+            user_id
         )
         
         if not participant:
@@ -146,9 +145,8 @@ class CollaborationService:
             )
         
         # Get all participants with user details
-        participants = self.participant_repo.get_by_session_with_users(
-            session.id,
-            active_only=True
+        participants = self.participant_repo.get_session_participants_with_users(
+            session.id
         )
         
         participant_data = []

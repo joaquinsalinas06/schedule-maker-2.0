@@ -83,6 +83,14 @@ api.interceptors.response.use(
       localStorage.removeItem('favoriteSchedules');
       localStorage.removeItem('favoritedCombinations');
       
+      // Prevent redirect loops by checking current location
+      if (window.location.pathname === '/auth' || window.location.pathname === '/login') {
+        // If already on auth pages, just clear tokens without redirect
+        processQueue(error, null);
+        isRefreshing = false;
+        return Promise.reject(error);
+      }
+      
       // Show temporary message before redirect
       const body = document.body;
       const overlay = document.createElement('div');
@@ -115,8 +123,8 @@ api.interceptors.response.use(
       body.appendChild(overlay);
       
       setTimeout(() => {
-        window.location.href = '/';
-      }, 2000);
+        window.location.href = '/auth';
+      }, 1500);
       
       isRefreshing = false;
     }
@@ -183,7 +191,9 @@ export const authService = {
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('remember_me');
     localStorage.removeItem('selectedUniversity');
-    window.location.href = '/';
+    localStorage.removeItem('favoriteSchedules');
+    localStorage.removeItem('favoritedCombinations');
+    window.location.href = '/auth';
   },
 
   getCurrentUser: (): User | null => {

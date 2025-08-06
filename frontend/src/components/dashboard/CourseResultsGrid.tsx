@@ -56,7 +56,7 @@ export function CourseResultsGrid({
   }
 
   return (
-    <div className="max-h-[600px] overflow-y-auto space-y-4 pr-2 scrollbar-thin scrollbar-thumb-cyan-500 scrollbar-track-transparent">
+    <div className="space-y-4">
       {searchResults
         .slice((displayPage - 1) * resultsPerPage, displayPage * resultsPerPage)
         .map((course, courseIndex) => (

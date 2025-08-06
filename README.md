@@ -1,373 +1,297 @@
-# 📅 Schedule Maker 2.0
+# Schedule Maker 2.0
 
-> A modern, collaborative university schedule management system built with FastAPI and Next.js
+**La herramienta más avanzada para generar horarios universitarios optimizados** 🎓
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+Schedule Maker 2.0 es una aplicación web completa diseñada específicamente para estudiantes universitarios, que permite crear, colaborar y gestionar horarios académicos de forma inteligente y eficiente.
 
-## 🚀 Features
+![Tech Stack](https://img.shields.io/badge/Frontend-Next.js_15-blue)
+![Tech Stack](https://img.shields.io/badge/Backend-FastAPI-green)
+![Tech Stack](https://img.shields.io/badge/Database-PostgreSQL-blue)
+![Tech Stack](https://img.shields.io/badge/TypeScript-enabled-blue)
 
-### Core Functionality
-- 🔐 **JWT Authentication** - Secure user registration and login
-- 🏛️ **Multi-University Support** - Support for different university systems
-- 📚 **Course Management** - Browse and search university courses
-- 📅 **Schedule Builder** - Visual, drag-and-drop schedule creation
-- ⚡ **Conflict Detection** - Automatic detection of time conflicts
-- 🤝 **Real-time Collaboration** - Work on schedules with others via WebSocket
-- 📱 **Responsive Design** - Mobile-first, modern UI
-- 🌙 **Dark/Light Mode** - Toggle between themes
-- 📊 **Schedule Comparison** - Compare multiple schedule options
-- ⭐ **Favorites System** - Save and organize preferred schedules
+## ✨ Características Principales
 
-### Technical Features
-- 🔄 **Real-time Updates** - WebSocket-powered live collaboration
-- 📁 **CSV Import** - Bulk import course data
-- 🎨 **Modern UI Components** - Built with Radix UI and Tailwind CSS
-- 🔍 **Advanced Search** - Filter courses by multiple criteria
-- 📈 **Analytics Dashboard** - User activity and schedule statistics
-- 🔒 **Security First** - Environment-based configuration, no hardcoded secrets
+### 🔍 **Búsqueda Inteligente de Cursos**
+- Búsqueda en tiempo real con autocompletado
+- Filtros por universidad, departamento y profesor
+- Base de datos completa de cursos de UTEC (más universidades próximamente)
+- Información detallada de profesores y secciones
 
-## 🛠️ Tech Stack
+### 📅 **Generación Automática de Horarios**
+- Algoritmo inteligente para generar combinaciones óptimas
+- Detección automática de conflictos de horarios
+- Múltiples opciones de horarios generados
+- Visualización clara y intuitiva de los horarios
 
-### Backend
-- **Framework**: FastAPI with async support
-- **Database**: PostgreSQL with SQLAlchemy ORM
-- **Authentication**: JWT tokens with bcrypt hashing
-- **WebSocket**: Real-time collaboration features
-- **API Documentation**: Auto-generated with OpenAPI/Swagger
+### 👥 **Sistema de Colaboración Avanzado**
+- **Sesiones Colaborativas**: Trabaja en tiempo real con compañeros
+- **Compartir Horarios**: Comparte tus horarios con códigos únicos
+- **Comparación de Horarios**: Compara horarios entre amigos
+- **Cursos Compartidos vs Individuales**: Organiza materias comunes y personales
 
-### Frontend
-- **Framework**: Next.js 15 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS with custom components
-- **UI Components**: Radix UI primitives
-- **State Management**: Zustand for global state
-- **HTTP Client**: Axios with React Query for data fetching
-- **Themes**: next-themes for dark/light mode
+### 🫂 **Sistema de Amigos**
+- Buscar y agregar compañeros de universidad
+- Sistema de solicitudes de amistad
+- Perfiles de usuario con información académica
+- Visualización de horarios de amigos para coordinación
 
-### Infrastructure
-- **Deployment**: Railway (backend) + Vercel (frontend)
-- **Database**: PostgreSQL (cloud-hosted)
-- **Environment**: Docker support included
+### 💾 **Gestión Personal de Horarios**
+- Guardar horarios favoritos
+- Múltiples versiones de horarios por semestre
+- Historial de horarios creados
+- Exportación y compartición fácil
 
-## 📋 Prerequisites
+### 🔐 **Autenticación y Perfiles**
+- Sistema de registro seguro por universidad
+- Perfiles personalizables con foto
+- Verificación por correo institucional
+- Gestión de preferencias personales
 
-- **Node.js** 18+ 
-- **Python** 3.8+
-- **PostgreSQL** 12+
-- **Git**
+## 🏗️ Arquitectura Técnica
 
-## 🚀 Quick Start
+### Frontend (Next.js 15 + TypeScript)
+```
+frontend/
+├── src/
+│   ├── app/                    # App Router de Next.js
+│   │   ├── dashboard/          # Panel principal
+│   │   │   ├── generate/       # Generación de horarios
+│   │   │   ├── collaboration/  # Centro de colaboración
+│   │   │   ├── friends/        # Sistema de amigos
+│   │   │   ├── my-schedules/   # Horarios guardados
+│   │   │   └── profile/        # Perfil de usuario
+│   │   ├── auth/              # Autenticación
+│   │   └── login/             # Inicio de sesión
+│   ├── components/            # Componentes reutilizables
+│   │   ├── ui/               # Componentes base (shadcn/ui)
+│   │   ├── dashboard/        # Componentes del dashboard
+│   │   └── collaboration/    # Componentes colaborativos
+│   ├── services/             # APIs y servicios
+│   ├── hooks/                # Hooks personalizados
+│   └── stores/               # Estado global (Zustand)
+```
 
-### 1. Clone the Repository
+### Backend (FastAPI + SQLAlchemy)
+```
+backend/
+├── app/
+│   ├── models/               # Modelos de base de datos
+│   │   ├── user.py          # Usuarios y autenticación
+│   │   ├── course.py        # Cursos y secciones
+│   │   ├── schedule.py      # Horarios personales
+│   │   ├── collaboration.py # Sesiones colaborativas
+│   │   └── friendship.py    # Sistema de amigos
+│   ├── routers/             # Endpoints de la API
+│   │   ├── auth.py          # Autenticación
+│   │   ├── courses.py       # Búsqueda de cursos
+│   │   ├── schedules.py     # Generación de horarios
+│   │   ├── collaboration.py # Colaboración
+│   │   └── friends.py       # Sistema de amigos
+│   ├── services/            # Lógica de negocio
+│   └── utils/               # Utilidades y configuración
+```
+
+## 🚀 Funcionalidades Detalladas
+
+### **1. Generación de Horarios** (`/dashboard/generate`)
+- **Búsqueda de Cursos**: Encuentra cursos por código, nombre o profesor
+- **Selección de Secciones**: Elige secciones específicas para cada curso
+- **Generación Inteligente**: Algoritmo que crea todas las combinaciones válidas
+- **Visualización de Resultados**: Ve múltiples opciones de horarios generados
+- **Detección de Conflictos**: Identifica automáticamente choques de horarios
+
+### **2. Centro de Colaboración** (`/dashboard/collaboration`)
+- **Crear Sesiones**: Inicia sesiones colaborativas con códigos únicos
+- **Unirse a Sesiones**: Únete usando códigos de sesión de 6 dígitos
+- **Gestión de Cursos Compartidos**: Coordina materias comunes con el grupo
+- **Cursos Individuales**: Mantén materias personales dentro de la sesión
+- **Chat en Tiempo Real**: Comunicación integrada (WebSocket)
+- **Invitación de Amigos**: Invita amigos directamente a sesiones
+
+### **3. Sistema de Amigos** (`/dashboard/friends`)
+- **Búsqueda de Estudiantes**: Encuentra compañeros por nombre, email o código
+- **Solicitudes de Amistad**: Sistema completo de solicitudes y aceptación
+- **Perfiles Detallados**: Ve información académica y estadísticas
+- **Comparación de Horarios**: Compara tus horarios con los de tus amigos
+- **Invitaciones Directas**: Invita amigos a sesiones colaborativas
+
+### **4. Mis Horarios** (`/dashboard/my-schedules`)
+- **Horarios Guardados**: Administra tus horarios favoritos
+- **Comparación Visual**: Compara diferentes versiones de horarios
+- **Exportación**: Descarga horarios en diferentes formatos
+- **Histórico**: Mantén registro de horarios por semestre
+
+### **5. Compartir Horarios**
+- **Códigos de Compartición**: Genera códigos únicos de 8 caracteres
+- **Enlaces Públicos**: Comparte horarios con enlaces directos
+- **Control de Acceso**: Gestiona quién puede ver tus horarios
+- **Revocación**: Revoca acceso cuando sea necesario
+
+## 🎯 Casos de Uso Típicos
+
+### **Para Estudiantes Individuales:**
+1. Busca tus cursos del semestre
+2. Selecciona las secciones que prefieres
+3. Genera múltiples opciones de horarios
+4. Guarda tu horario favorito
+5. Compártelo con amigos o compañeros
+
+### **Para Grupos de Estudio:**
+1. Crea una sesión colaborativa
+2. Invita a tus compañeros de grupo
+3. Seleccionen juntos los cursos que van a llevar
+4. Cada uno personaliza sus materias adicionales
+5. Comparen y coordinen horarios finales
+
+### **Para Coordinación Académica:**
+1. Conecta con compañeros de carrera
+2. Ve qué cursos están llevando tus amigos
+3. Compara horarios para encontrar tiempos libres
+4. Coordina horarios de estudio y trabajos grupales
+
+## 🛠️ Tecnologías Utilizadas
+
+### **Frontend:**
+- **Next.js 15** - Framework React con App Router
+- **TypeScript** - Tipado estático
+- **Tailwind CSS** - Estilos utilitarios
+- **Radix UI** - Componentes accesibles
+- **Zustand** - Gestión de estado
+- **React Query** - Manejo de cache y sincronización
+- **WebSocket** - Comunicación en tiempo real
+
+### **Backend:**
+- **FastAPI** - Framework web moderno y rápido
+- **SQLAlchemy** - ORM para base de datos
+- **PostgreSQL** - Base de datos relacional
+- **Pydantic** - Validación de datos
+- **JWT** - Autenticación segura
+- **WebSocket** - Tiempo real
+- **Cloudinary** - Manejo de imágenes
+
+### **DevOps:**
+- **Docker** - Containerización
+- **Railway** - Deployment y hosting
+- **GitHub Actions** - CI/CD
+
+## 🏫 Universidades Soportadas
+
+### **Actualmente Disponible:**
+- **UTEC** (Universidad de Ingeniería y Tecnología)
+  - ✅ Base de datos completa de cursos
+  - ✅ Información de profesores actualizada
+  - ✅ Sincronización semestral
+
+### **Próximamente:**
+- **UPC** (Universidad Peruana de Ciencias Aplicadas)
+- **PUCP** (Pontificia Universidad Católica del Perú)
+- **UNI** (Universidad Nacional de Ingeniería)
+
+*¿Tu universidad no está? [Sugiérela aquí](mailto:support@schedulemaker.pe)*
+
+## 🔧 Instalación y Desarrollo
+
+### **Prerrequisitos:**
+- Node.js 18+
+- Python 3.8+
+- PostgreSQL 12+
+- Docker (opcional)
+
+### **Configuración Rápida:**
+
+1. **Clona el repositorio:**
 ```bash
-git clone https://github.com/yourusername/schedule-maker-2.git
+git clone https://github.com/tu-usuario/schedule-maker-2.git
 cd schedule-maker-2
 ```
 
-### 2. Backend Setup
+2. **Backend:**
 ```bash
 cd backend
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your database credentials
+# Configura variables de entorno en .env
+python -m uvicorn app.main:app --reload
 ```
 
-### 3. Database Setup
+3. **Frontend:**
 ```bash
-# Make sure PostgreSQL is running
-# Create database
-createdb schedule_maker
-
-# Run database setup
-python scripts/setup_database.py
-
-# Import sample data (optional)
-python scripts/import_csv.py
-```
-
-### 4. Frontend Setup
-```bash
-cd ../frontend
-
-# Install dependencies
-npm install
-
-# Set up environment variables
-cp .env.local.example .env.local
-# Edit .env.local with your API URL
-```
-
-### 5. Run the Application
-```bash
-# Terminal 1: Start backend
-cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Terminal 2: Start frontend
 cd frontend
+npm install
 npm run dev
 ```
 
-Visit:
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs
-
-## 🐳 Docker Setup
-
-### Using Docker Compose
+4. **Base de datos:**
 ```bash
-# Set environment variables
-export ADMIN_EMAIL=admin@youruniversity.edu
-export ADMIN_PASSWORD=your-secure-password
+# Las tablas se crean automáticamente al iniciar el backend
+```
 
-# Start all services
+### **Con Docker:**
+```bash
 docker-compose up -d
-
-# View logs
-docker-compose logs -f
 ```
 
-## ⚙️ Configuration
+## 📊 Características del Algoritmo
 
-### Environment Variables
+### **Generación de Horarios:**
+- Evaluación de **todas las combinaciones posibles**
+- Detección automática de **conflictos de tiempo**
+- Optimización por **preferencias de horario**
+- Consideración de **modalidades** (presencial/virtual)
+- **Filtrado inteligente** de opciones inválidas
 
-#### Backend (.env)
-```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/schedule_maker
+### **Colaboración en Tiempo Real:**
+- Sincronización **inmediata** de cambios
+- **Detección de conflictos** colaborativos
+- **Notificaciones** de actualizaciones
+- **Historial** de cambios por usuario
 
-# Security
-SECRET_KEY=your-super-secret-key-minimum-32-characters
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+## 🔒 Seguridad
 
-# CORS
-CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+- **Autenticación JWT** segura
+- **Validación de datos** en frontend y backend
+- **Sanitización** de inputs del usuario
+- **Protección CORS** configurada
+- **Rate limiting** en APIs críticas
+- **Encriptación** de passwords con bcrypt
 
-# Admin User (for initial setup)
-ADMIN_EMAIL=admin@youruniversity.edu
-ADMIN_PASSWORD=your-secure-password
-ADMIN_FIRST_NAME=Admin
-ADMIN_LAST_NAME=User
-ADMIN_STUDENT_ID=ADMIN001
+## 📈 Próximas Funcionalidades
 
-# WebSocket
-WS_HOST=0.0.0.0
-WS_PORT=8000
+- [ ] **Notificaciones Push** - Alertas de cambios de horarios
+- [ ] **Calendario Integrado** - Sincronización con Google Calendar
+- [ ] **App Móvil** - Aplicación nativa para iOS y Android
+- [ ] **IA Predictiva** - Recomendaciones inteligentes de horarios
+- [ ] **Análisis de Rendimiento** - Estadísticas de carga académica
+- [ ] **Integración Moodle** - Conexión directa con plataformas universitarias
 
-# Development
-DEBUG=True
-```
+## 🤝 Contribución
 
-#### Frontend (.env.local)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_WS_URL=ws://localhost:8000
-```
+¡Contribuciones son bienvenidas! Por favor:
 
-## 📚 API Documentation
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add: Amazing Feature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
 
-### Authentication Endpoints
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `GET /api/auth/me` - Get current user info
-- `POST /api/auth/logout` - User logout
+## 📄 Licencia
 
-### Core Endpoints
-- `GET /api/universities` - List universities
-- `GET /api/courses` - Search courses with filters
-- `GET /api/schedules` - User's schedules
-- `POST /api/schedules` - Create new schedule
-- `PUT /api/schedules/{id}` - Update schedule
-- `DELETE /api/schedules/{id}` - Delete schedule
+Este proyecto está bajo la Licencia MIT - ve el archivo [LICENSE](LICENSE) para detalles.
 
-### Collaboration Endpoints
-- `POST /api/collaboration/sessions` - Create collaboration session
-- `GET /api/collaboration/sessions/{id}` - Join session
-- `WebSocket /ws/collaboration/{session_id}` - Real-time collaboration
+## 👨‍💻 Autor
 
-### System Endpoints
-- `GET /health` - Health check
-- `GET /db-status` - Database status
+**Salinas** - [@salinsuwu](https://github.com/salinsuwu)
 
-**Full API documentation available at**: `/docs` when running the backend
+## 🙏 Agradecimientos
 
-## 🎨 UI Components
-
-### Available Components
-- **Buttons**: Primary, secondary, outline, ghost variants
-- **Cards**: Schedule cards with flip animations
-- **Dialogs**: Modal dialogs for forms and confirmations
-- **Inputs**: Text inputs with validation and autocomplete
-- **Selects**: Dropdown selectors with search
-- **Tabs**: Tabbed interfaces for organizing content
-- **Toast**: Notification system
-- **Theme Toggle**: Dark/light mode switcher
-
-### Custom Hooks
-- `useWebSocket` - WebSocket connection management
-- `useDebounce` - Input debouncing
-- `useAutocomplete` - Autocomplete functionality
-- `use-toast` - Toast notification system
-
-## 🤝 Collaboration Features
-
-### Real-time Collaboration
-- **Session Management**: Create and join collaborative sessions
-- **Live Updates**: See changes from other users instantly
-- **Conflict Resolution**: Handle simultaneous edits gracefully
-- **User Presence**: Show who's currently editing
-
-### Schedule Sharing
-- **Share Links**: Generate shareable links for schedules
-- **Permission Levels**: View-only or edit access
-- **Version History**: Track changes over time
-
-## 📊 Database Schema
-
-### Core Tables
-- **users** - User accounts and profiles
-- **universities** - University information and settings
-- **courses** - Course catalog data
-- **sections** - Course sections with times and instructors
-- **sessions** - Individual class sessions
-- **schedules** - User-created schedules
-- **schedule_sessions** - Many-to-many relationship between schedules and sessions
-- **collaborations** - Collaboration session data
-
-## 🔧 Development
-
-### Code Structure
-```
-schedule-maker-2/
-├── backend/
-│   ├── app/
-│   │   ├── database/         # Database configuration
-│   │   ├── models/           # SQLAlchemy models
-│   │   ├── routers/          # API endpoints
-│   │   ├── services/         # Business logic
-│   │   ├── utils/            # Utilities and helpers
-│   │   └── main.py           # FastAPI application
-│   ├── scripts/              # Database and utility scripts
-│   └── requirements.txt      # Python dependencies
-├── frontend/
-│   ├── src/
-│   │   ├── app/              # Next.js app router pages
-│   │   ├── components/       # React components
-│   │   ├── hooks/            # Custom React hooks
-│   │   ├── services/         # API services
-│   │   ├── stores/           # State management
-│   │   └── types/            # TypeScript types
-│   └── package.json          # Node.js dependencies
-└── docker-compose.yml        # Docker configuration
-```
-
-### Testing
-```bash
-# Backend tests
-cd backend
-pytest
-
-# Frontend tests
-cd frontend
-npm test
-```
-
-### Code Quality
-```bash
-# Backend linting
-cd backend
-flake8 app/
-black app/
-
-# Frontend linting
-cd frontend
-npm run lint
-npm run type-check
-```
-
-## 🚀 Deployment
-
-### Production Deployment
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed deployment instructions including:
-- Railway/Render backend deployment
-- Vercel frontend deployment
-- Database setup and migration
-- Environment configuration
-- Security considerations
-
-### Environment-Specific Configs
-- **Development**: Local PostgreSQL, debug mode enabled
-- **Staging**: Cloud database, reduced logging
-- **Production**: Full security, performance optimizations
-
-## 🔒 Security
-
-### Security Features
-- **Password Hashing**: bcrypt with salt
-- **JWT Tokens**: Secure token-based authentication
-- **CORS Protection**: Configurable origin restrictions
-- **SQL Injection Prevention**: SQLAlchemy ORM protections
-- **Environment Variables**: No hardcoded secrets
-- **Input Validation**: Pydantic schemas for all inputs
-
-### Security Best Practices
-- All sensitive data stored in environment variables
-- Database credentials never committed to repository
-- HTTPS enforced in production
-- Regular dependency updates
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-- Follow existing code style and conventions
-- Add tests for new features
-- Update documentation as needed
-- Ensure all tests pass before submitting PR
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-### Common Issues
-- **CORS Errors**: Check CORS_ORIGINS environment variable
-- **Database Connection**: Verify DATABASE_URL format
-- **WebSocket Issues**: Ensure WebSocket URL uses correct protocol (ws/wss)
-- **Build Failures**: Check Node.js and Python versions
-
-### Getting Help
-1. Check the [Issues](https://github.com/yourusername/schedule-maker-2/issues) page
-2. Review the [Deployment Guide](./DEPLOYMENT_GUIDE.md)
-3. Check application logs for error details
-
-## 🙏 Acknowledgments
-
-- Built with [FastAPI](https://fastapi.tiangolo.com/) and [Next.js](https://nextjs.org/)
-- UI components from [Radix UI](https://www.radix-ui.com/)
-- Styling with [Tailwind CSS](https://tailwindcss.com/)
-- Icons from [Lucide React](https://lucide.dev/)
+- Comunidad estudiantil de UTEC por el feedback inicial
+- Contribuidores del proyecto
+- Bibliotecas y frameworks open source utilizados
 
 ---
 
-**Made with ❤️ for university students everywhere**
+**¿Necesitas ayuda?** 
+- 📧 Email: support@schedulemaker.pe
+- 💬 Discord: [Schedule Maker Community](https://discord.gg/schedulemaker)
+- 📖 Documentación: [docs.schedulemaker.pe](https://docs.schedulemaker.pe)
+
+*Hecho con ❤️ para estudiantes universitarios*

@@ -20,7 +20,7 @@ import html2canvas from 'html2canvas'
 interface FavoriteSchedulesProps {
   favorites: FavoriteSchedule[]
   onRemove: (id: string) => void
-  onView: (schedule: ScheduleCombination) => void
+  onView: (schedule: any) => void
   onEdit: (id: string, name: string, notes?: string) => void
   onShare?: (schedule: FavoriteSchedule) => void
 }
@@ -409,7 +409,7 @@ Generated on ${new Date().toLocaleDateString()}
               <div className="flex gap-2 pt-2">
                 <Button 
                   size="sm" 
-                  onClick={() => onView(favorite.combination)}
+                  onClick={() => onView(favorite)}
                   className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white"
                 >
                   <Eye className="w-3 h-3 mr-1" />

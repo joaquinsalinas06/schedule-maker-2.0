@@ -11,7 +11,7 @@ interface CourseSearchCardProps {
   setFilters: (filters: Filter) => void
   searchQuery: string
   setSearchQuery: (query: string) => void
-  handleSearch: () => void
+  handleSearch?: () => void
   isLoading: boolean
 }
 
@@ -63,7 +63,7 @@ export function CourseSearchCard({
             placeholder="Buscar por nombre o código del curso... (mín 3 caracteres)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch?.()}
             className="flex-1"
           />
 

@@ -89,7 +89,10 @@ export default function SchedulesPage() {
       // Handle viewing favorite schedule from my-schedules
       if (viewingFavorite) {
         try {
-          setViewingFavoriteSchedule(JSON.parse(viewingFavorite))
+          const parsedFavorite = JSON.parse(viewingFavorite)
+          console.log('📅 Loading viewingFavoriteSchedule from sessionStorage:', parsedFavorite)
+          console.log('📅 Schedule name from sessionStorage:', parsedFavorite?.name)
+          setViewingFavoriteSchedule(parsedFavorite)
           // Clear it after loading so it doesn't persist on refresh
           sessionStorage.removeItem('viewingFavoriteSchedule')
         } catch {
@@ -208,17 +211,19 @@ export default function SchedulesPage() {
     const newFavorite: FavoriteSchedule = {
       id: favoriteId,
       name: `Horario ${favoriteSchedules.length + 1}`,
-      combination: schedule,
+      combination: schedule.combination || schedule,
       created_at: new Date().toISOString(),
       notes: ''
     }
     setFavoriteSchedules(prev => [...prev, newFavorite])
-    setFavoritedCombinations(prev => new Set([...prev, schedule.combination_id.toString()]))
+    // Handle both favorite schedule format and regular schedule format
+    const combinationId = schedule.combination?.combination_id || schedule.combination_id
+    setFavoritedCombinations(prev => new Set([...prev, combinationId.toString()]))
     
     // Store in localStorage for persistence
     const updatedFavorites = [...favoriteSchedules, newFavorite]
     localStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites))
-    localStorage.setItem('favoritedCombinations', JSON.stringify([...favoritedCombinations, schedule.combination_id.toString()]))
+    localStorage.setItem('favoritedCombinations', JSON.stringify([...favoritedCombinations, combinationId.toString()]))
   }
 
   const removeFromFavoritesByCombinationId = (combinationId: string) => {
@@ -255,17 +260,83 @@ export default function SchedulesPage() {
           <div className="lg:col-span-3 space-y-4 sm:space-y-6">
             {/* Canvas */}
             <ScheduleVisualization 
-              scheduleData={(viewingFavoriteSchedule ? {
-                combinations: [viewingFavoriteSchedule.combination],
-                total_combinations: 1,
-                selected_courses_count: viewingFavoriteSchedule.combination.sections?.length || 0
-              } : generatedSchedules ? {
+              scheduleName={(() => {
+                console.log('🏷️  Passing scheduleName prop:', viewingFavoriteSchedule?.name)
+                console.log('🏷️  viewingFavoriteSchedule object:', viewingFavoriteSchedule)
+                return viewingFavoriteSchedule?.name
+              })()}
+              scheduleData={(viewingFavoriteSchedule ? (() => {
+                console.log('📊 Building scheduleData for viewing favorite schedule:', viewingFavoriteSchedule);
+                
+                // Handle nested data structure
+                let courses: any[] = [];
+                let actualCombination = viewingFavoriteSchedule.combination as any;
+                
+                // Check for nested combination structure
+                if (actualCombination.combination) {
+                  actualCombination = actualCombination.combination;
+                }
+                
+                if (actualCombination.courses) {
+                  // New format - already has courses array
+                  courses = actualCombination.courses;
+                } else if (actualCombination.sections) {
+                  // Old format - transform sections to courses
+                  courses = actualCombination.sections.map((section: any) => ({
+                    course_id: section.course_id || section.course?.id,
+                    course_code: section.course?.code || 'N/A',
+                    course_name: section.course?.name || 'Unknown Course',
+                    section_id: section.id,
+                    section_number: section.section_number || 'N/A',
+                    professor: section.professor || 'TBA',
+                    sessions: section.sessions?.map((session: any) => ({
+                      session_id: session.id || Math.random(),
+                      session_type: session.session_type || 'Lecture',
+                      day: session.day_of_week || 1,
+                      start_time: session.start_time || '08:00',
+                      end_time: session.end_time || '09:00', 
+                      location: session.classroom || 'TBA',
+                      modality: 'Presencial'
+                    })) || []
+                  }));
+                }
+                
+                const scheduleData = {
+                  combinations: [{
+                    combination_id: actualCombination.combination_id || 'temp',
+                    course_count: courses.length,
+                    courses: courses,
+                    sections: actualCombination.sections || [], // Keep original sections for compatibility
+                    conflicts: actualCombination.conflicts || []
+                  }],
+                  total_combinations: 1,
+                  selected_courses_count: courses.length
+                };
+                
+                console.log('Transformed schedule data:', scheduleData);
+                return scheduleData;
+            })() : generatedSchedules ? {
                 ...generatedSchedules,
-                selected_courses_count: generatedSchedules.combinations?.length || 0
-              } : null!) as any} 
-              onAddToFavorites={addToFavorites}
-              onRemoveFromFavorites={removeFromFavoritesByCombinationId}
-              favoritedCombinations={favoritedCombinations}
+                selected_courses_count: generatedSchedules.combinations?.[0]?.courses?.length || 0
+              } : null!) as any}
+              onAddToFavorites={viewingFavoriteSchedule ? undefined : addToFavorites}
+              onRemoveFromFavorites={viewingFavoriteSchedule ? (id) => {
+                // Remove the favorite schedule entirely
+                const updatedFavorites = favoriteSchedules.filter(fav => fav.id !== viewingFavoriteSchedule.id)
+                setFavoriteSchedules(updatedFavorites)
+                localStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites))
+                
+                // Remove from favoritedCombinations set
+                const newFavoritedCombinations = new Set(favoritedCombinations)
+                newFavoritedCombinations.delete(id)
+                setFavoritedCombinations(newFavoritedCombinations)
+                localStorage.setItem('favoritedCombinations', JSON.stringify([...newFavoritedCombinations]))
+                
+                // Go back to my schedules
+                setViewingFavoriteSchedule(null)
+                router.push('/dashboard/my-schedules')
+              } : removeFromFavoritesByCombinationId}
+              favoritedCombinations={viewingFavoriteSchedule ? new Set([viewingFavoriteSchedule.combination.combination_id?.toString()]) : favoritedCombinations}
               showBackButton={true}
               onBackToSelection={() => {
                 if (viewingFavoriteSchedule) {
@@ -395,13 +466,60 @@ export default function SchedulesPage() {
 
             {/* Selected Sections */}
             <SelectedSectionsCard 
-              selectedSections={selectedSections}
-              groupSectionsByCourse={groupSectionsByCourse}
+              selectedSections={viewingFavoriteSchedule ? 
+                // When viewing favorite, convert courses back to selected sections format
+                (() => {
+                  let actualCombination = viewingFavoriteSchedule.combination as any;
+                  if (actualCombination.combination) {
+                    actualCombination = actualCombination.combination;
+                  }
+                  
+                  if (actualCombination.courses) {
+                    return actualCombination.courses.map((course: any, index: number) => ({
+                      sectionId: course.section_id,
+                      courseCode: course.course_code,
+                      courseName: course.course_name,
+                      sectionCode: course.section_number,
+                      professor: course.professor,
+                      sessions: course.sessions || []
+                    }));
+                  }
+                  return [];
+                })() 
+                : selectedSections
+              }
+              groupSectionsByCourse={viewingFavoriteSchedule ? 
+                // Custom grouping for favorite schedule
+                () => {
+                  let actualCombination = viewingFavoriteSchedule.combination as any;
+                  if (actualCombination.combination) {
+                    actualCombination = actualCombination.combination;
+                  }
+                  
+                  if (actualCombination.courses) {
+                    return actualCombination.courses.map((course: any, index: number) => ({
+                      courseName: course.course_name,
+                      courseCode: course.course_code,
+                      sections: [{
+                        sectionId: course.section_id,
+                        courseCode: course.course_code,
+                        courseName: course.course_name,
+                        sectionCode: course.section_number,
+                        professor: course.professor,
+                        sessions: course.sessions || [],
+                        index: index
+                      }]
+                    }));
+                  }
+                  return [];
+                }
+                : groupSectionsByCourse
+              }
               collapsedCourses={collapsedCourses}
               toggleCourseCollapse={toggleCourseCollapse}
-              removeSection={removeSection}
-              handleGenerateSchedules={handleGenerateSchedules}
-              isLoading={isLoading}
+              removeSection={viewingFavoriteSchedule ? () => {} : removeSection} // Disable removal when viewing favorite
+              handleGenerateSchedules={viewingFavoriteSchedule ? () => {} : handleGenerateSchedules} // Disable generation when viewing favorite
+              isLoading={false} // Never loading when viewing favorite
             />
           </div>
         </div>

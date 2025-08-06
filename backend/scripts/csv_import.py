@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
-Consolidated CSV Import Script for Schedule Maker 2.0
+Enhanced CSV Import Script for Schedule Maker 2.0 with Hierarchical Session Support
+Maintains compatibility with existing backend while fixing hierarchical parsing issues.
+
 Usage: python backend/scripts/csv_import.py <csv_file_path> [university_id]
 """
 
@@ -63,7 +65,7 @@ class CourseImportData:
 
 
 class CSVImporter:
-    """Consolidated CSV Importer for course data"""
+    """Enhanced CSV Importer with hierarchical session support"""
     
     def __init__(self, db_session):
         self.db = db_session
@@ -84,7 +86,6 @@ class CSVImporter:
             return None
         
         try:
-            # Handle different time formats
             time_str = str(time_str).strip()
             
             # Format: "14:00"
@@ -103,22 +104,6 @@ class CSVImporter:
         
         return None
     
-    def parse_days(self, days_str: str) -> List[str]:
-        """Parse days string and return list of English day names"""
-        if not days_str or pd.isna(days_str):
-            return []
-        
-        days = []
-        days_str = str(days_str).strip()
-        
-        # Split by common separators and map to English
-        for day_part in re.split(r'[,\s]+', days_str):
-            day_part = day_part.strip()
-            if day_part in self.day_mapping:
-                days.append(self.day_mapping[day_part])
-        
-        return days
-    
     def parse_schedule(self, schedule_str: str) -> Tuple[List[str], Optional[time], Optional[time]]:
         """Parse schedule string like 'Mar. 15:00 - 18:00' and return days, start_time, end_time"""
         if not schedule_str or pd.isna(schedule_str):
@@ -127,7 +112,6 @@ class CSVImporter:
         schedule_str = str(schedule_str).strip()
         
         # Pattern: "Mar. 15:00 - 18:00" or "Lun. Mie. 10:00 - 12:00"
-        # Split by time pattern to separate days from times
         time_pattern = r'(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})'
         time_match = re.search(time_pattern, schedule_str)
         
@@ -184,32 +168,9 @@ class CSVImporter:
             return match.group(1)
         
         return ""
-
-    def extract_course_code(self, course_str: str) -> Tuple[str, str]:
-        """Extract course code and name from course string"""
-        if not course_str or pd.isna(course_str):
-            return "", ""
-        
-        course_str = str(course_str).strip()
-        
-        # Pattern: "CS101 - Introduction to Computer Science"
-        match = re.match(r'^([A-Z]{2,4}\d{3,4})\s*[-–]\s*(.+)$', course_str)
-        if match:
-            return match.group(1), match.group(2).strip()
-        
-        # Pattern: "CS101 Introduction to Computer Science"
-        match = re.match(r'^([A-Z]{2,4}\d{3,4})\s+(.+)$', course_str)
-        if match:
-            return match.group(1), match.group(2).strip()
-        
-        # Just course code
-        if re.match(r'^[A-Z]{2,4}\d{3,4}$', course_str):
-            return course_str, ""
-        
-        return "", course_str
     
     def parse_csv_file(self, file_path: str) -> List[CourseImportData]:
-        """Parse CSV file and return course data"""
+        """Parse CSV file with hierarchical session grouping"""
         try:
             df = pd.read_csv(file_path, encoding='utf-8')
         except UnicodeDecodeError:
@@ -218,18 +179,30 @@ class CSVImporter:
         # Skip empty rows at the beginning
         df = df.dropna(how='all')
         
-        courses_data = defaultdict(lambda: defaultdict(list))
+        print(f"✅ Successfully loaded CSV with {len(df)} rows")
+        
+        # First pass: collect all sessions by course
+        course_sessions = defaultdict(list)
+        course_names = {}
         
         for _, row in df.iterrows():
-            # Extract basic course info using actual CSV column names
+            # Extract basic course info
             course_code = str(row.get('Código Curso', '')).strip()
             course_name = str(row.get('Curso', '')).strip()
             
             if not course_code or not course_name:
                 continue
             
+            # Store course name
+            course_names[course_code] = course_name
+            
             section_num = str(row.get('Sección', '')).strip()
             if not section_num:
+                continue
+            
+            # Extract session info
+            session_group = str(row.get('Sesión Grupo', '')).strip()
+            if not session_group:
                 continue
             
             # Extract professor info
@@ -244,15 +217,12 @@ class CSVImporter:
                 capacity = 30
                 enrolled = 0
             
-            # Parse schedule info from 'Horario' field (e.g., "Mar. 15:00 - 18:00")
+            # Parse schedule
             horario = str(row.get('Horario', '')).strip()
             days, start_time, end_time = self.parse_schedule(horario)
             
             if not days or not start_time or not end_time:
                 continue
-            
-            # Extract session type from 'Sesión Grupo'
-            session_type = str(row.get('Sesión Grupo', 'TEORÍA')).strip()
             
             # Extract other fields
             modality = str(row.get('Modalidad', 'Presencial')).strip()
@@ -262,7 +232,7 @@ class CSVImporter:
             # Create session data for each day
             for day in days:
                 session_data = SessionImportData(
-                    session_type=session_type,
+                    session_type=session_group,  # Store full session group name
                     day=day,
                     start_time=start_time,
                     end_time=end_time,
@@ -273,28 +243,29 @@ class CSVImporter:
                     frequency=frequency
                 )
                 
-                courses_data[course_code][(section_num, course_name, professor, professor_email, capacity, enrolled)].append(session_data)
-        
-        # Convert to CourseImportData objects
-        result = []
-        for course_code, sections_dict in courses_data.items():
-            sections = []
-            course_name = ""
-            
-            for (section_num, name, prof, prof_email, capacity, enrolled), sessions in sections_dict.items():
-                course_name = name or course_name
+                # Store session with metadata
+                session_with_meta = {
+                    'session': session_data,
+                    'professor': professor,
+                    'professor_email': professor_email,
+                    'capacity': capacity,
+                    'enrolled': enrolled,
+                    'session_group': session_group,
+                    'section_num': section_num
+                }
                 
-                section_data = SectionImportData(
-                    section_number=section_num,
-                    capacity=capacity,
-                    enrolled=enrolled,
-                    professor=prof or "TBD",
-                    professor_email=prof_email or "",
-                    sessions=sessions
-                )
-                sections.append(section_data)
+                # Store all sessions by course for hierarchical processing
+                course_sessions[course_code].append(session_with_meta)
+        
+        # Second pass: Create sections respecting original CSV structure
+        result = []
+        for course_code, all_sessions in course_sessions.items():
+            course_name = course_names.get(course_code, 'Unknown Course')
             
-            # Extract department from course code (first 2-4 letters)
+            # Group sessions by original CSV section numbers
+            sections = self.create_hierarchical_sections(all_sessions)
+            
+            # Extract department from course code
             department = re.match(r'^([A-Z]{2,4})', course_code)
             department = department.group(1) if department else "UNKNOWN"
             
@@ -308,8 +279,232 @@ class CSVImporter:
         
         return result
     
+    def create_hierarchical_sections(self, all_sessions: List[dict]) -> List[SectionImportData]:
+        """Create sections handling shared theory + separate combinations"""
+        # Check if this course has the decimal pattern (TEORÍA X.XX)
+        has_decimal_pattern = any(
+            re.search(r'TEORÍA \d+\.\d+', session_meta['session_group']) 
+            for session_meta in all_sessions
+        )
+        
+        if has_decimal_pattern:
+            return self._create_decimal_pattern_sections(all_sessions)
+        else:
+            return self._create_standard_sections(all_sessions)
+    
+    def _create_decimal_pattern_sections(self, all_sessions: List[dict]) -> List[SectionImportData]:
+        """Handle courses with TEORÍA X.XX pattern (like Cálculo de una variable)"""
+        # Group sessions by session type
+        sessions_by_type = defaultdict(list)
+        for session_meta in all_sessions:
+            session_group = session_meta['session_group']
+            sessions_by_type[session_group].append(session_meta)
+        
+        # Find main theory sessions and decimal theory sessions
+        main_theory_sessions = {}  # "TEORÍA 1" -> [sessions]
+        decimal_theory_sessions = {}  # "TEORÍA 1.01" -> [sessions]
+        
+        for session_group, sessions in sessions_by_type.items():
+            if re.match(r'^TEORÍA \d+$', session_group):  # Main theory (TEORÍA 1, TEORÍA 2)
+                main_theory_sessions[session_group] = sessions
+            elif re.match(r'^TEORÍA \d+\.\d+$', session_group):  # Decimal theory (TEORÍA 1.01, TEORÍA 1.02)
+                decimal_theory_sessions[session_group] = sessions
+        
+        # Create sections by combining main theory + decimal theory
+        sections = []
+        section_counter = 1
+        
+        for decimal_group, decimal_session_list in decimal_theory_sessions.items():
+            # Extract the main number (e.g., "1" from "TEORÍA 1.01")
+            match = re.match(r'^TEORÍA (\d+)\.\d+$', decimal_group)
+            if not match:
+                continue
+            main_number = match.group(1)
+            main_group = f"TEORÍA {main_number}"
+            
+            # Find corresponding main theory sessions
+            main_session_list = main_theory_sessions.get(main_group, [])
+            
+            # Combine main theory + decimal theory into one section
+            combined_sessions = []
+            all_professors = set()
+            all_emails = set()
+            all_capacities = set()
+            all_enrolled = set()
+            
+            # Add main theory sessions (shared lecture)
+            for session_meta in main_session_list:
+                combined_sessions.append(session_meta['session'])
+                if session_meta['professor'] and session_meta['professor'] != "TBD":
+                    all_professors.add(session_meta['professor'])
+                if session_meta['professor_email']:
+                    all_emails.add(session_meta['professor_email'])
+                if session_meta['capacity']:
+                    all_capacities.add(session_meta['capacity'])
+                if session_meta['enrolled']:
+                    all_enrolled.add(session_meta['enrolled'])
+            
+            # Add decimal theory sessions (discussion/recitation)
+            for session_meta in decimal_session_list:
+                combined_sessions.append(session_meta['session'])
+                if session_meta['professor'] and session_meta['professor'] != "TBD":
+                    all_professors.add(session_meta['professor'])
+                if session_meta['professor_email']:
+                    all_emails.add(session_meta['professor_email'])
+                if session_meta['capacity']:
+                    all_capacities.add(session_meta['capacity'])
+                if session_meta['enrolled']:
+                    all_enrolled.add(session_meta['enrolled'])
+            
+            # Create section with truncated professor info
+            professor_list = ", ".join(sorted(all_professors)) if all_professors else "TBD"
+            if len(professor_list) > 250:
+                professor_list = professor_list[:247] + "..."
+            
+            email_list = ", ".join(sorted(all_emails)) if all_emails else ""
+            if len(email_list) > 250:
+                email_list = email_list[:247] + "..."
+            
+            section = SectionImportData(
+                section_number=str(section_counter),
+                capacity=max(all_capacities) if all_capacities else 30,
+                enrolled=max(all_enrolled) if all_enrolled else 0,
+                professor=professor_list,
+                professor_email=email_list,
+                sessions=combined_sessions
+            )
+            sections.append(section)
+            section_counter += 1
+        
+        return sections
+    
+    def _create_standard_sections(self, all_sessions: List[dict]) -> List[SectionImportData]:
+        """Handle standard courses (like Computación Gráfica)"""
+        # Group sessions by the original section number from CSV
+        sections_by_number = defaultdict(list)
+        
+        for session_meta in all_sessions:
+            section_num = session_meta['section_num']
+            sections_by_number[section_num].append(session_meta)
+        
+        # Create sections based on hierarchical patterns
+        sections = []
+        section_counter = 1
+        
+        for section_num, session_list in sections_by_number.items():
+            # Group sessions by session type within this section
+            sessions_by_type = defaultdict(list)
+            for session_meta in session_list:
+                session_group = session_meta['session_group']
+                sessions_by_type[session_group].append(session_meta)
+            
+            # Find theory sessions and lab sessions
+            theory_sessions = []
+            lab_sessions = defaultdict(list)
+            
+            for session_group, sessions in sessions_by_type.items():
+                if 'TEORÍA' in session_group:
+                    theory_sessions.extend(sessions)
+                elif 'LABORATORIO' in session_group:
+                    # Group labs by their specific identifier (e.g., "1.01", "1.02")
+                    lab_sessions[session_group].extend(sessions)
+            
+            # If we have theory + multiple lab groups, create separate sections
+            if theory_sessions and len(lab_sessions) > 1:
+                # Create one section for each lab combination with shared theory
+                for lab_group, lab_session_list in lab_sessions.items():
+                    combined_sessions = []
+                    all_professors = set()
+                    all_emails = set()
+                    all_capacities = set()
+                    all_enrolled = set()
+                    
+                    # Add theory sessions (shared)
+                    for session_meta in theory_sessions:
+                        combined_sessions.append(session_meta['session'])
+                        if session_meta['professor'] and session_meta['professor'] != "TBD":
+                            all_professors.add(session_meta['professor'])
+                        if session_meta['professor_email']:
+                            all_emails.add(session_meta['professor_email'])
+                        if session_meta['capacity']:
+                            all_capacities.add(session_meta['capacity'])
+                        if session_meta['enrolled']:
+                            all_enrolled.add(session_meta['enrolled'])
+                    
+                    # Add specific lab sessions
+                    for session_meta in lab_session_list:
+                        combined_sessions.append(session_meta['session'])
+                        if session_meta['professor'] and session_meta['professor'] != "TBD":
+                            all_professors.add(session_meta['professor'])
+                        if session_meta['professor_email']:
+                            all_emails.add(session_meta['professor_email'])
+                        if session_meta['capacity']:
+                            all_capacities.add(session_meta['capacity'])
+                        if session_meta['enrolled']:
+                            all_enrolled.add(session_meta['enrolled'])
+                    
+                    # Create section with truncated professor info
+                    professor_list = ", ".join(sorted(all_professors)) if all_professors else "TBD"
+                    if len(professor_list) > 250:
+                        professor_list = professor_list[:247] + "..."
+                    
+                    email_list = ", ".join(sorted(all_emails)) if all_emails else ""
+                    if len(email_list) > 250:
+                        email_list = email_list[:247] + "..."
+                    
+                    section = SectionImportData(
+                        section_number=str(section_counter),
+                        capacity=max(all_capacities) if all_capacities else 30,
+                        enrolled=max(all_enrolled) if all_enrolled else 0,
+                        professor=professor_list,
+                        professor_email=email_list,
+                        sessions=combined_sessions
+                    )
+                    sections.append(section)
+                    section_counter += 1
+            else:
+                # Standard case: aggregate all sessions for this section number
+                all_professors = set()
+                all_emails = set()
+                all_capacities = set()
+                all_enrolled = set()
+                combined_sessions = []
+                
+                for session_meta in session_list:
+                    combined_sessions.append(session_meta['session'])
+                    if session_meta['professor'] and session_meta['professor'] != "TBD":
+                        all_professors.add(session_meta['professor'])
+                    if session_meta['professor_email']:
+                        all_emails.add(session_meta['professor_email'])
+                    if session_meta['capacity']:
+                        all_capacities.add(session_meta['capacity'])
+                    if session_meta['enrolled']:
+                        all_enrolled.add(session_meta['enrolled'])
+                
+                # Create section with truncated professor info
+                professor_list = ", ".join(sorted(all_professors)) if all_professors else "TBD"
+                if len(professor_list) > 250:
+                    professor_list = professor_list[:247] + "..."
+                
+                email_list = ", ".join(sorted(all_emails)) if all_emails else ""
+                if len(email_list) > 250:
+                    email_list = email_list[:247] + "..."
+                
+                section = SectionImportData(
+                    section_number=section_num,  # Use original section number from CSV
+                    capacity=max(all_capacities) if all_capacities else 30,
+                    enrolled=max(all_enrolled) if all_enrolled else 0,
+                    professor=professor_list,
+                    professor_email=email_list,
+                    sessions=combined_sessions
+                )
+                sections.append(section)
+                section_counter += 1
+        
+        return sections
+    
     def import_courses(self, courses_data: List[CourseImportData], university_id: int):
-        """Import courses to database"""
+        """Import courses to database (maintains original interface)"""
         imported_count = 0
         
         for course_data in courses_data:
@@ -321,7 +516,7 @@ class CSVImporter:
                 
                 if existing_course:
                     course = existing_course
-                    print(f"Course {course_data.code} already exists, updating...")
+                    print(f"📚 Course {course_data.code} already exists, updating...")
                 else:
                     # Create new course
                     course_dict = {
@@ -332,9 +527,9 @@ class CSVImporter:
                         "is_active": True
                     }
                     course = self.course_repo.create(course_dict)
-                    print(f"Created course: {course_data.code} - {course_data.name}")
+                    print(f"✅ Created course: {course_data.code} - {course_data.name}")
                 
-                # Import sections
+                # Import sections with hierarchical session support
                 for section_data in course_data.sections:
                     existing_section = self.section_repo.get_by_course_and_number(
                         course.id, section_data.section_number
@@ -342,6 +537,7 @@ class CSVImporter:
                     
                     if existing_section:
                         section = existing_section
+                        print(f"  📝 Section {section_data.section_number} exists, updating sessions...")
                     else:
                         section_dict = {
                             "section_number": section_data.section_number,
@@ -353,28 +549,47 @@ class CSVImporter:
                             "is_active": True
                         }
                         section = self.section_repo.create(section_dict)
+                        print(f"  ✅ Created section {section_data.section_number} ({len(section_data.sessions)} sessions)")
                     
-                    # Import sessions
+                    # Import all sessions with duplicate prevention
                     for session_data in section_data.sessions:
-                        session_dict = {
-                            "session_type": session_data.session_type,
-                            "day": session_data.day,
-                            "start_time": session_data.start_time,
-                            "end_time": session_data.end_time,
-                            "location": session_data.location,
-                            "building": session_data.building,
-                            "room": session_data.room,
-                            "modality": session_data.modality,
-                            "frequency": session_data.frequency,
-                            "section_id": section.id,
-                            "is_active": True
-                        }
-                        self.session_repo.create(session_dict)
+                        # Check if session already exists
+                        existing_sessions = self.session_repo.get_by_section(section.id)
+                        session_exists = False
+                        
+                        for existing_session in existing_sessions:
+                            if (existing_session.session_type == session_data.session_type and
+                                existing_session.day == session_data.day and
+                                existing_session.start_time == session_data.start_time and
+                                existing_session.end_time == session_data.end_time and
+                                existing_session.location == session_data.location and
+                                existing_session.modality == session_data.modality and
+                                existing_session.is_active == True):
+                                session_exists = True
+                                break
+                        
+                        if not session_exists:
+                            session_dict = {
+                                "session_type": session_data.session_type,
+                                "day": session_data.day,
+                                "start_time": session_data.start_time,
+                                "end_time": session_data.end_time,
+                                "location": session_data.location,
+                                "building": session_data.building,
+                                "room": session_data.room,
+                                "modality": session_data.modality,
+                                "frequency": session_data.frequency,
+                                "section_id": section.id,
+                                "is_active": True
+                            }
+                            self.session_repo.create(session_dict)
+                        else:
+                            print(f"    ⏭️  Session already exists: {session_data.day} {session_data.start_time}-{session_data.end_time}")
                 
                 imported_count += 1
                 
             except Exception as e:
-                print(f"Error importing course {course_data.code}: {str(e)}")
+                print(f"❌ Error importing course {course_data.code}: {str(e)}")
                 continue
         
         return imported_count
@@ -389,7 +604,7 @@ def main():
     university_id = int(sys.argv[2]) if len(sys.argv) > 2 else 1
     
     if not os.path.exists(csv_file_path):
-        print(f"Error: CSV file '{csv_file_path}' not found")
+        print(f"❌ Error: CSV file '{csv_file_path}' not found")
         sys.exit(1)
     
     # Create database session
@@ -401,25 +616,34 @@ def main():
         university = university_repo.get_by_id(university_id)
         
         if not university:
-            print(f"Error: University with ID {university_id} not found")
+            print(f"❌ Error: University with ID {university_id} not found")
             sys.exit(1)
         
-        print(f"Importing courses for university: {university.name}")
+        print(f"🏫 Importing courses for university: {university.name}")
         
         # Initialize importer
         importer = CSVImporter(db_session)
         
-        # Parse CSV file
-        print(f"Parsing CSV file: {csv_file_path}")
+        # Parse CSV file with hierarchical support
+        print(f"📋 Parsing CSV file: {csv_file_path}")
         courses_data = importer.parse_csv_file(csv_file_path)
-        print(f"Found {len(courses_data)} courses to import")
+        
+        # Show summary
+        total_sections = sum(len(course.sections) for course in courses_data)
+        total_sessions = sum(len(section.sessions) for course in courses_data for section in course.sections)
+        
+        print(f"📊 Parsing Summary:")
+        print(f"  📚 Total courses: {len(courses_data)}")
+        print(f"  📝 Total sections: {total_sections}")
+        print(f"  📅 Total sessions: {total_sessions}")
         
         # Import courses
+        print(f"🚀 Starting database import...")
         imported_count = importer.import_courses(courses_data, university_id)
-        print(f"Successfully imported {imported_count} courses")
+        print(f"✅ Successfully imported {imported_count} courses with improved hierarchical structure!")
         
     except Exception as e:
-        print(f"Import failed: {str(e)}")
+        print(f"❌ Import failed: {str(e)}")
         db_session.rollback()
         sys.exit(1)
     

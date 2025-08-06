@@ -187,6 +187,72 @@ class CollaborativeSessionResponse(BaseModel):
 class JoinSessionRequest(BaseModel):
     session_code: str
 
+# Enhanced Collaboration schemas
+class CollaborativeCourseSelectionCreate(BaseModel):
+    course_code: str
+    course_name: str
+    section_code: str
+    professor: Optional[str] = None
+    schedule_data: dict
+    selection_type: str  # 'shared' or 'individual'
+    shared_with_users: List[int] = []
+    priority: Optional[int] = 1
+
+class CollaborativeCourseSelectionResponse(BaseModel):
+    id: int
+    session_id: int
+    user_id: int
+    course_code: str
+    course_name: str
+    section_code: str
+    professor: Optional[str]
+    schedule_data: dict
+    selection_type: str
+    shared_with_users: List[int] = []
+    priority: int
+    added_at: datetime
+    is_active: bool
+    
+    class Config:
+        from_attributes = True
+
+class CollaborativeCourseSelectionUpdate(BaseModel):
+    selection_type: Optional[str] = None
+    shared_with_users: Optional[List[int]] = None
+    priority: Optional[int] = None
+    is_active: Optional[bool] = None
+
+# Schedule Generation schemas
+class GenerateSchedulesRequest(BaseModel):
+    session_id: int
+    course_selections: List[dict]
+    personalized_schedules: Optional[List[dict]] = None
+
+class GenerateSchedulesResponse(BaseModel):
+    success: bool
+    message: str
+    schedules: List[dict]
+    conflicts: Optional[List[dict]] = None
+
+class GenerateCollaborativeScheduleRequest(BaseModel):
+    optimization_preferences: Optional[dict] = {}
+    conflict_resolution: Optional[str] = "priority"  # 'priority', 'manual', 'suggest_alternatives'
+
+class GeneratedCollaborativeScheduleResponse(BaseModel):
+    id: int
+    session_id: int
+    user_id: int
+    schedule_data: dict
+    shared_courses: List[dict]
+    individual_courses: List[dict]
+    conflicts: List[dict]
+    generation_metadata: dict
+    generated_at: datetime
+    is_current: bool
+    
+    class Config:
+        from_attributes = True
+
 class ScheduleShareCreate(BaseModel):
     schedule_id: int
     # Simplified: always view-only, always public, no expiration
@@ -270,3 +336,8 @@ class CSVAnalysisResponse(BaseModel):
     success: bool
     analysis: Optional[CSVAnalysisData] = None
     error: Optional[str] = None
+
+# Friend request schemas
+class FriendRequestCreate(BaseModel):
+    receiver_id: int
+    message: Optional[str] = None

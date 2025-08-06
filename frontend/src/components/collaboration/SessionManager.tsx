@@ -8,6 +8,7 @@ import { useCollaborationStore, CollaborativeSession } from '@/stores/collaborat
 // import { CollaborationAPI } from '@/services/collaborationAPI'; // Temporarily disabled
 import { websocketService } from '@/services/websocketService';
 import { CreateSessionDialog, JoinSessionDialog } from './CreateJoinSession';
+import { FriendInviteModal } from './FriendInviteModal';
 import { 
   Users, 
   Clock, 
@@ -15,12 +16,15 @@ import {
   Play, 
   BarChart3, 
   Calendar,
-  MapPin
+  MapPin,
+  UserPlus
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 export function SessionManager() {
   const [loading, setLoading] = useState(true);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<CollaborativeSession | null>(null);
   const { 
     sessions, 
     setSessions, 
@@ -35,10 +39,17 @@ export function SessionManager() {
 
   const loadSessions = async () => {
     try {
-      // Temporarily disabled due to auth issues
-      // const userSessions = await CollaborationAPI.getUserSessions();
-      // setSessions(userSessions);
-      setSessions([]); // Temporary empty array
+      // Only load from API if we don't have sessions in local storage
+      // This preserves sessions across tab switches and reloads
+      if (sessions.length === 0) {
+        // Temporarily disabled due to auth issues
+        // const userSessions = await CollaborationAPI.getUserSessions();
+        // setSessions(userSessions);
+        
+        // For now, keep existing sessions from localStorage
+        // Don't override with empty array
+        console.log('Sessions already loaded from localStorage:', sessions.length);
+      }
     } catch (error: any) {
       // Failed to load sessions
       toast({
@@ -77,6 +88,7 @@ export function SessionManager() {
 
   const leaveSession = () => {
     websocketService.disconnect();
+    // Explicitly clear the current session when user chooses to leave
     setCurrentSession(null);
   };
 
@@ -113,6 +125,19 @@ export function SessionManager() {
     if (days > 0) return `${days}d ${hours}h remaining`;
     if (hours > 0) return `${hours}h ${minutes}m remaining`;
     return `${minutes}m remaining`;
+  };
+
+  const openInviteModal = (session: CollaborativeSession) => {
+    setSelectedSession(session);
+    setInviteModalOpen(true);
+  };
+
+  const handleInviteSent = (friendIds: number[]) => {
+    toast({
+      title: "¡Invitaciones enviadas!",
+      description: `Se enviaron ${friendIds.length} invitación${friendIds.length !== 1 ? 'es' : ''} exitosamente`,
+    });
+    setInviteModalOpen(false);
   };
 
   if (loading) {
@@ -159,6 +184,15 @@ export function SessionManager() {
                 ) : (
                   <Badge variant="destructive">Disconnected</Badge>
                 )}
+                <Button 
+                  onClick={() => openInviteModal(currentSession)} 
+                  variant="outline" 
+                  size="sm"
+                  className="bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-700"
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Invitar Amigos
+                </Button>
                 <Button onClick={leaveSession} variant="outline" size="sm">
                   Leave Session
                 </Button>
@@ -272,13 +306,12 @@ export function SessionManager() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => {
-                        // Navigate to comparison view
-                        window.open(`/dashboard/collaboration?code=${session.session_code}`, '_blank');
-                      }}
+                      onClick={() => openInviteModal(session)}
+                      className=""
                     >
-                      <BarChart3 className="h-4 w-4" />
+                      <UserPlus className="h-4 w-4 " />
                     </Button>
+                    
                   </div>
                 </div>
               </CardContent>
@@ -302,6 +335,17 @@ export function SessionManager() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Friend Invite Modal */}
+      {selectedSession && (
+        <FriendInviteModal
+          isOpen={inviteModalOpen}
+          onClose={() => setInviteModalOpen(false)}
+          sessionCode={selectedSession.session_code}
+          sessionName={selectedSession.name}
+          onInviteSent={handleInviteSent}
+        />
       )}
     </div>
   );

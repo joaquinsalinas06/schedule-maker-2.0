@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 
 export interface User {
   id: number;
@@ -59,6 +59,12 @@ interface CollaborationState {
   // Schedule comparisons
   comparisons: ScheduleComparison[];
   
+  // Course selections for current session
+  courseSelections: any[];
+  
+  // Generated schedule data
+  generatedSchedule: any;
+  
   // Real-time collaboration state
   onlineUsers: User[];
   typingUsers: number[];
@@ -77,6 +83,15 @@ interface CollaborationState {
   setComparisons: (comparisons: ScheduleComparison[]) => void;
   addComparison: (comparison: ScheduleComparison) => void;
   removeComparison: (comparisonId: number) => void;
+  
+  // Course selection actions
+  setCourseSelections: (selections: any[]) => void;
+  addCourseSelection: (selection: any) => void;
+  removeCourseSelection: (index: number) => void;
+  updateCourseSelections: (selections: any[]) => void;
+  
+  // Generated schedule actions
+  setGeneratedSchedule: (schedule: any) => void;
   
   // Real-time updates
   updateOnlineUsers: (users: User[]) => void;
@@ -100,16 +115,19 @@ interface CollaborationState {
 
 export const useCollaborationStore = create<CollaborationState>()(
   devtools(
-    (set, get) => ({
-      // Initial state
-      currentSession: null,
-      isConnected: false,
-      sessions: [],
-      sharedSchedules: [],
-      comparisons: [],
-      onlineUsers: [],
-      typingUsers: [],
-      cursorPositions: {},
+    persist(
+      (set, get) => ({
+        // Initial state
+        currentSession: null,
+        isConnected: false,
+        sessions: [],
+        sharedSchedules: [],
+        comparisons: [],
+        courseSelections: [],
+        generatedSchedule: null,
+        onlineUsers: [],
+        typingUsers: [],
+        cursorPositions: {},
 
       // Session actions
       setCurrentSession: (session: CollaborativeSession | null) => set({ currentSession: session }),
@@ -144,6 +162,19 @@ export const useCollaborationStore = create<CollaborationState>()(
       removeComparison: (comparisonId: number) => set((state) => ({
         comparisons: state.comparisons.filter(c => c.id !== comparisonId)
       })),
+
+      // Course selection actions
+      setCourseSelections: (selections: any[]) => set({ courseSelections: selections }),
+      addCourseSelection: (selection: any) => set((state) => ({
+        courseSelections: [...state.courseSelections, selection]
+      })),
+      removeCourseSelection: (index: number) => set((state) => ({
+        courseSelections: state.courseSelections.filter((_, i) => i !== index)
+      })),
+      updateCourseSelections: (selections: any[]) => set({ courseSelections: selections }),
+
+      // Generated schedule actions
+      setGeneratedSchedule: (schedule: any) => set({ generatedSchedule: schedule }),
 
       // Real-time collaboration actions
       updateOnlineUsers: (users: User[]) => set({ onlineUsers: users }),
@@ -181,6 +212,8 @@ export const useCollaborationStore = create<CollaborationState>()(
       clearSession: () => set({
         currentSession: null,
         isConnected: false,
+        courseSelections: [],
+        generatedSchedule: null,
         onlineUsers: [],
         typingUsers: [],
         cursorPositions: {},
@@ -193,13 +226,26 @@ export const useCollaborationStore = create<CollaborationState>()(
         sessions: [],
         sharedSchedules: [],
         comparisons: [],
+        courseSelections: [],
+        generatedSchedule: null,
         onlineUsers: [],
         typingUsers: [],
         cursorPositions: {}
       })
     }),
     {
-      name: 'collaboration-store'
+        name: 'collaboration-store',
+        partialize: (state) => ({
+          sessions: state.sessions,
+          sharedSchedules: state.sharedSchedules,
+          currentSession: state.currentSession,
+          courseSelections: state.courseSelections,
+          generatedSchedule: state.generatedSchedule
+        })
+      }
+    ),
+    {
+      name: 'collaboration-store-devtools'
     }
   )
 );

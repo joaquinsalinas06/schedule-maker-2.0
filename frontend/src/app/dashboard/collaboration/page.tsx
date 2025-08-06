@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Users, Share, BarChart3, Calendar, ArrowLeft } from "lucide-react"
+import { Users, Share, BarChart3, ArrowLeft } from "lucide-react"
 import { useCollaborationStore } from '@/stores/collaborationStore'
 
 // Collaboration Components
@@ -59,7 +59,7 @@ export default function CollaborationPage() {
           </div>
 
           <Tabs value={collaborationTab} onValueChange={setCollaborationTab}>
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="sessions" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 Sesiones
@@ -71,10 +71,6 @@ export default function CollaborationPage() {
               <TabsTrigger value="compare" className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
                 Comparar
-              </TabsTrigger>
-              <TabsTrigger value="history" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Historial
               </TabsTrigger>
             </TabsList>
 
@@ -88,21 +84,6 @@ export default function CollaborationPage() {
 
             <TabsContent value="compare" className="mt-6">
               <IntegratedScheduleComparison />
-            </TabsContent>
-
-            <TabsContent value="history" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Historial de Colaboración</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Calendar className="h-12 w-12 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Historial de Sesiones</h3>
-                    <p>Ve el historial de tus sesiones colaborativas anteriores</p>
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
           </Tabs>
         </div>

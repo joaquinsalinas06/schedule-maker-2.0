@@ -39,6 +39,37 @@ export interface AddComparisonRequest {
   schedule_id: number;
 }
 
+export interface CourseSelection {
+  id?: number;
+  course_code: string;
+  course_name: string;
+  section_code: string;
+  professor?: string;
+  selection_type: 'shared' | 'individual';
+  shared_with_users: number[];
+  priority: number;
+  added_by?: number;
+  is_active?: boolean;
+  schedule_data: any;
+}
+
+export interface CourseSelectionCreate {
+  course_code: string;
+  course_name: string;
+  section_code: string;
+  professor?: string;
+  selection_type: 'shared' | 'individual';
+  shared_with_users: number[];
+  priority?: number;
+  schedule_data: any;
+}
+
+export interface GenerateSchedulesRequest {
+  session_id: number;
+  course_selections: CourseSelection[];
+  personalized_schedules?: any[];
+}
+
 
 export class CollaborationAPI {
   // Collaborative Sessions
@@ -115,6 +146,40 @@ export class CollaborationAPI {
 
   static async getSessionComparisons(sessionId: number): Promise<ScheduleComparison[]> {
     const response = await apiClient.get(`/collaboration/sessions/${sessionId}/compare`);
+    return response.data;
+  }
+
+  // Course Selections
+  static async getCourseSelections(sessionId: number): Promise<CourseSelection[]> {
+    const response = await apiClient.get(`/collaboration/sessions/${sessionId}/courses`);
+    return response.data;
+  }
+
+  static async saveCourseSelection(sessionId: number, selection: CourseSelectionCreate): Promise<CourseSelection> {
+    const response = await apiClient.post(`/collaboration/sessions/${sessionId}/courses`, selection);
+    return response.data;
+  }
+
+  static async removeCourseSelection(sessionId: number, selectionId: number): Promise<void> {
+    await apiClient.delete(`/collaboration/sessions/${sessionId}/courses/${selectionId}`);
+  }
+
+  static async updateCourseSelection(
+    sessionId: number, 
+    selectionId: number, 
+    updateData: {
+      selection_type?: 'shared' | 'individual';
+      shared_with_users?: number[];
+      priority?: number;
+    }
+  ): Promise<CourseSelection> {
+    const response = await apiClient.put(`/collaboration/sessions/${sessionId}/courses/${selectionId}`, updateData);
+    return response.data;
+  }
+
+  // Schedule Generation
+  static async generateSchedules(data: GenerateSchedulesRequest): Promise<any> {
+    const response = await apiClient.post('/collaboration/generate-schedules', data);
     return response.data;
   }
 
