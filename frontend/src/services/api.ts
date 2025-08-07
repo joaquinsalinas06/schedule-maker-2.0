@@ -7,7 +7,7 @@ import {
 export const apiService = {
   // Courses
 
-  // Search courses with enhanced filters (replaces autocomplete)
+    // Search courses with enhanced filters (replaces autocomplete)
   searchCourses: async (
     query?: string, 
     university?: string, 

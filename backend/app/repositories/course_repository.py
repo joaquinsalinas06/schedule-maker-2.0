@@ -27,7 +27,11 @@ class CourseRepository(BaseRepository[Course]):
         if university_short_name:
             db_query = db_query.filter(University.short_name == university_short_name)
         
-        # Text search across course name, code, and professor
+        # Department filter (applied FIRST to limit search scope)
+        if department:
+            db_query = db_query.filter(Course.department == department.upper())
+        
+        # Text search across course name, code, and professor (within department if specified)
         if query and should_perform_search(query):
             search_terms = create_search_terms(query)
             
@@ -66,10 +70,6 @@ class CourseRepository(BaseRepository[Course]):
                     db_query = db_query.filter(search_conditions[0])
                 else:
                     db_query = db_query.filter(*search_conditions)
-        
-        # Department filter (based on course code prefix)
-        if department:
-            db_query = db_query.filter(Course.department == department.upper())
         
         # Professor filter (separate from general search)
         if professor:

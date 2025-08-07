@@ -155,6 +155,45 @@ export function EnhancedCollaborativeBuilder() {
     }
   };
 
+  // Enhanced search function with filters
+  const handleSearch = async () => {
+    if (!searchQuery.trim() && !filters.department) return
+    
+    setLoading(true)
+    try {
+      // Use search endpoint with enhanced filters
+      const { apiService } = await import('@/services/api');
+      const response = await apiService.searchCourses(
+        searchQuery.trim(), 
+        filters.university,
+        filters.department || undefined,
+        undefined, // professor
+        20
+      )
+      setSearchResults(response || [])
+    } catch (error) {
+      console.error('Search error:', error)
+      setSearchResults([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Trigger search when filters change (except for empty states)
+  useEffect(() => {
+    const hasActiveFilters = searchQuery.length >= 3 || filters.department;
+    
+    if (hasActiveFilters) {
+      const timer = setTimeout(() => {
+        handleSearch();
+      }, 300); // Debounce filter changes
+      
+      return () => clearTimeout(timer);
+    } else {
+      setSearchResults([]);
+    }
+  }, [filters.department, searchQuery]);
+
   // Sync autocomplete with search results when autocomplete changes (matching generate page)
   useEffect(() => {
     if (autocompleteSuggestions.length > 0 && autocompleteQuery.length >= 3) {

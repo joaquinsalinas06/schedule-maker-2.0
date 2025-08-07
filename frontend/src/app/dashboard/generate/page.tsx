@@ -79,6 +79,21 @@ export default function GeneratePage() {
     setCollapsedCourses(newCollapsed)
   }
 
+    // Trigger search when filters change (except for empty states)
+  useEffect(() => {
+    const hasActiveFilters = searchQuery.length >= 3 || filters.department;
+    
+    if (hasActiveFilters) {
+      const timer = setTimeout(() => {
+        handleSearch();
+      }, 300); // Debounce filter changes
+      
+      return () => clearTimeout(timer);
+    } else {
+      setSearchResults([]);
+    }
+  }, [filters.department, searchQuery]);
+
   // Sync autocomplete with search results when autocomplete changes
   useEffect(() => {
     if (autocompleteSuggestions.length > 0 && autocompleteQuery.length >= 3) {
@@ -94,17 +109,17 @@ export default function GeneratePage() {
   }, [searchQuery, setAutocompleteQuery])
 
   const handleSearch = async () => {
-    if (!searchQuery.trim() && !filters.university && !filters.department) return
+    if (!searchQuery.trim() && !filters.department) return
     
     setIsLoading(true)
     setDisplayPage(1) // Reset display pagination on new search
     try {
-      // Use search endpoint for faster results
+      // Use search endpoint with enhanced filters
       const response = await apiService.searchCourses(
         searchQuery.trim(), 
         filters.university,
         filters.department || undefined,
-        undefined,
+        undefined, // professor
         20
       )
       setSearchResults(response || [])

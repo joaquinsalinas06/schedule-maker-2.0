@@ -2,7 +2,9 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Search, X, BookOpen } from "lucide-react"
 import { Filter } from "@/types"
 
 interface CourseSearchCardProps {
@@ -21,20 +23,57 @@ export function CourseSearchCard({
   setSearchQuery,
   handleSearch,
 }: CourseSearchCardProps) {
+
+  const clearAllFilters = () => {
+    setSearchQuery("")
+    setFilters({
+      ...filters,
+      department: "",
+    })
+  }
+
+  const activeFiltersCount = [
+    filters.department,
+    searchQuery
+  ].filter(Boolean).length
+
   return (
     <Card className="bg-card/80 backdrop-blur-sm border-border shadow-xl">
       <CardHeader className="pb-3 sm:pb-6">
-        <CardTitle className="flex items-center gap-2 text-foreground text-lg sm:text-xl">
-          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-500" />
-          Buscar Cursos
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Search className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-500" />
+            <CardTitle className="text-foreground text-lg sm:text-xl">
+              Buscar Cursos
+            </CardTitle>
+            {activeFiltersCount > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {activeFiltersCount} filtro{activeFiltersCount !== 1 ? 's' : ''}
+              </Badge>
+            )}
+          </div>
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearAllFilters}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
         <CardDescription className="text-muted-foreground text-sm">
-          Encuentra y selecciona las secciones que deseas incluir en tu horario
+          Busca por nombre del curso, código, o profesor
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 sm:space-y-4">
-        {/* Mobile optimized department selector */}
+        {/* Career/Department Filter */}
         <div className="w-full">
+          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-2">
+            <BookOpen className="w-3 h-3" />
+            Carrera / Departamento
+          </label>
           <select
             value={filters.department}
             onChange={(e) => setFilters({...filters, department: e.target.value})}
@@ -57,19 +96,48 @@ export function CourseSearchCard({
           </select>
         </div>
 
-        {/* Mobile optimized search input */}
+        {/* Unified Search Input */}
         <div className="w-full">
-          <Input
-            placeholder="Buscar por nombre o código del curso..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch?.()}
-            className="w-full text-base sm:text-sm py-2.5 sm:py-2"
-          />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar curso, código, o profesor (ej: Matemática, CS1102, Napa)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch?.()}
+              className="w-full text-base sm:text-sm py-2.5 sm:py-2 pl-10"
+            />
+          </div>
           <p className="text-xs text-muted-foreground mt-1 px-1">
-            Mínimo 3 caracteres para búsqueda automática
+            Busca en nombres de cursos, códigos y profesores simultáneamente
           </p>
         </div>
+
+        {/* Active Filters Display */}
+        {activeFiltersCount > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {searchQuery && (
+              <Badge variant="outline" className="text-xs">
+                <Search className="w-3 h-3 mr-1" />
+                Búsqueda: {searchQuery}
+                <X 
+                  className="w-3 h-3 ml-1 cursor-pointer hover:text-destructive" 
+                  onClick={() => setSearchQuery("")}
+                />
+              </Badge>
+            )}
+            {filters.department && (
+              <Badge variant="outline" className="text-xs">
+                <BookOpen className="w-3 h-3 mr-1" />
+                Carrera: {filters.department}
+                <X 
+                  className="w-3 h-3 ml-1 cursor-pointer hover:text-destructive" 
+                  onClick={() => setFilters({...filters, department: ""})}
+                />
+              </Badge>
+            )}
+          </div>
+        )}
         
         <div className="text-xs sm:text-sm text-muted-foreground px-1">
           Buscando en: <span className="font-medium text-cyan-600">{filters.university}</span>
