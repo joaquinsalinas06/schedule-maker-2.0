@@ -67,7 +67,7 @@ const getResponsiveFontSizes = (containerWidth: number) => {
     }
   } else if (containerWidth <= TABLET_BREAKPOINT) {
     return {
-      titleFont: 14, infoFont: 10, headerFont: 12, timeFont: 11,
+      titleFont: 18, infoFont: 14, headerFont: 12, timeFont: 11,
       courseFont: 10, professorFont: 9, locationFont: 8
     }
   } else {
@@ -311,8 +311,8 @@ export function ScheduleComparisonVisualization({
 
           let currentY = textY
           
-          // Course code and participant indicator
-          const courseText = `${courseSection.course_code} (${participant.name})`
+          // Course name and participant indicator  
+          const courseText = `${courseSection.course_name} (${participant.name})`
           const courseHeight = drawFittingText(courseText, textX, currentY, maxWidth, fontSizes.courseFont, 'bold')
           currentY += courseHeight + 2
 

@@ -418,6 +418,8 @@ class CollaborationService:
         message_type = message.get("type")
         data = message.get("data", {})
         
+        print(f"[WebSocket] Processing message: {message_type} from user {user_id}")
+        
         if message_type == "schedule_update":
             self.handle_schedule_update(session_code, data)
             return {
@@ -466,6 +468,51 @@ class CollaborationService:
                 "exclude_user": user_id
             }
         
+        elif message_type == "course_selections_update":
+            # Handle course selections update from a participant
+            course_selections = data.get("course_selections", [])
+            print(f"[WebSocket] Broadcasting course selections update: {len(course_selections)} selections")
+            return {
+                "type": "course_selections_update_broadcast",
+                "data": {
+                    "course_selections": course_selections,
+                    "updated_by": user_id,
+                    "timestamp": message.get("timestamp")
+                },
+                "exclude_user": user_id
+            }
+        
+        elif message_type == "course_selection_add":
+            # Handle single course selection addition
+            course_selection = data.get("course_selection")
+            if course_selection:
+                print(f"[WebSocket] Broadcasting course selection addition: {course_selection.get('course_code', 'unknown')}")
+                return {
+                    "type": "course_selection_add_broadcast",
+                    "data": {
+                        "course_selection": course_selection,
+                        "added_by": user_id,
+                        "timestamp": message.get("timestamp")
+                    },
+                    "exclude_user": user_id
+                }
+        
+        elif message_type == "course_selection_remove":
+            # Handle course selection removal
+            selection_index = data.get("index")
+            if selection_index is not None:
+                print(f"[WebSocket] Broadcasting course selection removal: index {selection_index}")
+                return {
+                    "type": "course_selection_remove_broadcast",
+                    "data": {
+                        "index": selection_index,
+                        "removed_by": user_id,
+                        "timestamp": message.get("timestamp")
+                    },
+                    "exclude_user": user_id
+                }
+        
+        print(f"[WebSocket] Unknown message type: {message_type}")
         return None
     
     async def handle_comparison_connection(self, session_code: str, user_id: int) -> Dict[str, Any]:
@@ -602,3 +649,10 @@ class CollaborationService:
             }, exclude_user=exclude_user)
         elif message_type == "comparison_update_broadcast":
             await manager.send_comparison_update(session_code, data)
+        elif message_type in ["course_selections_update_broadcast", "course_selection_add_broadcast", "course_selection_remove_broadcast"]:
+            # Handle course selection updates
+            await manager.broadcast_to_session(session_code, {
+                "type": message_type.replace("_broadcast", ""),
+                "data": data,
+                "timestamp": data.get("timestamp")
+            }, exclude_user=exclude_user)

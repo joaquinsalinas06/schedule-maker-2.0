@@ -50,31 +50,26 @@ export function SessionManager() {
           
           if (compCode) {
             // In comparison mode - don't try to load sessions from API
-            console.log('🔍 Comparison mode detected, skipping session API loading');
           } else {
             // Normal mode - try to load sessions from API
             const userSessions = await CollaborationAPI.getUserSessions();
             setSessions(userSessions);
-            console.log('✅ Loaded sessions from API:', userSessions.length);
           }
         } catch (apiError) {
           // Check if it's a 405 error (endpoint not implemented)
           const error = apiError as any;
           if (error.status === 405) {
-            console.log('ℹ️ User sessions endpoint not implemented yet, this is expected');
+            // User sessions endpoint not implemented yet, this is expected
           } else {
-            console.warn('⚠️ Failed to load sessions from API:', apiError);
+            // Failed to load sessions from API
           }
           // Keep existing sessions from secure storage
-          console.log('📦 Sessions already loaded from secure storage:', sessions.length);
         }
       } else {
-        console.log('📦 Sessions already loaded:', sessions.length);
+        // Sessions already loaded
       }
     } catch (error) {
-      console.error('❌ Error in loadSessions:', error);
-      // Don't show error toast for API failures
-      console.log('Continuing without API session loading...');
+      // Error in loadSessions - continuing without API session loading
     } finally {
       setLoading(false);
     }

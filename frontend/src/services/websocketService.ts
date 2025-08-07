@@ -14,17 +14,21 @@ class WebSocketService {
   private reconnectDelay = 1000;
   private sessionCode: string | null = null;
   private token: string | null = null;
+  private pingInterval: NodeJS.Timeout | null = null;
+  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private messageQueue: WebSocketMessage[] = [];
+  private isReconnecting = false;
 
   connect(sessionCode: string, token: string): void {
     // Prevent multiple connections to the same session
     if (this.ws && this.ws.readyState === WebSocket.OPEN && this.sessionCode === sessionCode) {
-      console.log('🔌 WebSocket already connected to session:', sessionCode);
+      // WebSocket already connected to session
       return;
     }
     
     // Close existing connection if different session
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
-      console.log('🔌 Closing existing WebSocket connection');
+      // Closing existing WebSocket connection
       this.ws.close();
     }
     
@@ -36,7 +40,7 @@ class WebSocketService {
     const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     const wsUrl = `${cleanBaseUrl}/ws/collaborate/${sessionCode}?token=${encodeURIComponent(token)}`;
     
-    console.log('🔌 Connecting WebSocket to session:', sessionCode);
+    // Connecting WebSocket to session
     
     try {
       this.ws = new WebSocket(wsUrl);
@@ -71,7 +75,9 @@ class WebSocketService {
     if (!this.ws) return;
 
     this.ws.onopen = () => {
+      console.log('[WebSocket] Connection opened successfully');
       this.reconnectAttempts = 0;
+      this.isReconnecting = false;
       useCollaborationStore.getState().setIsConnected(true);
       
       // Send a message to announce joining
@@ -79,6 +85,12 @@ class WebSocketService {
         type: 'user_join',
         timestamp: new Date().toISOString()
       });
+      
+      // Start ping interval
+      this.startPingInterval();
+      
+      // Process any queued messages
+      this.processMessageQueue();
     };
 
     this.ws.onmessage = (event) => {
@@ -91,15 +103,17 @@ class WebSocketService {
     };
 
     this.ws.onclose = (event) => {
+      console.log('[WebSocket] Connection closed:', event.code, event.reason);
       useCollaborationStore.getState().setIsConnected(false);
+      this.stopPingInterval();
       
-      // WebSocket closed
-      
-      if (event.code !== 1000) { // Not a normal closure
+      if (event.code !== 1000 && !this.isReconnecting) { // Not a normal closure
         if (event.code === 1008) {
-          // WebSocket closed due to policy violation (likely authentication error)
+          console.error('[WebSocket] Authentication error - token may be expired');
+          useCollaborationStore.getState().setSessionExpired?.(true);
+        } else {
+          this.handleConnectionError();
         }
-        this.handleConnectionError();
       }
     };
 
@@ -112,19 +126,26 @@ class WebSocketService {
   private handleConnectionError(): void {
     useCollaborationStore.getState().setIsConnected(false);
     
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+    if (this.reconnectAttempts < this.maxReconnectAttempts && !this.isReconnecting) {
+      this.isReconnecting = true;
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
       
-      setTimeout(() => {
+      console.log(`[WebSocket] Attempting reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
+      
+      this.reconnectTimeout = setTimeout(() => {
         if (this.sessionCode && this.token) {
           this.connect(this.sessionCode, this.token);
         }
       }, delay);
+    } else {
+      console.error('[WebSocket] Max reconnection attempts reached');
+      this.isReconnecting = false;
     }
   }
 
   private handleMessage(message: WebSocketMessage): void {
+    console.log('[WebSocket] Received message:', message.type, message);
     const store = useCollaborationStore.getState();
 
     switch (message.type) {
@@ -222,7 +243,7 @@ class WebSocketService {
       case 'schedule_generation_complete':
         if (message.data?.personalized_schedules) {
           // Handle schedule generation completion
-          console.log('Received personalized schedules:', message.data.personalized_schedules);
+          // Received personalized schedules
           // Could trigger a notification or update UI state
         }
         break;
@@ -234,7 +255,10 @@ class WebSocketService {
 
   sendMessage(message: WebSocketMessage): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      console.log('[WebSocket] Sending message:', message.type, message);
       this.ws.send(JSON.stringify(message));
+    } else {
+      console.warn('[WebSocket] Cannot send message - connection not open:', message.type);
     }
   }
 
@@ -319,13 +343,64 @@ class WebSocketService {
   }
 
   disconnect(): void {
+    console.log('[WebSocket] Disconnecting WebSocket');
+    
+    // Stop ping interval
+    this.stopPingInterval();
+    
+    // Clear reconnection timeout
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+    
+    // Close WebSocket connection
     if (this.ws) {
       this.ws.close(1000, 'User disconnected');
       this.ws = null;
     }
+    
+    // Reset state
+    this.sessionCode = null;
+    this.token = null;
+    this.isReconnecting = false;
+    this.reconnectAttempts = 0;
+    this.messageQueue = [];
+    
+    // Update store
     useCollaborationStore.getState().setIsConnected(false);
     // Don't clear the session - keep it so user can rejoin later
     // useCollaborationStore.getState().clearSession();
+  }
+
+  private startPingInterval(): void {
+    this.stopPingInterval(); // Clear any existing interval
+    
+    this.pingInterval = setInterval(() => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        console.log('[WebSocket] Sending ping');
+        this.ws.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, 30000); // Ping every 30 seconds
+  }
+
+  private stopPingInterval(): void {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+  }
+
+  private processMessageQueue(): void {
+    console.log(`[WebSocket] Processing message queue (${this.messageQueue.length} messages)`);
+    
+    while (this.messageQueue.length > 0 && this.ws && this.ws.readyState === WebSocket.OPEN) {
+      const message = this.messageQueue.shift();
+      if (message) {
+        console.log('[WebSocket] Sending queued message:', message);
+        this.ws.send(JSON.stringify(message));
+      }
+    }
   }
 
   isConnected(): boolean {

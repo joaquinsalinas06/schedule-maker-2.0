@@ -9,6 +9,7 @@ from app.repositories.user_repository import UserRepository
 from app.repositories.university_repository import UniversityRepository
 from app.utils.security import verify_password, get_password_hash, create_access_token, create_refresh_token, decode_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.services.cloudinary_service import cloudinary_service
+from app.services.email_verification_service import email_verification_service
 from fastapi import HTTPException, status, UploadFile
 
 
@@ -17,13 +18,21 @@ class AuthService:
         self.user_repo = UserRepository(db)
         self.university_repo = UniversityRepository(db)
 
-    def register_user(self, user_data, remember_me: bool = False) -> tuple[str, str, User]:
+    def register_user(self, user_data, remember_me: bool = False, require_email_verification: bool = False) -> tuple[str, str, User]:
         # Check if user already exists
         if self.user_repo.get_by_email(user_data.email):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered"
             )
+        
+        # Check email verification if required (optional for most flows)
+        if require_email_verification:
+            if not email_verification_service.is_email_verified(self.user_repo.db, user_data.email):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email verification required. Please verify your email before registering."
+                )
         
         # Verify university exists
         if not self.university_repo.get(user_data.university_id):

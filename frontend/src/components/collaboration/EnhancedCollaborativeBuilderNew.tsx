@@ -82,7 +82,7 @@ export function EnhancedCollaborativeBuilder() {
         return user.id;
       }
     } catch (error) {
-      console.error('Error parsing user from localStorage:', error);
+      // Error parsing user from localStorage
     }
     return 1; // Default fallback
   }
@@ -100,7 +100,7 @@ export function EnhancedCollaborativeBuilder() {
       const selections = await CollaborationAPI.getCourseSelections(currentSession.id);
       setCourseSelections(selections);
     } catch (error) {
-      console.error('Error loading course selections:', error);
+      // Error loading course selections
     }
   };
 
@@ -201,7 +201,7 @@ export function EnhancedCollaborativeBuilder() {
         }
 
       } catch (error) {
-        console.error('Error saving course selection:', error);
+        // Error saving course selection
       }
     }
   };
@@ -228,9 +228,8 @@ export function EnhancedCollaborativeBuilder() {
           shared_with_users: newType === 'shared' ? sharedWith : [],
           priority: selection.priority || 1
         });
-        console.log('Course selection type updated successfully in database');
       } catch (error) {
-        console.error('Failed to update course selection in database:', error);
+        // Failed to update course selection in database
         // Revert local changes if API call failed
         setCourseSelections(courseSelections.map((sel, i) => 
           i === index ? selection : sel
@@ -258,7 +257,7 @@ export function EnhancedCollaborativeBuilder() {
         websocketService.sendCourseSelectionUpdate(updatedSelections);
       }
     } catch (error) {
-      console.error('Error removing course selection:', error);
+      // Error removing course selection
     }
   };
 
@@ -300,7 +299,6 @@ export function EnhancedCollaborativeBuilder() {
           personalized_schedules: [currentUserSchedule]
         });
         
-        console.log('Schedule generated successfully via API:', generatedSchedule);
         
         // Clear any existing conflicts
         setConflicts([]);
@@ -314,7 +312,7 @@ export function EnhancedCollaborativeBuilder() {
         alert(`✅ ¡Tu horario personal se generó exitosamente!\n\n• ${currentUserSchedule.sharedCount} secciones compartidas\n• ${currentUserSchedule.individualCount} secciones individuales\n• ${currentUserSchedule.totalSections} secciones totales\n\n¡Horario listo para visualizar!`);
         
       } catch (apiError) {
-        console.error('Failed to generate schedule via API:', apiError);
+        // Failed to generate schedule via API
         
         // Transform and store the schedule data for visualization even in fallback
         const transformedSchedule = transformScheduleData(userSections);
@@ -325,7 +323,7 @@ export function EnhancedCollaborativeBuilder() {
         alert(`⚠️ Horario generado localmente pero no se pudo guardar en el servidor.\n\n• ${currentUserSchedule.sharedCount} secciones compartidas\n• ${currentUserSchedule.individualCount} secciones individuales\n• ${currentUserSchedule.totalSections} secciones totales\n\nPor favor, verifica tu conexión e intenta nuevamente.`);
       }
     } catch (error) {
-      console.error('Error generating schedule:', error);
+      // Error generating schedule
       alert('❌ Error al generar el horario. Por favor, intenta nuevamente.');
     } finally {
       setLoading(false);

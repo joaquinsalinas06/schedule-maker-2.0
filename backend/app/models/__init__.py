@@ -8,6 +8,7 @@ from .session import Session
 from .schedule import Schedule, ScheduleSession
 from .collaboration import CollaborativeSession, SessionParticipant, ScheduleShare, ScheduleComparison, CollaborativeCourseSelection, GeneratedCollaborativeSchedule
 from .friendship import FriendRequest, Friendship
+from .email_verification import EmailVerification
 
 __all__ = [
     "Base",
@@ -26,5 +27,6 @@ __all__ = [
     "CollaborativeCourseSelection",
     "GeneratedCollaborativeSchedule",
     "FriendRequest",
-    "Friendship"
+    "Friendship",
+    "EmailVerification"
 ]

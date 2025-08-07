@@ -17,7 +17,7 @@ export const useUserSessionSecurity = () => {
         const lastKnownUser = localStorage.getItem('lastKnownUser');
         
         if (currentUser !== lastKnownUser) {
-          console.log('🔐 User session changed, clearing data for security');
+          // User session changed, clearing data for security
           
           // Clear collaboration data
           clearUserData();
@@ -37,12 +37,12 @@ export const useUserSessionSecurity = () => {
           const hasFavorites = localStorage.getItem('favoriteSchedules');
           const hasOldCombinations = localStorage.getItem('favoritedCombinations');
           if (hasFavorites || hasOldCombinations) {
-            console.log('🔄 Migrating existing data to secure storage');
+            // Migrating existing data to secure storage
             migrateToSecureStorage();
           }
         }
       } catch (error) {
-        console.warn('Error checking user session security:', error);
+        // Error checking user session security
       }
     };
 

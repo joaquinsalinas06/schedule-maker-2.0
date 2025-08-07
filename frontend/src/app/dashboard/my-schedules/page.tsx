@@ -34,8 +34,6 @@ export default function MySchedulesPage() {
         ? { ...schedule, name: newName, notes: newNotes }
         : schedule
     )
-    console.log('Favorite schedules before update:', favoriteSchedules)
-    console.log('Updated favorite schedules:', updatedFavorites)
     setFavoriteSchedules(updatedFavorites)
     SecureStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites)) // 🔒 User-specific
   }
@@ -108,7 +106,6 @@ export default function MySchedulesPage() {
 
   const handleViewSchedule = (favorite: FavoriteSchedule) => {
     // Use the actual favorite schedule object for viewing
-    console.log('Viewing favorite:', favorite)
     sessionStorage.setItem('viewingFavoriteSchedule', JSON.stringify(favorite))
     router.push('/dashboard/schedules')
   }

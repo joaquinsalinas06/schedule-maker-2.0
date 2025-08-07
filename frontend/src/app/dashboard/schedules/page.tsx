@@ -81,14 +81,10 @@ export default function SchedulesPage() {
       if (savedSchedules) {
         try {
           const parsedSchedules = JSON.parse(savedSchedules)
-          console.log('📊 Loading generatedSchedules from sessionStorage:', parsedSchedules)
-          console.log('📊 First course sessions sample:', parsedSchedules?.combinations?.[0]?.courses?.[0]?.sessions?.[0])
           setGeneratedSchedules(parsedSchedules)
         } catch (error) {
-          console.error('❌ Error loading saved schedules:', error)
+          // Error loading saved schedules
         }
-      } else {
-        console.log('🔍 No generatedSchedules in sessionStorage')
       }
       
       if (savedSelectedSections) {
@@ -120,16 +116,12 @@ export default function SchedulesPage() {
       if (viewingFavorite) {
         try {
           const parsedFavorite = JSON.parse(viewingFavorite)
-          console.log('📅 Loading viewingFavoriteSchedule from sessionStorage:', parsedFavorite)
-          console.log('📅 Schedule name from sessionStorage:', parsedFavorite?.name)
           setViewingFavoriteSchedule(parsedFavorite)
           // Clear it after loading so it doesn't persist on refresh
           sessionStorage.removeItem('viewingFavoriteSchedule')
         } catch (error) {
-          console.error('❌ Error loading viewing favorite:', error)
+          // Error loading viewing favorite
         }
-      } else {
-        console.log('🔍 No viewingFavoriteSchedule in sessionStorage')
       }
     }
   }, [])
@@ -308,7 +300,6 @@ export default function SchedulesPage() {
             <ScheduleVisualization 
               scheduleName={viewingFavoriteSchedule?.name}
               scheduleData={(viewingFavoriteSchedule ? (() => {
-                console.log('📊 Building scheduleData for viewing favorite schedule:', viewingFavoriteSchedule);
                 
                 // Handle nested data structure
                 let courses: VisualizationCourseSection[] = [];
@@ -322,8 +313,6 @@ export default function SchedulesPage() {
                 if ((actualCombination as { courses?: unknown[] }).courses) {
                   // New format - already has courses array
                   const rawCourses = (actualCombination as { courses: { course_id: number; course_code: string; course_name: string; section_id: number; section_number: string; professor: string; sessions: any[] }[] }).courses;
-                  console.log('🔍 Raw courses from favorite:', rawCourses);
-                  console.log('🔍 First course sessions:', rawCourses[0]?.sessions);
                   
                   courses = rawCourses.map(course => ({
                     course_id: course.course_id,
@@ -343,8 +332,6 @@ export default function SchedulesPage() {
                     }))
                   }));
                   
-                  console.log('🔍 Transformed courses:', courses);
-                  console.log('🔍 First transformed course sessions:', courses[0]?.sessions);
                 } else if ((actualCombination as { sections?: unknown[] }).sections) {
                   // Old format - transform sections to courses
                   const sections = (actualCombination as { sections: { id: number; course_code: string; course_name: string; section_number?: string; professor?: string; sessions?: TypesSession[] }[] }).sections;
@@ -379,10 +366,8 @@ export default function SchedulesPage() {
                   selected_courses_count: courses.length
                 };
                 
-                console.log('Transformed schedule data:', scheduleData);
                 return scheduleData;
             })() : generatedSchedules ? (() => {
-                console.log('📈 Raw generatedSchedules data:', generatedSchedules);
                 const transformedData = {
                 ...generatedSchedules,
                 combinations: generatedSchedules.combinations.map(combination => ({
@@ -409,7 +394,6 @@ export default function SchedulesPage() {
                 })),
                 selected_courses_count: generatedSchedules.combinations?.[0]?.courses?.length || 0
               };
-              console.log('📈 Transformed session sample:', transformedData.combinations[0]?.courses[0]?.sessions[0]);
               return transformedData;
               })() : null!)}
               onAddToFavorites={viewingFavoriteSchedule ? undefined : addToFavoritesWrapper}

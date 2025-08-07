@@ -36,15 +36,12 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
   }, [autoLoadCode, hasAutoLoaded]);
   // Transform shared schedule data to ScheduleVisualization format
   const transformSharedScheduleData = (sharedSchedule: any) => {
-    console.log('🔄 Transforming shared schedule data:', sharedSchedule);
     
     if (!sharedSchedule?.schedule?.combination?.courses) {
-      console.log('❌ No courses found in shared schedule data');
       return null;
     }
 
     const courses = sharedSchedule.schedule.combination.courses.map((course: any, index: number) => {
-      console.log('📚 Processing course:', course);
       
       return {
         course_id: course.course_id || index + 1,
@@ -54,7 +51,6 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
         section_number: course.section_number,
         professor: course.professor,
         sessions: course.sessions?.map((session: any, sessionIndex: number) => {
-          console.log('🕐 Processing session:', session);
           
           return {
             session_id: session.session_id || sessionIndex + 1,
@@ -81,7 +77,6 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
       selected_courses_count: courses.length
     };
     
-    console.log('✅ Transformed schedule data:', transformedData);
     return transformedData;
   };
 
@@ -102,7 +97,6 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
 
     try {
       const result = await CollaborationAPI.getSharedSchedule(token);
-      console.log(result);
       setViewingSchedule(result);
       toast({
         title: "Horario Cargado",

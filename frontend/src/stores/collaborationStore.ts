@@ -11,6 +11,7 @@ interface CollaborationState {
   // Current session
   currentSession: CollaborativeSession | null;
   isConnected: boolean;
+  sessionExpired: boolean;
   
   // Sessions
   sessions: CollaborativeSession[];
@@ -36,6 +37,7 @@ interface CollaborationState {
   // Actions
   setCurrentSession: (session: CollaborativeSession | null) => void;
   setIsConnected: (connected: boolean) => void;
+  setSessionExpired: (expired: boolean) => void;
   setSessions: (sessions: CollaborativeSession[]) => void;
   addSession: (session: CollaborativeSession) => void;
   updateSession: (sessionCode: string, updates: Partial<CollaborativeSession>) => void;
@@ -94,7 +96,7 @@ const getUserStorageKey = () => {
       return `collaboration-store-user-${parsedUser.id}`;
     }
   } catch (error) {
-    console.warn('Failed to get user for storage key:', error);
+    // Failed to get user for storage key
   }
   return 'collaboration-store-anonymous';
 };
@@ -106,6 +108,7 @@ export const useCollaborationStore = create<CollaborationState>()(
         // Initial state
         currentSession: null,
         isConnected: false,
+        sessionExpired: false,
         sessions: [],
         sharedSchedules: [],
         comparisons: [],
@@ -119,6 +122,7 @@ export const useCollaborationStore = create<CollaborationState>()(
       // Session actions
       setCurrentSession: (session: CollaborativeSession | null) => set({ currentSession: session }),
       setIsConnected: (connected: boolean) => set({ isConnected: connected }),
+      setSessionExpired: (expired: boolean) => set({ sessionExpired: expired }),
       
       setSessions: (sessions: CollaborativeSession[]) => set({ sessions }),
       addSession: (session: CollaborativeSession) => set((state) => ({
@@ -256,9 +260,9 @@ export const useCollaborationStore = create<CollaborationState>()(
               localStorage.removeItem(key);
             });
             
-            console.log('🧹 Cleared collaboration data for security:', keysToCheck);
+            // Cleared collaboration data for security
           } catch (error) {
-            console.warn('Failed to clear collaboration storage:', error);
+            // Failed to clear collaboration storage
           }
         }
       }

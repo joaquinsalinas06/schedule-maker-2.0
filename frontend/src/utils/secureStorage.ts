@@ -12,7 +12,7 @@ const getUserStorageKey = (baseKey: string): string => {
       return `${baseKey}-user-${parsedUser.id}`;
     }
   } catch (error) {
-    console.warn('Failed to get user for storage key:', error);
+    // Failed to get user for storage key
   }
   return `${baseKey}-anonymous`;
 };
@@ -29,7 +29,7 @@ export class SecureStorage {
       const userKey = getUserStorageKey(key);
       return localStorage.getItem(userKey);
     } catch (error) {
-      console.warn(`Failed to get ${key} from secure storage:`, error);
+      // Failed to get item from secure storage
       return null;
     }
   }
@@ -42,7 +42,7 @@ export class SecureStorage {
       const userKey = getUserStorageKey(key);
       localStorage.setItem(userKey, value);
     } catch (error) {
-      console.warn(`Failed to set ${key} in secure storage:`, error);
+      // Failed to set item in secure storage
     }
   }
 
@@ -54,7 +54,7 @@ export class SecureStorage {
       const userKey = getUserStorageKey(key);
       localStorage.removeItem(userKey);
     } catch (error) {
-      console.warn(`Failed to remove ${key} from secure storage:`, error);
+      // Failed to remove item from secure storage
     }
   }
 
@@ -81,9 +81,9 @@ export class SecureStorage {
       // Remove all user-specific keys
       keysToRemove.forEach(key => localStorage.removeItem(key));
       
-      console.log('🧹 Cleared user-specific data:', keysToRemove);
+      // Cleared user-specific data
     } catch (error) {
-      console.warn('Failed to clear user data:', error);
+      // Failed to clear user data
     }
   }
 
@@ -106,9 +106,9 @@ export class SecureStorage {
       // Remove all user-specific keys from all users
       keysToRemove.forEach(key => localStorage.removeItem(key));
       
-      console.log('🧹 Security cleanup - cleared all user data:', keysToRemove);
+      // Security cleanup - cleared all user data
     } catch (error) {
-      console.warn('Failed to clear all user data:', error);
+      // Failed to clear all user data
     }
   }
 }
@@ -138,10 +138,10 @@ export const migrateToSecureStorage = (): void => {
         SecureStorage.setItem(key, value);
         // Remove from global storage
         localStorage.removeItem(key);
-        console.log(`✅ Migrated ${key} to secure storage`);
+        // Migrated key to secure storage
       }
     });
   } catch (error) {
-    console.warn('Failed to migrate to secure storage:', error);
+    // Failed to migrate to secure storage
   }
 };

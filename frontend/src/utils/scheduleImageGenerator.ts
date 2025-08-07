@@ -135,15 +135,15 @@ export const generateScheduleImage = ({
       const topMarginOffset = height * TOP_MARGIN
       const sideMarginOffset = width * SIDE_MARGIN
 
-      // Font sizes optimized for image generation
+      // Font sizes optimized for image generation (desktop sizes)
       const fontSizes = {
-        titleFont: 20,
-        infoFont: 14,
-        headerFont: 16,
-        timeFont: 14,
-        courseFont: 14,
-        professorFont: 13,
-        locationFont: 12,
+        titleFont: 16,
+        infoFont: 11,
+        headerFont: 13,
+        timeFont: 12,
+        courseFont: 11,
+        professorFont: 10,
+        locationFont: 9,
       }
 
       // Clear canvas with dark theme background
@@ -180,7 +180,7 @@ export const generateScheduleImage = ({
       // Schedule title
       const displayName = scheduleName || `Horario Generado`
       ctx.fillStyle = '#f1f5f9'
-      ctx.font = `bold ${fontSizes.titleFont}px system-ui, -apple-system, sans-serif`
+      ctx.font = `bold ${fontSizes.titleFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillText(displayName, sideMarginOffset / 2, headerCenterY - 15)
@@ -189,7 +189,7 @@ export const generateScheduleImage = ({
       const favoriteText = isFavorited ? " ★" : ""
       const courseCountText = `${schedule.courses?.length || 0} cursos${favoriteText}`
       
-      ctx.font = `${fontSizes.infoFont}px system-ui, -apple-system, sans-serif`
+      ctx.font = `${fontSizes.infoFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
       ctx.fillStyle = '#94a3b8'
       ctx.fillText(courseCountText, sideMarginOffset / 2, headerCenterY + 8)
       
@@ -197,7 +197,7 @@ export const generateScheduleImage = ({
 
       // Draw day headers
       ctx.fillStyle = '#f1f5f9'
-      ctx.font = `bold ${fontSizes.headerFont}px system-ui, -apple-system, sans-serif`
+      ctx.font = `bold ${fontSizes.headerFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
       ctx.textAlign = 'center'
       
       for (let day = 0; day < DAY_COUNT; day++) {
@@ -227,7 +227,7 @@ export const generateScheduleImage = ({
 
       // Horizontal lines and time labels
       ctx.strokeStyle = '#1e293b'
-      ctx.font = `${fontSizes.timeFont}px system-ui, -apple-system, sans-serif`
+      ctx.font = `${fontSizes.timeFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
       ctx.textAlign = 'right'
       ctx.fillStyle = '#94a3b8'
       
@@ -335,7 +335,7 @@ export const generateScheduleImage = ({
           const maxTextHeight = blockHeight - 20  // Reserve space at bottom
 
           const drawFittingText = (text: string, x: number, y: number, maxWidth: number, fontSize: number, fontWeight: string = 'normal') => {
-            ctx.font = `${fontWeight} ${fontSize}px system-ui, -apple-system, sans-serif`
+            ctx.font = `${fontWeight} ${fontSize}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
             
             let displayText = text
             const textWidth = ctx.measureText(displayText).width
@@ -363,16 +363,16 @@ export const generateScheduleImage = ({
 
           let currentY = textY
           
-          // Course code - Always shown first
+          // Course name - Always shown first, most important
           ctx.fillStyle = '#ffffff'
-          const codeHeight = drawFittingText(course.course_code, textX, currentY, maxWidth, fontSizes.courseFont + 1, 'bold')
-          currentY += codeHeight
+          const nameHeight = drawFittingText(course.course_name, textX, currentY, maxWidth, fontSizes.courseFont + 1, 'bold')
+          currentY += nameHeight
           
-          // Course name - Show if we have space (most blocks should show this)
+          // Course code - Show if we have space
           if (currentY + fontSizes.courseFont + 2 < yPos + maxTextHeight) {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
-            const nameHeight = drawFittingText(course.course_name, textX, currentY, maxWidth, fontSizes.courseFont - 1, 'normal')
-            currentY += nameHeight
+            const codeHeight = drawFittingText(course.course_code, textX, currentY, maxWidth, fontSizes.courseFont - 1, 'normal')
+            currentY += codeHeight
           }
           
           // Section - Show if we have space (should fit in most 1h blocks)

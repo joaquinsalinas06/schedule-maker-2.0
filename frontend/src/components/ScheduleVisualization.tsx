@@ -100,10 +100,10 @@ const getResponsiveFontSizes = (containerWidth: number) => {
       titleFont: 12,      // "Horario #" - much smaller
       infoFont: 9,        // Credits and courses info - much smaller
       headerFont: 10,
-      timeFont: 10,
-      courseFont: 10,
-      professorFont: 9,
-      locationFont: 8,
+      timeFont: 9,
+      courseFont: 8,
+      professorFont: 7,
+      locationFont: 7,
       noScheduleTitle: 16,
       noScheduleSubtitle: 11
     }
@@ -112,10 +112,10 @@ const getResponsiveFontSizes = (containerWidth: number) => {
       titleFont: 18,      // "Horario #" - much smaller
       infoFont: 14,       // Credits and courses info - much smaller
       headerFont: 12,
-      timeFont: 12,
-      courseFont: 12,
-      professorFont: 11,
-      locationFont: 10,
+      timeFont: 11,
+      courseFont: 10,
+      professorFont: 9,
+      locationFont: 8,
       noScheduleTitle: 20,
       noScheduleSubtitle: 13
     }
@@ -124,10 +124,10 @@ const getResponsiveFontSizes = (containerWidth: number) => {
       titleFont: 16,      // "Horario #" - much smaller (was 24)
       infoFont: 11,       // Credits and courses info - much smaller (was 14)
       headerFont: 13,
-      timeFont: 13,
-      courseFont: 13,
-      professorFont: 12,
-      locationFont: 11,
+      timeFont: 12,
+      courseFont: 11,
+      professorFont: 10,
+      locationFont: 9,
       noScheduleTitle: 24,
       noScheduleSubtitle: 16
     }
@@ -579,7 +579,7 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
 
         // Helper function for fitting text with proper styling
         const drawFittingText = (text: string, x: number, y: number, maxWidth: number, fontSize: number, fontWeight: string = 'normal') => {
-          ctx.font = `${fontWeight} ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
+          ctx.font = `${fontWeight} ${fontSize}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
           
           // Measure text and truncate if needed
           let displayText = text
@@ -609,16 +609,16 @@ export function ScheduleVisualization({ scheduleData, onAddToFavorites, onRemove
 
         let currentY = textY
         
-        // Course code - Always shown first, compact
+        // Course name - Always shown first, most important
         ctx.fillStyle = '#ffffff'
-        const codeHeight = drawFittingText(course.course_code, textX, currentY, maxWidth, fontSizes.courseFont + 1, 'bold')
-        currentY += codeHeight
+        const nameHeight = drawFittingText(course.course_name, textX, currentY, maxWidth, fontSizes.courseFont + 1, 'bold')
+        currentY += nameHeight
         
-        // Course name - Show if we have space (most blocks should show this)
+        // Course code - Show if we have space
         if (currentY + fontSizes.courseFont + 2 < yPos + maxTextHeight) {
           ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
-          const nameHeight = drawFittingText(course.course_name, textX, currentY, maxWidth, fontSizes.courseFont - 1, 'normal')
-          currentY += nameHeight
+          const codeHeight = drawFittingText(course.course_code, textX, currentY, maxWidth, fontSizes.courseFont - 1, 'normal')
+          currentY += codeHeight
         }
         
         // Section number - Show if we have space (should fit in most 1h blocks)

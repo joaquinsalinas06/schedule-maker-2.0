@@ -103,7 +103,7 @@ export function CreateSessionDialog() {
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="ej., Planificación Horarios Otoño 2024"
+                placeholder="ej., Planificación Horarios Otoño 2025"
                 required
               />
             </div>

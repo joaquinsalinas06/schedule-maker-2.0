@@ -31,24 +31,17 @@ export function IntegratedScheduleComparison() {
 
   // Initialize comparison on component mount
   useEffect(() => {
-    console.log('🔄 IntegratedScheduleComparison: Initializing...');
     const newComparison = comparisonService.createComparison(`Comparación ${new Date().toLocaleDateString()}`);
-    console.log('🆕 Created new comparison:', newComparison);
     
     // Check for auto-loaded comparison schedule (use sessionStorage to persist across re-mounts)
     const hasLoadedKey = 'comparison_schedule_loaded';
     const hasAlreadyLoaded = sessionStorage.getItem(hasLoadedKey);
     const comparisonSchedule = sessionStorage.getItem('comparison_schedule');
     
-    console.log('🔍 Checking comparison state:', { 
-      hasAlreadyLoaded: !!hasAlreadyLoaded, 
-      hasComparisonSchedule: !!comparisonSchedule 
-    });
     
     if (!hasAlreadyLoaded && comparisonSchedule) {
       try {
         const scheduleData = JSON.parse(comparisonSchedule);
-        console.log('📊 Parsed schedule data:', scheduleData);
         
         // Create a participant from the friend's schedule
         const participant: ComparisonParticipant = {
@@ -65,7 +58,6 @@ export function IntegratedScheduleComparison() {
           }]
         };
         
-        console.log('👤 Created participant:', participant);
         
         // Add the participant to the comparison
         const updatedComparison = {
@@ -73,8 +65,6 @@ export function IntegratedScheduleComparison() {
           participants: [participant]
         };
         
-        console.log('📋 Updated comparison with participant:', updatedComparison);
-        console.log('📋 Participants count in updated comparison:', updatedComparison.participants.length);
         setActiveComparison(updatedComparison);
         
         // Mark as loaded to prevent re-loading
@@ -86,7 +76,7 @@ export function IntegratedScheduleComparison() {
           description: `Se ha cargado el horario de ${scheduleData.owner} para comparar`,
         });
       } catch (error) {
-        console.error('❌ Error loading comparison schedule:', error);
+        // Error loading comparison schedule
         toast({
           title: 'Error',
           description: 'No se pudo cargar el horario para comparar',
@@ -94,22 +84,15 @@ export function IntegratedScheduleComparison() {
         });
       }
     } else {
-      if (hasAlreadyLoaded) {
-        console.log('ℹ️ Comparison schedule already loaded in this session');
-      } else {
-        console.log('ℹ️ No comparison schedule found in sessionStorage');
-      }
       setActiveComparison(newComparison);
     }
 
     // Cleanup function to reset the loaded flag when component unmounts
     return () => {
-      console.log('🧹 IntegratedScheduleComparison: Cleaning up...');
       // Only clear if we're navigating away from comparison mode
       const urlParams = new URLSearchParams(window.location.search);
       if (!urlParams.get('compcode')) {
         sessionStorage.removeItem('comparison_schedule_loaded');
-        console.log('🗑️ Cleared comparison loaded flag');
       }
     };
   }, [toast]);
@@ -221,7 +204,6 @@ export function IntegratedScheduleComparison() {
   };
 
   if (!activeComparison) {
-    console.log('⏳ Comparison is null, showing loading state');
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -232,7 +214,6 @@ export function IntegratedScheduleComparison() {
     );
   }
 
-  console.log('✅ Rendering comparison with participants:', activeComparison.participants.length);
 
   return (
     <div className="space-y-6">

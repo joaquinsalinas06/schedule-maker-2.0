@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import EmailVerification from "@/components/EmailVerification"
+import { useEmailVerification } from "@/hooks/useEmailVerification"
 import {
   Calendar,
   Mail,
@@ -31,6 +33,8 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [registrationStep, setRegistrationStep] = useState<'form' | 'verify' | 'complete'>('form')
+  const { checkStatus } = useEmailVerification()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -66,15 +70,43 @@ export default function AuthPage() {
     }
 
     if (activeTab === "register") {
+      // First Name validation
       if (!formData.firstName) {
         newErrors.firstName = "El nombre es requerido"
+      } else if (formData.firstName.trim().length < 2) {
+        newErrors.firstName = "El nombre debe tener al menos 2 caracteres"
+      } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(formData.firstName)) {
+        newErrors.firstName = "El nombre solo puede contener letras y espacios"
       }
+
+      // Last Name validation
       if (!formData.lastName) {
         newErrors.lastName = "El apellido es requerido"
+      } else if (formData.lastName.trim().length < 2) {
+        newErrors.lastName = "El apellido debe tener al menos 2 caracteres"
+      } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(formData.lastName)) {
+        newErrors.lastName = "El apellido solo puede contener letras y espacios"
       }
+
+      // UTEC Student ID validation
       if (!formData.studentId) {
         newErrors.studentId = "El código de estudiante es requerido"
+      } else if (!/^\d{9}$/.test(formData.studentId)) {
+        newErrors.studentId = "El código debe tener exactamente 9 dígitos"
+      } else {
+        // Validate UTEC code format: YYYYCXXXX
+        const year = parseInt(formData.studentId.substring(0, 4))
+        const cycle = parseInt(formData.studentId.substring(4, 5))
+        const currentYear = new Date().getFullYear()
+        
+        if (year < 2016 || year > currentYear + 1) {
+          newErrors.studentId = `El año debe estar entre 2016 y ${currentYear + 1}`
+        } else if (cycle !== 1 && cycle !== 2) {
+          newErrors.studentId = "El ciclo debe ser 1 (primer semestre) o 2 (segundo semestre)"
+        }
       }
+
+      // Password confirmation validation
       if (!formData.confirmPassword) {
         newErrors.confirmPassword = "Confirma tu contraseña"
       } else if (formData.password !== formData.confirmPassword) {
@@ -98,23 +130,71 @@ export default function AuthPage() {
           password: formData.password,
           rememberMe: formData.rememberMe
         })
+        window.location.href = "/dashboard"
       } else {
-        await authService.register({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          password: formData.password,
-          student_id: formData.studentId,
-          university_id: 1 // UTEC ID
-        })
+        // For registration, first check if email verification is required
+        if (registrationStep === 'form') {
+          // Check if email is already verified
+          const status = await checkStatus(formData.email)
+          if (status?.is_verified) {
+            setRegistrationStep('complete')
+            // Proceed with registration
+            await authService.register({
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              email: formData.email,
+              password: formData.password,
+              student_id: formData.studentId,
+              university_id: 1 // UTEC ID
+            })
+            // Registration successful - ensure first-time user popup shows
+            localStorage.removeItem('schedule-maker-first-time-user')
+            window.location.href = "/dashboard"
+          } else {
+            // Email not verified, show verification step
+            setRegistrationStep('verify')
+          }
+        }
       }
-      window.location.href = "/dashboard"
     } catch (error) {
       console.error('Authentication error:', error)
       setErrors({ general: "Error en la autenticación. Intenta nuevamente." })
+      if (activeTab === "register") {
+        setRegistrationStep('form')
+      }
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleEmailVerificationComplete = async () => {
+    setRegistrationStep('complete')
+    setIsLoading(true)
+    
+    try {
+      // Email is verified, now complete the registration
+      await authService.register({
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        student_id: formData.studentId,
+        university_id: 1 // UTEC ID
+      })
+      // Registration successful - ensure first-time user popup shows
+      localStorage.removeItem('schedule-maker-first-time-user')
+      window.location.href = "/dashboard"
+    } catch (error) {
+      console.error('Registration error:', error)
+      setErrors({ general: "Error al crear la cuenta. Intenta nuevamente." })
+      setRegistrationStep('form')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const goBackToForm = () => {
+    setRegistrationStep('form')
   }
 
   const benefits = [
@@ -218,8 +298,75 @@ export default function AuthPage() {
                   <TabsTrigger value="register">Registrarse</TabsTrigger>
                 </TabsList>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <TabsContent value="login" className="space-y-4 mt-0">
+                {/* Show general errors */}
+                {errors.general && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <div className="flex items-center gap-2 text-red-700">
+                      <AlertCircle className="w-4 h-4" />
+                      <span className="text-sm">{errors.general}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Registration Email Verification Step */}
+                {activeTab === "register" && registrationStep === 'verify' && (
+                  <div className="space-y-4">
+                    <div className="text-center mb-4">
+                      <h3 className="text-lg font-semibold text-foreground mb-2">
+                        Verificar Email
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Antes de crear tu cuenta, necesitamos verificar tu email
+                      </p>
+                    </div>
+                    
+                    <EmailVerification
+                      email={formData.email}
+                      onVerificationComplete={handleEmailVerificationComplete}
+                      isEmbedded={true}
+                    />
+                    
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={goBackToForm}
+                      className="w-full"
+                      disabled={isLoading}
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Cambiar Email
+                    </Button>
+                  </div>
+                )}
+
+                {/* Registration Complete Step */}
+                {activeTab === "register" && registrationStep === 'complete' && (
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        {isLoading ? (
+                          <Loader2 className="w-6 h-6 text-green-600 animate-spin" />
+                        ) : (
+                          <CheckCircle className="w-6 h-6 text-green-600" />
+                        )}
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground mb-2">
+                        {isLoading ? "Creando tu cuenta..." : "¡Email verificado!"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {isLoading 
+                          ? "Configurando tu perfil y redirigiendo al dashboard..." 
+                          : "Tu cuenta ha sido creada exitosamente."
+                        }
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Login and Registration Forms */}
+                {(activeTab === "login" || (activeTab === "register" && registrationStep === 'form')) && (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <TabsContent value="login" className="space-y-4 mt-0">
                     <div className="space-y-2">
                       <Label htmlFor="email">Correo Electrónico</Label>
                       <div className="relative">
@@ -302,7 +449,14 @@ export default function AuthPage() {
                             type="text"
                             placeholder="Juan"
                             value={formData.firstName}
-                            onChange={(e) => handleInputChange("firstName", e.target.value)}
+                            onChange={(e) => {
+                              // Clean and format name input
+                              const value = e.target.value
+                                .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '') // Only letters and spaces
+                                .replace(/\s+/g, ' ') // Single spaces only
+                                .substring(0, 50); // Max length
+                              handleInputChange("firstName", value);
+                            }}
                             className={`pl-10 ${errors.firstName ? "border-red-500" : ""}`}
                           />
                         </div>
@@ -321,7 +475,14 @@ export default function AuthPage() {
                           type="text"
                           placeholder="Pérez"
                           value={formData.lastName}
-                          onChange={(e) => handleInputChange("lastName", e.target.value)}
+                          onChange={(e) => {
+                            // Clean and format name input
+                            const value = e.target.value
+                              .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '') // Only letters and spaces
+                              .replace(/\s+/g, ' ') // Single spaces only
+                              .substring(0, 50); // Max length
+                            handleInputChange("lastName", value);
+                          }}
                           className={errors.lastName ? "border-red-500" : ""}
                         />
                         {errors.lastName && (
@@ -334,15 +495,23 @@ export default function AuthPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="studentId">Código de Estudiante</Label>
+                      <Label htmlFor="studentId">Código de Estudiante UTEC</Label>
                       <Input
                         id="studentId"
                         type="text"
-                        placeholder="202012345"
+                        placeholder="202210604"
                         value={formData.studentId}
-                        onChange={(e) => handleInputChange("studentId", e.target.value)}
+                        onChange={(e) => {
+                          // Only allow numbers and limit to 9 digits
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 9);
+                          handleInputChange("studentId", value);
+                        }}
+                        maxLength={9}
                         className={errors.studentId ? "border-red-500" : ""}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Formato: AAAACXXXX (Año + Ciclo + 4 dígitos). Ej: 202210604
+                      </p>
                       {errors.studentId && (
                         <div className="flex items-center gap-1 text-red-500 text-sm">
                           <AlertCircle className="w-3 h-3" />
@@ -455,34 +624,38 @@ export default function AuthPage() {
                     </div>
                   </TabsContent>
 
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white font-semibold py-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        {activeTab === "login" ? "Iniciando sesión..." : "Creando cuenta..."}
-                      </>
-                    ) : (
-                      <>{activeTab === "login" ? "Iniciar Sesión" : "Crear Cuenta"}</>
-                    )}
-                  </Button>
-                </form>
-
-                <div className="mt-6 text-center text-sm text-muted-foreground">
-                  <p>
-                    {activeTab === "login" ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab(activeTab === "login" ? "register" : "login")}
-                      className="text-cyan-400 hover:text-cyan-300 transition-colors font-semibold"
+                    <Button
+                      type="submit"
+                      className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white font-semibold py-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+                      disabled={isLoading}
                     >
-                      {activeTab === "login" ? "Regístrate aquí" : "Inicia sesión"}
-                    </button>
-                  </p>
-                </div>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          {activeTab === "login" ? "Iniciando sesión..." : "Verificando email..."}
+                        </>
+                      ) : (
+                        <>{activeTab === "login" ? "Iniciar Sesión" : "Continuar"}</>
+                      )}
+                    </Button>
+                  </form>
+                )}
+
+                {/* Bottom text for tab switching */}
+                {(activeTab === "login" || (activeTab === "register" && registrationStep === 'form')) && (
+                  <div className="mt-6 text-center text-sm text-muted-foreground">
+                    <p>
+                      {activeTab === "login" ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab(activeTab === "login" ? "register" : "login")}
+                        className="text-cyan-400 hover:text-cyan-300 transition-colors font-semibold"
+                      >
+                        {activeTab === "login" ? "Regístrate aquí" : "Inicia sesión"}
+                      </button>
+                    </p>
+                  </div>
+                )}
               </Tabs>
             </CardContent>
           </Card>

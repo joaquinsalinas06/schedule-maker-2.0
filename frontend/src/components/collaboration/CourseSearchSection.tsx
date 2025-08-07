@@ -99,7 +99,7 @@ export function CourseSearchSection({
           selectedSections={selectedSections}
           addSection={addSection}
           removeSection={removeSection || ((index: number) => {
-            console.log('Remove section at index:', index);
+            // Remove section at index
           })}
         />
       </CardContent>

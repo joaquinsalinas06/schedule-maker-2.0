@@ -77,6 +77,8 @@ def print_config_summary() -> None:
     print(f"   • SECRET_KEY: {'✓ Set' if os.getenv('SECRET_KEY') else '✗ Missing'}")
     print(f"   • CORS_ORIGINS: {os.getenv('CORS_ORIGINS', 'http://localhost:3000')}")
     print(f"   • ADMIN_EMAIL: {'✓ Set' if os.getenv('ADMIN_EMAIL') else '✗ Not Set'}")
+    print(f"   • SMTP_SERVER: {'✓ Set' if os.getenv('SMTP_SERVER') else '✗ Not Set'}")
+    print(f"   • FROM_EMAIL: {'✓ Set' if os.getenv('FROM_EMAIL') else '✗ Not Set'}")
     
     missing = validate_required_env_vars()
     if missing:
@@ -84,3 +86,40 @@ def print_config_summary() -> None:
     else:
         print("   ✅ All required variables are set")
     print()
+
+
+class Settings:
+    """Application settings loaded from environment variables."""
+    
+    # Database
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+    
+    # Security
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "")
+    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = get_env_int("ACCESS_TOKEN_EXPIRE_MINUTES", 30)
+    
+    # CORS
+    CORS_ORIGINS: list = get_env_list("CORS_ORIGINS", default=["http://localhost:3000"])
+    
+    # Admin
+    ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "")
+    
+    # Email Configuration
+    SMTP_SERVER: str = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    SMTP_PORT: int = get_env_int("SMTP_PORT", 587)
+    SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_USE_TLS: bool = get_env_bool("SMTP_USE_TLS", True)
+    FROM_EMAIL: str = os.getenv("FROM_EMAIL", "")
+    
+    # Email Verification Settings
+    EMAIL_VERIFICATION_EXPIRE_MINUTES: int = get_env_int("EMAIL_VERIFICATION_EXPIRE_MINUTES", 15)
+    EMAIL_VERIFICATION_MAX_ATTEMPTS: int = get_env_int("EMAIL_VERIFICATION_MAX_ATTEMPTS", 5)
+    
+    # Development
+    DEBUG: bool = get_env_bool("DEBUG", False)
+
+
+# Global settings instance
+settings = Settings()

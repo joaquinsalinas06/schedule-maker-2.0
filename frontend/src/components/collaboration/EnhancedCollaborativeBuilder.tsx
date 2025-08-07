@@ -88,7 +88,7 @@ export function EnhancedCollaborativeBuilder() {
         return user.id;
       }
     } catch (error) {
-      console.warn('Failed to parse user from localStorage');
+      // Failed to parse user from localStorage
     }
     // Fallback to session participants (assuming current user is in the session)
     return currentSession?.participants[0]?.id || 1;
@@ -118,7 +118,6 @@ export function EnhancedCollaborativeBuilder() {
       if (!websocketService.isConnected()) {
         const token = localStorage.getItem('token');
         if (token) {
-          console.log('🔌 Re-establishing WebSocket connection for session:', currentSession.session_code);
           websocketService.connect(currentSession.session_code, token);
         }
       }
@@ -129,7 +128,6 @@ export function EnhancedCollaborativeBuilder() {
   useEffect(() => {
     return () => {
       if (websocketService.isConnected()) {
-        console.log('🔌 Cleaning up WebSocket connection on component unmount');
         websocketService.disconnect();
       }
     };
@@ -138,10 +136,6 @@ export function EnhancedCollaborativeBuilder() {
   // Load course selections when session changes or component mounts
   const loadCourseSelections = async () => {
     if (!currentSession) return;
-    
-    console.log('🔄 Loading course selections...');
-    console.log('- Session ID:', currentSession.id);
-    console.log('- Current courseSelections in store:', courseSelections.length);
     
     try {
       // Load course selections from API for this session
@@ -154,14 +148,9 @@ export function EnhancedCollaborativeBuilder() {
         added_by: selection.user_id || selection.added_by // Use user_id from DB or existing added_by
       }));
       
-      console.log('✅ Loaded from API:', fixedSelections.length, 'selections');
-      console.log('- Shared from API:', fixedSelections.filter(s => s.selection_type === 'shared').length);
-      console.log('- Individual from API:', fixedSelections.filter(s => s.selection_type === 'individual').length);
-      console.log('- Fixed added_by values:', fixedSelections.map(s => s.added_by));
       setCourseSelections(fixedSelections);
     } catch (error) {
-      console.error('❌ Failed to load course selections from API:', error);
-      console.log('- Keeping existing store selections:', courseSelections.length);
+      // Failed to load course selections from API
       // Keep existing selections in store if API fails
     }
   };
@@ -197,7 +186,6 @@ export function EnhancedCollaborativeBuilder() {
     );
     
     if (isAlreadySelected) {
-      console.log('Section already selected, skipping...');
       return;
     }
 
@@ -239,13 +227,6 @@ export function EnhancedCollaborativeBuilder() {
 
     // Save to database via API first to get the ID
     if (currentSession?.id) {
-      console.log('💾 Attempting to save course selection to database...', {
-        sessionId: currentSession.id,
-        courseCode: section.courseCode,
-        selectionType: selectionType,
-        participants: currentSession?.participants,
-        sharedWith: selectionType === 'shared' ? sharedWith : 'N/A'
-      });
       
       try {
         const { CollaborationAPI } = await import('@/services/collaborationAPI');
@@ -270,7 +251,6 @@ export function EnhancedCollaborativeBuilder() {
           priority: 1
         };
         
-        console.log('📤 Sending to API:', apiData);
         const savedSelection = await CollaborationAPI.saveCourseSelection(currentSession.id, apiData);
         
         // Add the saved selection (with database ID) to store
@@ -280,19 +260,12 @@ export function EnhancedCollaborativeBuilder() {
         };
         addCourseSelection(selectionWithId);
         
-        console.log('✅ Course selection saved to database successfully:', savedSelection);
       } catch (error: any) {
-        console.error('❌ Failed to save course selection to database:', error);
-        console.error('Full error response:', error.response);
-        console.error('Error details:', error.response?.data || error.message);
-        if (error.response?.data?.detail) {
-          console.error('Validation errors:', error.response.data.detail);
-        }
+        // Failed to save course selection to database
         // Fallback: Add to store without ID
         addCourseSelection(newSelection);
       }
     } else {
-      console.warn('⚠️ No session ID available, adding to local store only');
       addCourseSelection(newSelection);
     }
     
@@ -313,9 +286,8 @@ export function EnhancedCollaborativeBuilder() {
       try {
         const { CollaborationAPI } = await import('@/services/collaborationAPI');
         await CollaborationAPI.removeCourseSelection(currentSession.id, selectionToRemove.id);
-        console.log('Course selection removed from database');
       } catch (error) {
-        console.error('Failed to remove course selection from database:', error);
+        // Failed to remove course selection from database
         // Could show a toast notification here
       }
     }
@@ -350,9 +322,8 @@ export function EnhancedCollaborativeBuilder() {
           shared_with_users: newType === 'shared' ? sharedWith : [],
           priority: selection.priority || 1
         });
-        console.log('Course selection type updated successfully in database');
       } catch (error) {
-        console.error('Failed to update course selection in database:', error);
+        // Failed to update course selection in database
         // Revert local changes if API call failed
         setCourseSelections(courseSelections.map((sel, i) => 
           i === index ? selection : sel
@@ -416,7 +387,6 @@ export function EnhancedCollaborativeBuilder() {
 
     setLoading(true);
     try {
-      console.log('Generating personal schedule...');
       
       // Get shared and individual sections for current user
       const sharedSections = getSharedCourses();
@@ -425,13 +395,6 @@ export function EnhancedCollaborativeBuilder() {
         selection => selection.added_by === currentUserId
       );
       
-      console.log('🔍 Debug schedule generation:');
-      console.log('- All courseSelections:', courseSelections.length);
-      console.log('- Shared sections:', sharedSections.length);
-      console.log('- All individual sections:', allIndividualSections.length);
-      console.log('- User individual sections (filtered by added_by):', individualSections.length);
-      console.log('- Current user ID:', currentUserId);
-      console.log('- Individual selections added_by values:', allIndividualSections.map(s => s.added_by));
       
       // Combine shared + individual sections for current user
       const userSections = [...sharedSections, ...individualSections];
@@ -452,7 +415,6 @@ export function EnhancedCollaborativeBuilder() {
           // Convert collaborative course selections to section IDs like regular schedule generation
           const sectionIds = userSections.map(selection => selection.schedule_data?.sectionId).filter(id => id);
           
-          console.log('📋 Generating schedule with section IDs:', sectionIds);
           
           // Use the regular API service for schedule generation
           const { apiService } = await import('@/services/api');
@@ -460,13 +422,11 @@ export function EnhancedCollaborativeBuilder() {
             selected_sections: sectionIds
           });
           
-          console.log('Schedule generated successfully via API:', generatedSchedule);
           
           // Clear any existing conflicts
           setConflicts([]);
           
           // Use the API response directly (it's already in the right format for ScheduleVisualization)
-          console.log('🎯 Setting generated schedule from API:', generatedSchedule.data);
           setGeneratedSchedule(generatedSchedule.data);
           
           // Schedule generated successfully - no alert needed, visual feedback is enough
@@ -477,22 +437,21 @@ export function EnhancedCollaborativeBuilder() {
           }
           
         } catch (apiError) {
-          console.error('Failed to generate schedule via API:', apiError);
+          // Failed to generate schedule via API
           
           // Transform and store the schedule data for visualization even in fallback
           const transformedSchedule = transformScheduleData(userSections);
-          console.log('🎯 Setting generated schedule (fallback):', transformedSchedule);
           setGeneratedSchedule(transformedSchedule);
           
           // Fallback: Use transformed data (no alert needed)
         }
       } else {
         // No session ID available - just return without doing anything
-        console.warn('Cannot generate schedule: No active session found');
+        // Cannot generate schedule: No active session found
       }
       
     } catch (error) {
-      console.error('Failed to generate schedule:', error);
+      // Failed to generate schedule
       // No alert needed - user will see loading state disappear
     } finally {
       setLoading(false);
@@ -513,10 +472,8 @@ export function EnhancedCollaborativeBuilder() {
 
   // Transform collaborative course selections to ScheduleVisualization format
   const transformScheduleData = (userSections: CollaborativeCourseSelection[]) => {
-    console.log('🔄 Transforming schedule data for visualization:', userSections);
     
     const courses = userSections.map((selection, index) => {
-      console.log('🔄 Processing selection:', selection);
       
       return {
         course_id: index + 1,
@@ -526,7 +483,6 @@ export function EnhancedCollaborativeBuilder() {
         section_number: selection.section_code,
         professor: selection.professor || 'TBA',
         sessions: selection.schedule_data?.sessions?.map((session: any, sessionIndex: number) => {
-          console.log('🔄 Processing session:', session);
           
           return {
             session_id: sessionIndex + 1,
@@ -551,7 +507,6 @@ export function EnhancedCollaborativeBuilder() {
       selected_courses_count: courses.length
     };
     
-    console.log('✅ Transformed schedule data:', transformedData);
     return transformedData;
   };
 
@@ -643,8 +598,6 @@ export function EnhancedCollaborativeBuilder() {
             </CardHeader>
             <CardContent>
               {(() => {
-                console.log('🖥️  Render check - generatedSchedule exists:', !!generatedSchedule);
-                console.log('🖥️  generatedSchedule data:', generatedSchedule);
                 return generatedSchedule;
               })() ? (
                 <ScheduleVisualization 

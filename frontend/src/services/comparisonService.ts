@@ -72,10 +72,8 @@ export class ComparisonService {
       const response = await api.get(`/collaboration/shared/${shareCode}`)
       const shareData = response.data
 
-      console.log('Share data response:', shareData)
 
       if (!shareData || !shareData.schedule) {
-        console.log('Invalid share data structure:', shareData)
         return { success: false, error: 'Código de horario no válido' }
       }
 
