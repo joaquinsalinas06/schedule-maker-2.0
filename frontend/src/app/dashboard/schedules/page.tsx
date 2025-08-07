@@ -231,7 +231,7 @@ export default function SchedulesPage() {
   }
 
   // Wrapper to convert ScheduleVisualization's ScheduleCombination to our type
-  const addToFavoritesWrapper = (schedule: { combination_id: string; course_count: number; courses: unknown[] }) => {
+  const addToFavoritesWrapper = async (schedule: { combination_id: string; course_count: number; courses: unknown[] }) => {
     const typedSchedule: TypesScheduleCombination = {
       combination_id: schedule.combination_id,
       sections: [],
@@ -239,11 +239,11 @@ export default function SchedulesPage() {
       course_count: schedule.course_count,
       courses: schedule.courses as unknown as CourseSection[]
     }
-    addToFavorites(typedSchedule)
+    await addToFavorites(typedSchedule)
   }
 
   // Favorite schedule management
-  const addToFavorites = (schedule: TypesScheduleCombination) => {
+  const addToFavorites = async (schedule: TypesScheduleCombination) => {
     const favoriteId = `fav_${Date.now()}`
     const newFavorite: FavoriteSchedule = {
       id: favoriteId,
@@ -261,6 +261,22 @@ export default function SchedulesPage() {
     const updatedFavorites = [...favoriteSchedules, newFavorite]
     SecureStorage.setItem('favoriteSchedules', JSON.stringify(updatedFavorites)) // 🔒 User-specific
     SecureStorage.setItem('favoritedCombinations', JSON.stringify([...favoritedCombinations, combinationId.toString()])) // 🔒 User-specific
+    
+    // Also save to database
+    try {
+      console.log('Attempting to save schedule to database:', newFavorite.name)
+      const { CollaborationAPI } = await import('@/services/collaborationAPI')
+      const scheduleData = {
+        name: newFavorite.name,
+        combination: schedule,
+        description: newFavorite.notes || ''
+      }
+      const result = await CollaborationAPI.saveSchedule(scheduleData)
+      console.log('Schedule saved to database successfully:', result)
+    } catch (error) {
+      console.error('Failed to save schedule to database:', error)
+      // Continue with localStorage-only save - don't break the user experience
+    }
   }
 
   const removeFromFavoritesByCombinationId = (combinationId: string) => {

@@ -378,11 +378,11 @@ Generated on ${new Date().toLocaleDateString()}
               <div className="flex gap-3 sm:gap-4 text-xs sm:text-sm">
                 <div className="flex items-center gap-1">
                   <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-500 flex-shrink-0" />
-                  <span className="truncate">{favorite.combination.courses?.length || favorite.combination.sections?.length || 0} cursos</span>
+                  <span className="truncate">{favorite.combination?.courses?.length || favorite.combination?.sections?.length || 0} cursos</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500 flex-shrink-0" />
-                  <span className="truncate">{favorite.combination.courses?.length || favorite.combination.sections?.length || 0} cursos</span>
+                  <span className="truncate">{favorite.combination?.courses?.length || favorite.combination?.sections?.length || 0} cursos</span>
                 </div>
               </div>
 

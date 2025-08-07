@@ -43,12 +43,12 @@ async def save_favorite_schedule(
 
 
 # Get saved schedules (simplified)
-@router.get("/saved", response_model=List[ScheduleResponse])
+@router.get("/saved")
 def get_saved_schedules(
     current_user: User = Depends(get_current_active_user),
     schedule_service = Depends(get_schedule_service)
 ):
-    """Get user's saved favorite schedules"""
+    """Get user's saved favorite schedules with combination data"""
     return schedule_service.get_user_schedules(current_user)
 
 

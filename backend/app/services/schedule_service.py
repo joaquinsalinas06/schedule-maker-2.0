@@ -177,15 +177,83 @@ class ScheduleService:
             "combination_id": schedule_data.combination_id
         }
 
-    def get_user_schedules(self, user: User) -> List[Schedule]:
-        """Get user's saved schedules with validation"""
+    def get_user_schedules(self, user: User) -> List[Dict]:
+        """Get user's saved schedules with combination data"""
         try:
-            return self.schedule_repo.get_user_schedules(user.id)
+            schedules = self.schedule_repo.get_user_schedules(user.id)
+            
+            # Build response with combination data
+            result = []
+            for schedule in schedules:
+                # Get the sessions and build combination data
+                combination_data = self._build_combination_data_from_schedule(schedule)
+                
+                schedule_dict = {
+                    'id': schedule.id,
+                    'created_at': schedule.created_at,
+                    'updated_at': schedule.updated_at,
+                    'is_active': schedule.is_active,
+                    'name': schedule.name,
+                    'description': schedule.description,
+                    'user_id': schedule.user_id,
+                    'is_favorite': schedule.is_favorite,
+                    'combination_data': combination_data
+                }
+                result.append(schedule_dict)
+            
+            return result
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error retrieving user schedules: {str(e)}"
             )
+
+    def _build_combination_data_from_schedule(self, schedule) -> Dict:
+        """Build combination data from schedule sessions"""
+        if not schedule.schedule_sessions:
+            return None
+            
+        # Group sessions by course/section
+        courses_dict = {}
+        for schedule_session in schedule.schedule_sessions:
+            session = schedule_session.session
+            section = schedule_session.section
+            course = section.course
+            
+            # Create unique key for course/section combination
+            key = f"{course.code}_{section.id}"
+            
+            session_data = {
+                'id': session.id,
+                'session_type': session.session_type,
+                'day_of_week': session.day,
+                'start_time': str(session.start_time),
+                'end_time': str(session.end_time),
+                'classroom': session.location,
+                'modality': session.modality
+            }
+            
+            if key not in courses_dict:
+                courses_dict[key] = {
+                    'course_id': course.id,
+                    'course_code': course.code,
+                    'course_name': course.name,
+                    'section_id': section.id,
+                    'section_number': section.section_number,
+                    'professor': section.professor,
+                    'sessions': []
+                }
+            
+            courses_dict[key]['sessions'].append(session_data)
+        
+        # Convert to list
+        courses = list(courses_dict.values())
+            
+        return {
+            'combination_id': f"saved_{schedule.id}",
+            'courses': courses,
+            'course_count': len(courses)
+        }
 
     def delete_user_schedule(self, schedule_id: int, user: User) -> None:
         """Delete a user's schedule with proper validation and error handling"""

@@ -124,6 +124,7 @@ class ScheduleCreate(ScheduleBase):
 class ScheduleResponse(ScheduleBase, BaseResponse):
     user_id: int
     is_favorite: bool
+    combination_data: Optional[dict] = None
 
 # Schedule generation and management schemas
 class GenerateScheduleRequest(BaseModel):

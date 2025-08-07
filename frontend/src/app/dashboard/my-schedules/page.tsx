@@ -13,19 +13,61 @@ export default function MySchedulesPage() {
   
   const [favoriteSchedules, setFavoriteSchedules] = useState<FavoriteSchedule[]>([])
 
-  // Load favorite schedules from localStorage on component mount
+  // Load favorite schedules from localStorage AND database on component mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedFavorites = SecureStorage.getItem('favoriteSchedules') // 🔒 User-specific
-      
-      if (savedFavorites) {
+    const loadSchedules = async () => {
+      if (typeof window !== 'undefined') {
+        // Load from localStorage first (for immediate display)
+        const savedFavorites = SecureStorage.getItem('favoriteSchedules') // 🔒 User-specific
+        if (savedFavorites) {
+          try {
+            setFavoriteSchedules(JSON.parse(savedFavorites))
+          } catch {
+            // Error loading saved favorites
+          }
+        }
+
+        // Also load from database (for schedules saved from other devices/sessions)
         try {
-          setFavoriteSchedules(JSON.parse(savedFavorites))
-        } catch {
-          // Error loading saved favorites
+          console.log('Attempting to load schedules from database...')
+          const { CollaborationAPI } = await import('@/services/collaborationAPI')
+          const databaseSchedules = await CollaborationAPI.getSavedSchedules()
+          console.log('Loaded schedules from database:', databaseSchedules)
+          
+          // Convert database schedules to FavoriteSchedule format
+          const convertedSchedules = databaseSchedules.map(schedule => ({
+            id: `db_${schedule.id}`,
+            name: schedule.name || 'Untitled Schedule',
+            combination: schedule.combination_data || {},
+            created_at: schedule.created_at || new Date().toISOString(),
+            notes: schedule.description || ''
+          }))
+          
+          console.log('Converted schedules:', convertedSchedules)
+          
+          // Merge with localStorage schedules, avoiding duplicates
+          setFavoriteSchedules(prev => {
+            const merged = [...prev]
+            convertedSchedules.forEach(dbSchedule => {
+              // Check if this schedule already exists in localStorage
+              const exists = prev.some(localSchedule => 
+                localSchedule.combination?.combination_id === dbSchedule.combination?.combination_id
+              )
+              if (!exists) {
+                merged.push(dbSchedule)
+              }
+            })
+            console.log('Final merged schedules:', merged)
+            return merged
+          })
+        } catch (error) {
+          console.error('Failed to load schedules from database:', error)
+          // Continue with localStorage-only schedules - don't break the user experience
         }
       }
     }
+    
+    loadSchedules()
   }, [])
 
   const editFavorite = (scheduleId: string, newName: string, newNotes?: string) => {

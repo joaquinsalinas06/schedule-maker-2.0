@@ -89,6 +89,11 @@ export class CollaborationAPI {
     return response.data;
   }
 
+  static async getSavedSchedules(): Promise<any[]> {
+    const response = await apiClient.get('/api/schedules/saved');
+    return response.data;
+  }
+
   // Schedule Comparison
   static async addScheduleToComparison(
     sessionId: number, 
