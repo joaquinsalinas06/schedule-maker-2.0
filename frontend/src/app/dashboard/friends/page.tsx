@@ -247,7 +247,7 @@ export default function FriendsPage() {
         })
       )
 
-      const validSchedules = detailedSchedules.filter(schedule => schedule !== null)
+      const validSchedules = detailedSchedules.filter((schedule: any) => schedule !== null)
 
       if (validSchedules.length === 0) {
         toast({

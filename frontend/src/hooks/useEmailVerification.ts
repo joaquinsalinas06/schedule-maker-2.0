@@ -2,8 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+import { authService } from '@/services/auth';
 
 export interface EmailVerificationStatus {
   has_verification: boolean;
@@ -49,20 +48,12 @@ export function useEmailVerification(): UseEmailVerificationReturn {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/send-verification`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const result = await response.json();
+      const result = await authService.sendVerification(email);
 
       // Handle direct response or wrapped response
       const actualResult = result.result || result;
 
-      if (response.ok && actualResult.data) {
+      if (actualResult.data) {
         toast({
           title: "Verification code sent",
           description: `Check your email at ${email}`,
@@ -72,16 +63,16 @@ export function useEmailVerification(): UseEmailVerificationReturn {
       } else {
         toast({
           title: "Error",
-          description: actualResult.message || result.message || "Failed to send verification code",
+          description: actualResult.message || "Failed to send verification code",
           variant: "destructive",
         });
         return false;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Send verification error:', error);
       toast({
         title: "Error",
-        description: "Failed to send verification code. Please try again.",
+        description: error.response?.data?.detail || "Failed to send verification code. Please try again.",
         variant: "destructive",
       });
       return false;
@@ -103,20 +94,12 @@ export function useEmailVerification(): UseEmailVerificationReturn {
 
     setIsResending(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/resend-verification`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const result = await response.json();
+      const result = await authService.resendVerification(email);
 
       // Handle direct response or wrapped response  
       const actualResult = result.result || result;
 
-      if (response.ok && actualResult.success) {
+      if (actualResult.success) {
         toast({
           title: "Code resent",
           description: `New verification code sent to ${email}`,
@@ -126,16 +109,16 @@ export function useEmailVerification(): UseEmailVerificationReturn {
       } else {
         toast({
           title: "Error", 
-          description: actualResult.message || result.message || "Failed to resend verification code",
+          description: actualResult.message || "Failed to resend verification code",
           variant: "destructive",
         });
         return false;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Resend verification error:', error);
       toast({
         title: "Error",
-        description: "Failed to resend verification code. Please try again.",
+        description: error.response?.data?.detail || "Failed to resend verification code. Please try again.",
         variant: "destructive",
       });
       return false;
@@ -148,21 +131,20 @@ export function useEmailVerification(): UseEmailVerificationReturn {
     if (!email) return null;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/verification-status/${encodeURIComponent(email)}`);
-      const result = await response.json();
+      const result = await authService.checkVerificationStatus(email);
       
       // Handle direct response or wrapped response
       const actualResult = result.result || result;
       
-      if (response.ok && actualResult.data) {
+      if (actualResult.data) {
         setStatus(actualResult.data);
         return actualResult.data;
       } else {
-        console.error('Check status error:', actualResult.message || result.message || 'Unknown error');
+        console.error('Check status error:', actualResult.message || 'Unknown error');
         console.error('Full response:', result);
         return null;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Check status error:', error);
       return null;
     }
@@ -185,21 +167,13 @@ export function useEmailVerification(): UseEmailVerificationReturn {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/verify-and-login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, code: code.trim() }),
-      });
-
-      const result = await response.json();
+      const result = await authService.verifyCodeAndLogin(email, code.trim());
 
       // Extract the actual response data
       const actualResult = result.result || result;
       
-      // Check if response is successful (status 200 and has data)
-      if (response.ok && actualResult.data) {
+      // Check if response is successful (has data)
+      if (actualResult.data) {
         if (actualResult.data.access_token && actualResult.data.user) {
           // User exists and is now logged in
           toast({
@@ -239,17 +213,17 @@ export function useEmailVerification(): UseEmailVerificationReturn {
       } else {
         toast({
           title: "Verification failed",
-          description: actualResult.message || result.message || "The verification code is invalid or expired",
+          description: actualResult.message || "The verification code is invalid or expired",
           variant: "destructive",
         });
         await checkStatus(email); // Refresh status after failed attempt
         return { success: false, hasUser: false };
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Verify code and login error:', error);
       toast({
         title: "Connection error",
-        description: "Failed to verify code. Please try again.",
+        description: error.response?.data?.detail || "Failed to verify code. Please try again.",
         variant: "destructive",
       });
       return { success: false, hasUser: false };

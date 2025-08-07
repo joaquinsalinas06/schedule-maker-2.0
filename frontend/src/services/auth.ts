@@ -297,6 +297,30 @@ export const authService = {
 
   setUser: (user: User): void => {
     localStorage.setItem('user', JSON.stringify(user));
+  },
+
+  // Email verification methods
+  sendVerification: async (email: string): Promise<any> => {
+    const response = await api.post('/api/auth/send-verification', { email });
+    return response.data;
+  },
+
+  resendVerification: async (email: string): Promise<any> => {
+    const response = await api.post('/api/auth/resend-verification', { email });
+    return response.data;
+  },
+
+  checkVerificationStatus: async (email: string): Promise<any> => {
+    const response = await api.get(`/api/auth/verification-status/${encodeURIComponent(email)}`);
+    return response.data;
+  },
+
+  verifyCodeAndLogin: async (email: string, code: string): Promise<any> => {
+    const response = await api.post('/api/auth/verify-and-login', { 
+      email, 
+      code: code.trim() 
+    });
+    return response.data;
   }
 };
 
