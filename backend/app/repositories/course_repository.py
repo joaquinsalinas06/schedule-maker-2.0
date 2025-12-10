@@ -95,3 +95,36 @@ class CourseRepository(BaseRepository[Course]):
             Course.university_id == university_id,
             Course.is_active == True
         ).first()
+
+    def bulk_create_courses(self, courses_data: List[dict]) -> List[Course]:
+        """
+        Batch create multiple courses for performance
+
+        Optimized for mass imports - uses bulk_save_objects instead of individual inserts
+        """
+        course_objects = [Course(**course) for course in courses_data]
+        self.db.bulk_save_objects(course_objects, return_defaults=True)
+        self.db.commit()
+        return course_objects
+
+    def get_by_codes_and_university(self, codes: List[str], university_id: int) -> List[Course]:
+        """
+        Get multiple courses by codes in a single query (eliminates N+1)
+
+        Returns a list of courses matching the given codes for the university
+        """
+        if not codes:
+            return []
+
+        return self.db.query(Course).filter(
+            Course.code.in_(codes),
+            Course.university_id == university_id,
+            Course.is_active == True
+        ).all()
+
+    def get_by_period(self, academic_period_id: int) -> List[Course]:
+        """Get all courses for an academic period"""
+        return self.db.query(Course).filter(
+            Course.academic_period_id == academic_period_id,
+            Course.is_active == True
+        ).all()

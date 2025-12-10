@@ -10,10 +10,12 @@ class Course(BaseModel):
     name = Column(String(255), nullable=False)
     description = Column(Text)
     department = Column(String(100))  # Will store career codes like 'CS', 'DS', 'BIO'
-    
+    academic_period_id = Column(Integer, ForeignKey("academic_periods.id"), nullable=True)
+
     # Relationships
     university = relationship("University", back_populates="courses")
     sections = relationship("Section", back_populates="course", cascade="all, delete-orphan")
+    academic_period = relationship("AcademicPeriod", back_populates="courses")
     
     __table_args__ = (
         {'sqlite_autoincrement': True},

@@ -12,8 +12,10 @@ class Section(BaseModel):
     waitlisted = Column(Integer, default=0)
     professor = Column(String(255))
     professor_email = Column(String(255))
-    
+    content_hash = Column(String(64), nullable=True)  # SHA-256 hash for change detection
+
     # Relationships
     course = relationship("Course", back_populates="sections")
     sessions = relationship("Session", back_populates="section", cascade="all, delete-orphan")
     schedule_sessions = relationship("ScheduleSession", back_populates="section")
+    enrollment_snapshots = relationship("EnrollmentSnapshot", back_populates="section", cascade="all, delete-orphan")

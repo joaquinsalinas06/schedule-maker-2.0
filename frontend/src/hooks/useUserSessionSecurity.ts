@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useCollaborationStore } from '@/stores/collaborationStore';
 import { SecureStorage, migrateToSecureStorage } from '@/utils/secureStorage';
+import { DEV_MODE } from '@/config/dev';
 
 /**
  * Security hook to clear data when user changes and migrate to secure storage
@@ -10,6 +11,11 @@ export const useUserSessionSecurity = () => {
   const clearUserData = useCollaborationStore(state => state.clearUserData);
 
   useEffect(() => {
+    // En modo desarrollo, saltear las verificaciones de seguridad
+    if (DEV_MODE) {
+      return;
+    }
+    
     // Check for user changes and clear data if needed
     const checkUserSession = () => {
       try {

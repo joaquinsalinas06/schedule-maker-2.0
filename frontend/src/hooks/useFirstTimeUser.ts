@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { DEV_MODE } from '@/config/dev'
 
 const FIRST_TIME_USER_KEY = 'schedule-maker-first-time-user'
 
@@ -12,6 +13,13 @@ export function useFirstTimeUser() {
     const checkFirstTime = () => {
       try {
         if (typeof window === 'undefined') {
+          return
+        }
+
+        // En modo desarrollo, siempre marcar como visitado (no mostrar popup)
+        if (DEV_MODE) {
+          setIsFirstTime(false)
+          setIsLoading(false)
           return
         }
 

@@ -15,7 +15,8 @@ class Session(BaseModel):
     room = Column(String(50))
     modality = Column(String(50), default='Presencial')
     frequency = Column(String(50), default='Semanal')
-    
+    content_hash = Column(String(64), nullable=True)  # SHA-256 hash for change detection
+
     # Relationships
     section = relationship("Section", back_populates="sessions")
     schedule_sessions = relationship("ScheduleSession", back_populates="session")

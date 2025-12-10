@@ -28,3 +28,10 @@ class BaseRepository(ABC, Generic[ModelType]):
         self.db.commit()
         self.db.refresh(db_obj)
         return db_obj
+
+    def update_by_id(self, id: int, obj_in: dict) -> Optional[ModelType]:
+        """Update by ID - convenience method"""
+        db_obj = self.get(id)
+        if db_obj:
+            return self.update(db_obj, obj_in)
+        return None

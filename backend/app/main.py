@@ -20,7 +20,7 @@ from app.models.user import User
 from app.utils.security import get_password_hash
 
 # Router imports
-from app.routers import auth, courses, schedules, collaboration, websocket, friends
+from app.routers import auth, courses, schedules, collaboration, websocket, friends, admin
 
 # Create FastAPI app
 app = FastAPI(
@@ -130,6 +130,7 @@ app.include_router(schedules.router)
 app.include_router(collaboration.router)
 app.include_router(friends.router)
 app.include_router(websocket.router)
+app.include_router(admin.router)
 
 # Health check endpoints
 @app.get("/health")

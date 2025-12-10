@@ -4,9 +4,13 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Calendar, Menu } from "lucide-react"
 import { useState } from "react"
+import { DEV_MODE } from "@/config/dev"
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  
+  // En modo dev, ir directo al dashboard sin login
+  const loginHref = DEV_MODE ? "/dashboard/generate" : "/auth"
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-950/90 backdrop-blur-sm border-b border-gray-800">
@@ -27,9 +31,9 @@ export function Navbar() {
             <Link href="/universities" className="text-gray-400 hover:text-white text-sm font-medium transition-colors">
               Universidades
             </Link>
-            <Link href="/auth">
+            <Link href={loginHref}>
               <Button className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 text-sm font-medium transition-colors">
-                Ingresar
+                {DEV_MODE ? "Ir al Dashboard" : "Ingresar"}
               </Button>
             </Link>
           </div>
@@ -56,9 +60,9 @@ export function Navbar() {
           >
             Universidades
           </Link>
-          <Link href="/auth">
+          <Link href={loginHref}>
             <Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 text-base font-medium transition-colors">
-              Ingresar
+              {DEV_MODE ? "Ir al Dashboard" : "Ingresar"}
             </Button>
           </Link>
         </div>

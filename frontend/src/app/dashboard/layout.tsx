@@ -7,6 +7,7 @@ import { authService } from "@/services/auth"
 import { SidebarSection } from "@/types"
 import { useFirstTimeUser } from "@/hooks/useFirstTimeUser"
 import { useUserSessionSecurity } from "@/hooks/useUserSessionSecurity"
+import { DEV_MODE } from "@/config/dev"
 
 // Dashboard Components
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar'
@@ -102,6 +103,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   // Simple auth check - only redirect if no token exists
   useEffect(() => {
     const checkAuth = () => {
+      // En modo desarrollo, saltear la autenticación
+      if (DEV_MODE) {
+        console.log('🔧 Modo desarrollo activado - Autenticación deshabilitada')
+        setAuthLoading(false)
+        return
+      }
+      
       if (typeof window !== 'undefined' && !authService.isAuthenticated()) {
         window.location.href = '/'
         return

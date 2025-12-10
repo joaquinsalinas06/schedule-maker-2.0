@@ -14,3 +14,6 @@ class University(BaseModel):
     # Relationships
     courses = relationship("Course", back_populates="university")
     users = relationship("User", back_populates="university")
+    academic_periods = relationship("AcademicPeriod", back_populates="university")
+    parser_configuration = relationship("ParserConfiguration", back_populates="university", uselist=False)
+    import_logs = relationship("ImportLog", back_populates="university")
