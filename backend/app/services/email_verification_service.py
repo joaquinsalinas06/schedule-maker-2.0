@@ -48,6 +48,11 @@ class EmailVerificationService:
             # Commit the verification record
             db.commit()
             db.refresh(verification)
+
+            # Optional bypass mode for environments where SMTP egress is blocked
+            if settings.BYPASS_EMAIL_VERIFICATION:
+                logger.warning(f"BYPASS_EMAIL_VERIFICATION enabled. Skipping email send for: {email}")
+                return verification
             
             # Send verification email
             email_sent = email_service.send_verification_email(email, verification.verification_code)
@@ -78,6 +83,28 @@ class EmailVerificationService:
             True if verification successful, False otherwise
         """
         try:
+            # Optional bypass mode for environments where SMTP egress is blocked
+            if settings.BYPASS_EMAIL_VERIFICATION:
+                verification = db.query(EmailVerification).filter(
+                    EmailVerification.email == email,
+                    EmailVerification.is_verified == False
+                ).order_by(EmailVerification.created_at.desc()).first()
+
+                if verification:
+                    verification.is_verified = True
+                    verification.verified_at = datetime.now(timezone.utc).replace(tzinfo=None)
+                    verification.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+
+                from ..repositories.user_repository import UserRepository
+                user_repo = UserRepository(db)
+                user = user_repo.get_by_email(email)
+                if user:
+                    user.is_verified = True
+
+                db.commit()
+                logger.warning(f"BYPASS_EMAIL_VERIFICATION enabled. Auto-verifying: {email}")
+                return True
+
             # First, find any active verification for this email
             now = datetime.now(timezone.utc)
             verification = db.query(EmailVerification).filter(

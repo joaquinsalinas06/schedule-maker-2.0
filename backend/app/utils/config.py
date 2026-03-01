@@ -116,6 +116,7 @@ class Settings:
     # Email Verification Settings
     EMAIL_VERIFICATION_EXPIRE_MINUTES: int = get_env_int("EMAIL_VERIFICATION_EXPIRE_MINUTES", 15)
     EMAIL_VERIFICATION_MAX_ATTEMPTS: int = get_env_int("EMAIL_VERIFICATION_MAX_ATTEMPTS", 5)
+    BYPASS_EMAIL_VERIFICATION: bool = get_env_bool("BYPASS_EMAIL_VERIFICATION", False)
     
     # Development
     DEBUG: bool = get_env_bool("DEBUG", False)
