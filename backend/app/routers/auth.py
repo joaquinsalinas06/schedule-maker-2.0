@@ -147,6 +147,24 @@ def send_email_verification(
 ):
     """Send email verification code to the provided email address."""
     try:
+        from app.utils.config import settings
+        
+        # In bypass mode, auto-verify the email immediately
+        if settings.BYPASS_EMAIL_VERIFICATION:
+            verification = email_verification_service.create_verification(db, request.email)
+            if verification:
+                # Auto-verify in bypass mode
+                email_verification_service.verify_code(db, request.email, verification.verification_code)
+                return {
+                    "success": True,
+                    "message": f"Email verified successfully (bypass mode)",
+                    "data": {
+                        "email": request.email,
+                        "verified": True,
+                        "bypass_mode": True
+                    }
+                }
+        
         verification = email_verification_service.create_verification(db, request.email)
         
         if verification:
