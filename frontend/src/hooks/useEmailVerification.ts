@@ -53,6 +53,16 @@ export function useEmailVerification(): UseEmailVerificationReturn {
       // Handle direct response or wrapped response
       const actualResult = result.result || result;
 
+      // Check if in bypass mode
+      if (actualResult.data?.bypass_mode) {
+        toast({
+          title: "Email verified",
+          description: "Your email has been verified automatically (bypass mode)",
+        });
+        await checkStatus(email);
+        return true;
+      }
+
       if (actualResult.data) {
         toast({
           title: "Verification code sent",
