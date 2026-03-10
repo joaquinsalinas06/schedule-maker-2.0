@@ -46,6 +46,13 @@ export default function EmailVerification({
     }
   }, [email]);
 
+  useEffect(() => {
+    if (status?.is_verified && !isVerified) {
+      setIsVerified(true);
+      onVerificationComplete();
+    }
+  }, [status?.is_verified, isVerified, onVerificationComplete]);
+
   // Auto-send verification code if this is an embedded component (registration flow)
   useEffect(() => {
     if (email && isEmbedded && !hasCodeSent && !isLoading) {
@@ -98,6 +105,7 @@ export default function EmailVerification({
     const success = await sendVerification(email);
     if (success) {
       setHasCodeSent(true);
+      await checkVerificationStatus();
     }
   };
 
@@ -118,7 +126,8 @@ export default function EmailVerification({
       
       if (result.hasUser && result.tokens) {
         // User exists and is now logged in - store tokens and redirect
-        localStorage.setItem('access_token', result.tokens.access_token);
+        localStorage.setItem('token', result.tokens.access_token);
+        localStorage.setItem('user', JSON.stringify(result.tokens.user));
         if (result.tokens.refresh_token) {
           localStorage.setItem('refresh_token', result.tokens.refresh_token);
         }
