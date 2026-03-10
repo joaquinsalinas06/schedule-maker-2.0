@@ -95,3 +95,10 @@ class CourseRepository(BaseRepository[Course]):
             Course.university_id == university_id,
             Course.is_active == True
         ).first()
+
+    def get_by_university(self, university_id: int) -> List[Course]:
+        """Get all active courses for a university"""
+        return self.db.query(Course).filter(
+            Course.university_id == university_id,
+            Course.is_active == True
+        ).all()

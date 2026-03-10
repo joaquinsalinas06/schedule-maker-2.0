@@ -1,3 +1,3 @@
-from . import auth, courses, schedules, collaboration, websocket
+from . import auth, courses, schedules, collaboration, websocket, admin
 
-__all__ = ["auth", "courses", "schedules", "collaboration", "websocket"]
+__all__ = ["auth", "courses", "schedules", "collaboration", "websocket", "admin"]

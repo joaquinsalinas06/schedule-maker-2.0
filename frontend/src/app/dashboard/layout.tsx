@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Calendar, Grid3X3, Users, Star, UserPlus } from "lucide-react"
+import { Calendar, Grid3X3, Users, Star, UserPlus, Database } from "lucide-react"
 import { authService } from "@/services/auth"
 import { SidebarSection } from "@/types"
 import { useFirstTimeUser } from "@/hooks/useFirstTimeUser"
@@ -30,8 +30,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [authLoading, setAuthLoading] = useState(true)
   const [pageLoading, setPageLoading] = useState(false)
+  const [currentUser, setCurrentUser] = useState<{ role?: string } | null>(null)
   // First time user popup logic
   const { isFirstTime, isLoading: firstTimeLoading, markAsVisited } = useFirstTimeUser()
+
+  // Load current user for role-based sidebar
+  useEffect(() => {
+    const user = authService.getCurrentUser()
+    setCurrentUser(user)
+  }, [])
 
   const sidebarSections: SidebarSection[] = [
     {
@@ -51,7 +58,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     {
       id: "my-schedules",
       title: "Mis Horarios",
-      shortTitle: "Favoritos", 
+      shortTitle: "Favoritos",
       icon: Star,
       color: "from-amber-500 to-orange-600",
     },
@@ -62,13 +69,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: Users,
       color: "from-green-500 to-emerald-600",
     },
-        {
+    {
       id: "friends",
       title: "Mis Amigos",
       shortTitle: "Amigos",
       icon: UserPlus,
       color: "from-rose-500 to-pink-600",
     },
+    ...(currentUser?.role === 'admin' ? [{
+      id: "admin",
+      title: "Importar Datos",
+      shortTitle: "Admin",
+      icon: Database,
+      color: "from-red-500 to-orange-600",
+    }] : []),
   ]
 
   // Get current active section from pathname

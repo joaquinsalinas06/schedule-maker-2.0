@@ -540,7 +540,7 @@ class CSVUpdater:
                         course_updated = True
                     
                     if course_updated:
-                        self.course_repo.update(course.id, {"name": course.name, "department": course.department})
+                        self.course_repo.update(course, {"name": course_data.name, "department": course_data.department})
                         changes_detected['courses_updated'] += 1
                         print(f"🔄 Updated course: {course_data.code}")
                     else:
@@ -566,7 +566,7 @@ class CSVUpdater:
                 for section in existing_sections:
                     if str(section.section_number) not in csv_section_numbers and section.is_active:
                         print(f"  ❌ Section {section.section_number} no longer in CSV, deactivating...")
-                        self.section_repo.update(section.id, {"is_active": False})
+                        self.section_repo.update(section, {"is_active": False})
                         changes_detected['sections_deactivated'] += 1
                 
                 # Process sections with hierarchical session support
@@ -608,7 +608,7 @@ class CSVUpdater:
                             section_updated = True
                         
                         if section_updated:
-                            self.section_repo.update(section.id, updates)
+                            self.section_repo.update(section, updates)
                             changes_detected['sections_updated'] += 1
                             print(f"  🔄 Updated section {section_data.section_number}")
                         else:
@@ -642,7 +642,7 @@ class CSVUpdater:
                             existing_signature = f"{existing_session.session_type}|{existing_session.day}|{existing_session.start_time}|{existing_session.end_time}"
                             if existing_signature not in csv_session_signatures:
                                 print(f"      ❌ Session {existing_session.day} {existing_session.start_time}-{existing_session.end_time} no longer in CSV, deactivating...")
-                                self.session_repo.update(existing_session.id, {"is_active": False})
+                                self.session_repo.update(existing_session, {"is_active": False})
                                 changes_detected['sessions_deactivated'] += 1
                     
                     # Process each session from CSV
@@ -691,7 +691,7 @@ class CSVUpdater:
                                 session_updated = True
                             
                             if session_updated:
-                                self.session_repo.update(matching_session.id, updates)
+                                self.session_repo.update(matching_session, updates)
                                 changes_detected['sessions_updated'] += 1
                                 print(f"      🔄 Updated session {session_data.day} {session_data.start_time}-{session_data.end_time}")
                             else:

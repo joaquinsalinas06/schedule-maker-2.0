@@ -9,24 +9,26 @@ from .schedule import Schedule, ScheduleSession
 from .collaboration import CollaborativeSession, SessionParticipant, ScheduleShare, ScheduleComparison, CollaborativeCourseSelection, GeneratedCollaborativeSchedule
 from .friendship import FriendRequest, Friendship
 from .email_verification import EmailVerification
+from .admin_audit_log import AdminAuditLog
 
 __all__ = [
     "Base",
     "BaseModel",
-    "University", 
+    "University",
     "User",
     "Course",
-    "Section", 
+    "Section",
     "Session",
     "Schedule",
     "ScheduleSession",
     "CollaborativeSession",
-    "SessionParticipant", 
+    "SessionParticipant",
     "ScheduleShare",
     "ScheduleComparison",
     "CollaborativeCourseSelection",
     "GeneratedCollaborativeSchedule",
     "FriendRequest",
     "Friendship",
-    "EmailVerification"
+    "EmailVerification",
+    "AdminAuditLog"
 ]

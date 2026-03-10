@@ -16,3 +16,10 @@ class SectionRepository(BaseRepository[Section]):
             Section.section_number == section_number,
             Section.is_active == True
         ).first()
+
+    def get_by_course(self, course_id: int) -> List[Section]:
+        """Get all active sections for a course"""
+        return self.db.query(Section).filter(
+            Section.course_id == course_id,
+            Section.is_active == True
+        ).all()

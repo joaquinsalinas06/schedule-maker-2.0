@@ -590,6 +590,7 @@ class CSVImporter:
                 
             except Exception as e:
                 print(f"❌ Error importing course {course_data.code}: {str(e)}")
+                self.db.rollback()
                 continue
         
         return imported_count
