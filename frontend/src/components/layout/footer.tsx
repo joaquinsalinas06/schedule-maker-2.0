@@ -3,63 +3,97 @@ import { Calendar } from "lucide-react"
 
 export function Footer() {
   return (
-    <footer className="py-12 px-6 bg-gray-950 border-t border-gray-800">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-cyan-600 rounded-lg flex items-center justify-center">
-                <Calendar className="w-4 h-4 text-white" />
+    <footer className="border-t border-border bg-background">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          {/* Brand */}
+          <div className="col-span-2 md:col-span-1">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <Calendar className="w-4 h-4 text-primary-foreground" />
               </div>
-              <div>
-                <h3 className="text-white font-semibold">Schedule Maker</h3>
-              </div>
+              <span className="font-semibold text-foreground">Schedule Maker</span>
             </div>
-            <p className="text-gray-400 text-sm">La herramienta de horarios más usada por estudiantes universitarios.</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              La herramienta inteligente para crear horarios universitarios optimizados.
+            </p>
           </div>
+
+          {/* Product */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Producto</h4>
-            <ul className="space-y-2 text-gray-400 text-sm">
+            <h4 className="text-sm font-medium text-foreground mb-4">Producto</h4>
+            <ul className="space-y-3">
               <li>
-                <Link href="/how-it-works" className="hover:text-white transition-colors">
-                  Cómo funciona
+                <Link 
+                  href="/how-it-works" 
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Como funciona
                 </Link>
               </li>
               <li>
-                <Link href="/universities" className="hover:text-white transition-colors">
+                <Link 
+                  href="/universities" 
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Universidades
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  Preguntas frecuentes
                 </Link>
               </li>
             </ul>
           </div>
+
+          {/* Support */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Soporte</h4>
-            <ul className="space-y-2 text-gray-400 text-sm">
+            <h4 className="text-sm font-medium text-foreground mb-4">Soporte</h4>
+            <ul className="space-y-3">
               <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  Centro de ayuda
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
+                <Link 
+                  href="mailto:joaquin.salinas@utec.edu.pe" 
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Contacto
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-white transition-colors">
+                <Link 
+                  href="mailto:joaquin.salinas@utec.edu.pe?subject=Reportar%20problema" 
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Reportar problema
                 </Link>
               </li>
             </ul>
           </div>
+
+          {/* Legal */}
+          <div>
+            <h4 className="text-sm font-medium text-foreground mb-4">Legal</h4>
+            <ul className="space-y-3">
+              <li>
+                <Link 
+                  href="#" 
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Privacidad
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="#" 
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Terminos
+                </Link>
+              </li>
+            </ul>
+          </div>
         </div>
-        <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-500 text-sm">
-          <p>&copy; 2025 Schedule Maker. Hecho con ❤️ por Joaquín Salinas.</p>
+
+        {/* Bottom */}
+        <div className="mt-12 pt-8 border-t border-border">
+          <p className="text-sm text-muted-foreground text-center">
+            {new Date().getFullYear()} Schedule Maker. Creado por Joaquin Salinas.
+          </p>
         </div>
       </div>
     </footer>
