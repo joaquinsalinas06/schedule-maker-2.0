@@ -7,6 +7,9 @@ from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
+from app.models.course import Course
+from app.models.section import Section
+from app.models.session import Session as SessionModel
 from app.repositories.course_repository import CourseRepository
 from app.repositories.section_repository import SectionRepository
 from app.repositories.session_repository import SessionRepository
@@ -169,9 +172,7 @@ class ImportService:
         return courses_data
 
     def _execute_reset(self, courses_data, university_id: int) -> Dict[str, Any]:
-        """Reset mode: soft-delete all existing data, then import fresh."""
-        from csv_import import CSVImporter
-
+        """Reset mode: soft-delete all existing data, then bulk import fresh."""
         stats = {
             "mode": "reset",
             "deactivated_courses": 0,
@@ -210,7 +211,7 @@ class ImportService:
             """), {"uid": university_id})
             stats["deactivated_courses"] = result_courses.rowcount
 
-            self.db.commit()
+            self.db.flush()
             logger.info(f"Bulk deactivation done: {stats['deactivated_courses']} courses, "
                         f"{stats['deactivated_sections']} sections, {stats['deactivated_sessions']} sessions")
         except Exception as e:
@@ -219,22 +220,85 @@ class ImportService:
             logger.error(f"Reset deactivation failed: {e}")
             raise
 
-        # Step 2: Import fresh data, committing per course for resilience
-        importer = CSVImporter(self.db)
-        for course_data in courses_data:
-            try:
-                importer.import_courses([course_data], university_id)
-                self.db.commit()
-                stats["courses_created"] += 1
-                stats["sections_created"] += len(course_data.sections)
-                stats["sessions_created"] += sum(
-                    len(s.sessions) for s in course_data.sections
-                )
-            except Exception as e:
-                self.db.rollback()
-                error_msg = f"Error importing {course_data.code}: {str(e)}"
-                stats["errors"].append(error_msg)
-                logger.warning(error_msg)
+        # Step 2: Bulk insert all courses, sections, and sessions
+        # Since we deactivated everything, no need for existence checks
+        try:
+            BATCH_SIZE = 50
+            for batch_start in range(0, len(courses_data), BATCH_SIZE):
+                batch = courses_data[batch_start:batch_start + BATCH_SIZE]
+
+                # Create all Course objects for this batch
+                course_objects = []
+                for course_data in batch:
+                    course_obj = Course(
+                        code=course_data.code,
+                        name=course_data.name,
+                        department=course_data.department,
+                        university_id=university_id,
+                        is_active=True,
+                    )
+                    course_objects.append((course_obj, course_data))
+                    self.db.add(course_obj)
+
+                # Flush to get course IDs assigned
+                self.db.flush()
+
+                # Create all Section objects for this batch
+                section_objects = []
+                for course_obj, course_data in course_objects:
+                    for section_data in course_data.sections:
+                        section_obj = Section(
+                            section_number=section_data.section_number,
+                            capacity=section_data.capacity,
+                            enrolled=section_data.enrolled,
+                            professor=section_data.professor,
+                            professor_email=section_data.professor_email,
+                            course_id=course_obj.id,
+                            is_active=True,
+                        )
+                        section_objects.append((section_obj, section_data))
+                        self.db.add(section_obj)
+                        stats["sections_created"] += 1
+
+                # Flush to get section IDs assigned
+                self.db.flush()
+
+                # Create all Session objects for this batch
+                session_objects = []
+                for section_obj, section_data in section_objects:
+                    for sess_data in section_data.sessions:
+                        session_obj = SessionModel(
+                            session_type=sess_data.session_type,
+                            day=sess_data.day,
+                            start_time=sess_data.start_time,
+                            end_time=sess_data.end_time,
+                            location=sess_data.location,
+                            building=sess_data.building,
+                            room=sess_data.room,
+                            modality=sess_data.modality,
+                            frequency=sess_data.frequency,
+                            section_id=section_obj.id,
+                            is_active=True,
+                        )
+                        session_objects.append(session_obj)
+                        stats["sessions_created"] += 1
+
+                self.db.add_all(session_objects)
+                stats["courses_created"] += len(batch)
+
+                logger.info(f"Batch {batch_start // BATCH_SIZE + 1}: inserted {len(batch)} courses")
+
+            # Single commit for all data
+            self.db.commit()
+            logger.info(f"Bulk import complete: {stats['courses_created']} courses, "
+                        f"{stats['sections_created']} sections, {stats['sessions_created']} sessions")
+
+        except Exception as e:
+            self.db.rollback()
+            error_msg = f"Error in bulk import: {str(e)}"
+            stats["errors"].append(error_msg)
+            logger.error(error_msg)
+            raise
 
         return stats
 
