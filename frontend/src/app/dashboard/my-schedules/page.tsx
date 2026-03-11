@@ -16,6 +16,7 @@ export default function MySchedulesPage() {
   const [favoriteSchedules, setFavoriteSchedules] = useState<
     FavoriteSchedule[]
   >([]);
+  const [isFavoritesLoaded, setIsFavoritesLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -82,58 +83,62 @@ export default function MySchedulesPage() {
         }
 
         setIsLoading(false);
+        setIsFavoritesLoaded(true);
       }
     };
 
     loadSchedules();
   }, []);
 
+  // Sync favorites reactively
+  useEffect(() => {
+    if (isFavoritesLoaded) {
+      SecureStorage.setItem(
+        "favoriteSchedules",
+        JSON.stringify(favoriteSchedules),
+      );
+    }
+  }, [favoriteSchedules, isFavoritesLoaded]);
+
   const editFavorite = (
     scheduleId: string,
     newName: string,
     newNotes?: string,
   ) => {
-    const updatedFavorites = favoriteSchedules.map((schedule) =>
-      schedule.id === scheduleId
-        ? { ...schedule, name: newName, notes: newNotes }
-        : schedule,
-    );
-    setFavoriteSchedules(updatedFavorites);
-    SecureStorage.setItem(
-      "favoriteSchedules",
-      JSON.stringify(updatedFavorites),
+    setFavoriteSchedules((prev) =>
+      prev.map((schedule) =>
+        schedule.id === scheduleId
+          ? { ...schedule, name: newName, notes: newNotes }
+          : schedule,
+      ),
     );
   };
 
   const removeFavorite = (scheduleId: string) => {
-    const updatedFavorites = favoriteSchedules.filter(
-      (schedule) => schedule.id !== scheduleId,
-    );
-    setFavoriteSchedules(updatedFavorites);
-    SecureStorage.setItem(
-      "favoriteSchedules",
-      JSON.stringify(updatedFavorites),
-    );
-
-    const schedule = favoriteSchedules.find((s) => s.id === scheduleId);
-    if (schedule) {
-      const savedCombinations = SecureStorage.getItem("favoritedCombinations");
-      if (savedCombinations) {
-        try {
-          const combinations = JSON.parse(savedCombinations);
-          const updatedCombinations = combinations.filter(
-            (id: string) =>
-              id !== schedule.combination.combination_id?.toString(),
-          );
-          SecureStorage.setItem(
-            "favoritedCombinations",
-            JSON.stringify(updatedCombinations),
-          );
-        } catch {
-          // Error updating combinations
+    setFavoriteSchedules((prev) => {
+      const schedule = prev.find((s) => s.id === scheduleId);
+      if (schedule) {
+        const savedCombinations = SecureStorage.getItem(
+          "favoritedCombinations",
+        );
+        if (savedCombinations) {
+          try {
+            const combinations = JSON.parse(savedCombinations);
+            const updatedCombinations = combinations.filter(
+              (id: string) =>
+                id !== schedule.combination.combination_id?.toString(),
+            );
+            SecureStorage.setItem(
+              "favoritedCombinations",
+              JSON.stringify(updatedCombinations),
+            );
+          } catch {
+            // Error updating combinations
+          }
         }
       }
-    }
+      return prev.filter((s) => s.id !== scheduleId);
+    });
   };
 
   const shareSchedule = async (

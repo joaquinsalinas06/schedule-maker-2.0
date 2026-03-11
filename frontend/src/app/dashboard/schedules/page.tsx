@@ -101,6 +101,7 @@ export default function SchedulesPage() {
   const [favoritedCombinations, setFavoritedCombinations] = useState<
     Set<string>
   >(new Set());
+  const [isFavoritesLoaded, setIsFavoritesLoaded] = useState(false);
 
   const buildSelectionSignature = (
     sections: SelectedSection[],
@@ -183,8 +184,23 @@ export default function SchedulesPage() {
           // Error loading viewing favorite
         }
       }
+      setIsFavoritesLoaded(true);
     }
   }, []);
+
+  // Sync favorites to SecureStorage reactively
+  useEffect(() => {
+    if (isFavoritesLoaded) {
+      SecureStorage.setItem(
+        "favoriteSchedules",
+        JSON.stringify(favoriteSchedules),
+      );
+      SecureStorage.setItem(
+        "favoritedCombinations",
+        JSON.stringify(Array.from(favoritedCombinations)),
+      );
+    }
+  }, [favoriteSchedules, favoritedCombinations, isFavoritesLoaded]);
 
   // Calculate impossible sections only for the exact selection that was generated.
   useEffect(() => {
@@ -194,7 +210,10 @@ export default function SchedulesPage() {
       maxOptionalCourses,
     );
 
-    if (!lastGeneratedSelectionSignature || currentSignature !== lastGeneratedSelectionSignature) {
+    if (
+      !lastGeneratedSelectionSignature ||
+      currentSignature !== lastGeneratedSelectionSignature
+    ) {
       setImpossibleSections(new Set());
       return;
     }
@@ -414,10 +433,7 @@ export default function SchedulesPage() {
 
   // Favorite schedule management
   const addToFavorites = async (schedule: TypesScheduleCombination) => {
-    const combinationId = schedule.combination_id;
-    if (favoritedCombinations.has(combinationId.toString())) {
-      return; // Prevent duplicate saves if clicked rapidly or synced already
-    }
+    const combinationId = schedule.combination_id.toString();
 
     const favoriteId = `fav_${Date.now()}`;
     const newFavorite: FavoriteSchedule = {
@@ -427,22 +443,24 @@ export default function SchedulesPage() {
       created_at: new Date().toISOString(),
       notes: "",
     };
-    setFavoriteSchedules((prev) => [...prev, newFavorite]);
-    // Handle both favorite schedule format and regular schedule format
-    setFavoritedCombinations(
-      (prev) => new Set([...prev, combinationId.toString()]),
-    );
 
-    // Store in localStorage for persistence
-    const updatedFavorites = [...favoriteSchedules, newFavorite];
-    SecureStorage.setItem(
-      "favoriteSchedules",
-      JSON.stringify(updatedFavorites),
-    ); // 🔒 User-specific
-    SecureStorage.setItem(
-      "favoritedCombinations",
-      JSON.stringify([...favoritedCombinations, combinationId.toString()]),
-    ); // 🔒 User-specific
+    setFavoritedCombinations((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(combinationId);
+      return newSet;
+    });
+
+    setFavoriteSchedules((prev) => {
+      // Prevent duplicates in case of double clicks
+      if (
+        prev.some(
+          (f) => f.combination.combination_id?.toString() === combinationId,
+        )
+      ) {
+        return prev;
+      }
+      return [...prev, newFavorite];
+    });
 
     // Also save to database
     try {
@@ -457,43 +475,21 @@ export default function SchedulesPage() {
       console.log("Schedule saved to database successfully:", result);
     } catch (error) {
       console.error("Failed to save schedule to database:", error);
-      // Continue with localStorage-only save - don't break the user experience
     }
   };
 
   const removeFromFavoritesByCombinationId = (combinationId: string) => {
-    // Find the favorite by combination_id instead of by id
-    const favorite = favoriteSchedules.find(
-      (fav) => fav.combination.combination_id?.toString() === combinationId,
-    );
+    setFavoritedCombinations((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(combinationId);
+      return newSet;
+    });
 
-    if (favorite) {
-      // Remove from favorited combinations set
-      setFavoritedCombinations((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(combinationId);
-        return newSet;
-      });
-
-      // Remove from favorites array
-      const updatedFavorites = favoriteSchedules.filter(
-        (fav) => fav.id !== favorite.id,
+    setFavoriteSchedules((prev) => {
+      return prev.filter(
+        (fav) => fav.combination.combination_id?.toString() !== combinationId,
       );
-      setFavoriteSchedules(updatedFavorites);
-
-      // Update localStorage
-      SecureStorage.setItem(
-        "favoriteSchedules",
-        JSON.stringify(updatedFavorites),
-      ); // 🔒 User-specific
-      const updatedCombinations = Array.from(favoritedCombinations).filter(
-        (id) => id !== combinationId,
-      );
-      SecureStorage.setItem(
-        "favoritedCombinations",
-        JSON.stringify(updatedCombinations),
-      ); // 🔒 User-specific
-    }
+    });
   };
 
   return (
