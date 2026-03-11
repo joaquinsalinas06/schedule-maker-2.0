@@ -2,67 +2,87 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Calendar, Menu } from "lucide-react"
+import { Calendar, Menu, X } from "lucide-react"
 import { useState } from "react"
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-950/90 backdrop-blur-sm border-b border-gray-800">
-      <div className="max-w-7xl mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-cyan-600 rounded-lg flex items-center justify-center animate-pulse-slow">
-              <Calendar className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold text-white">Schedule Maker</h1>
-            </div>
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="/how-it-works" className="text-gray-400 hover:text-white text-sm font-medium transition-colors">
-              Cómo funciona
-            </Link>
-            <Link href="/universities" className="text-gray-400 hover:text-white text-sm font-medium transition-colors">
-              Universidades
-            </Link>
-            <Link href="/auth">
-              <Button className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 text-sm font-medium transition-colors">
-                Ingresar
-              </Button>
-            </Link>
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-foreground rounded-md flex items-center justify-center">
+            <Calendar className="w-4 h-4 text-primary-foreground" />
           </div>
-          <div className="md:hidden">
-            <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              <Menu className="w-6 h-6 text-white" />
-            </Button>
-          </div>
-        </div>
-      </div>
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-gray-950/95 backdrop-blur-sm border-t border-gray-800 py-4 px-6 space-y-4">
+          <span className="font-semibold text-foreground">Schedule Maker</span>
+        </Link>
+
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center gap-1">
           <Link
             href="/how-it-works"
-            className="block text-gray-400 hover:text-white text-base font-medium transition-colors"
-            onClick={() => setMobileMenuOpen(false)}
+            className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent"
           >
-            Cómo funciona
+            Como funciona
           </Link>
           <Link
             href="/universities"
-            className="block text-gray-400 hover:text-white text-base font-medium transition-colors"
-            onClick={() => setMobileMenuOpen(false)}
+            className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent"
           >
             Universidades
           </Link>
+          <div className="w-px h-5 bg-border mx-2" />
           <Link href="/auth">
-            <Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 text-base font-medium transition-colors">
+            <Button size="sm" className="h-8 px-4">
               Ingresar
             </Button>
           </Link>
         </div>
+
+        {/* Mobile Menu Button */}
+        <button
+          className="md:hidden p-2 -mr-2 text-muted-foreground hover:text-foreground transition-colors"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label={mobileMenuOpen ? "Cerrar menu" : "Abrir menu"}
+        >
+          {mobileMenuOpen ? (
+            <X className="w-5 h-5" />
+          ) : (
+            <Menu className="w-5 h-5" />
+          )}
+        </button>
+      </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-background border-t border-border animate-fade-in">
+          <div className="px-4 py-3 space-y-1">
+            <Link
+              href="/how-it-works"
+              className="block px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Como funciona
+            </Link>
+            <Link
+              href="/universities"
+              className="block px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Universidades
+            </Link>
+            <div className="pt-2">
+              <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
+                <Button className="w-full" size="sm">
+                  Ingresar
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
       )}
     </nav>
-  )
+  );
 }

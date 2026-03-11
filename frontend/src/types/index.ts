@@ -13,6 +13,7 @@ export type { University, Course, Section, Session, CourseSection } from './acad
 export type { User, UserProfileUpdate, LoginRequest, RegisterRequest, AuthResponse, FriendRequest } from './user';
 export type { 
   ScheduleRequest, 
+  ScheduleScores,
   ScheduleCombination, 
   ScheduleResponse, 
   FavoriteSchedule, 

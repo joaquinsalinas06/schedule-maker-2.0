@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import { DashboardSkeleton } from "@/components/ui/loading-skeletons"
 
 export default function LoginPage() {
   useEffect(() => {
@@ -10,12 +11,5 @@ export default function LoginPage() {
     }
   }, [])
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-      <div className="text-white text-center">
-        <div className="animate-spin h-8 w-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p>Redirigiendo...</p>
-      </div>
-    </div>
-  )
+  return <DashboardSkeleton />
 }

@@ -91,7 +91,7 @@ export function CourseSelectionList({
                 </span>
                 <Badge 
                   variant={selection.selection_type === 'shared' ? 'default' : 'secondary'}
-                  className={selection.selection_type === 'shared' ? 'bg-blue-500' : 'bg-green-500'}
+                  className={selection.selection_type === 'shared' ? 'bg-secondary hover:bg-accent text-foreground' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}
                 >
                   {selection.selection_type === 'shared' ? (
                     <>
@@ -194,13 +194,13 @@ export function CourseSelectionList({
           <div className="border-t border-border pt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
-                <div className="text-lg font-bold text-blue-600">
+                <div className="text-lg font-bold text-primary">
                   {getSharedCourses().length}
                 </div>
                 <div className="text-sm text-muted-foreground">Compartidos</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-green-600">
+                <div className="text-lg font-bold text-primary">
                   {getIndividualCourses().length}
                 </div>
                 <div className="text-sm text-muted-foreground">Individuales</div>

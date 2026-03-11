@@ -244,56 +244,7 @@ export const authService = {
     return response.data;
   },
 
-  // Check if token is valid and refresh if needed
-  validateAndRefreshToken: async (): Promise<boolean> => {
-    const token = localStorage.getItem('token');
-    if (!token) return false;
 
-    try {
-      // Try to make a request to verify token validity
-      await api.get('/api/auth/me');
-      return true;
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        // Token is invalid, try to refresh if remember me is enabled
-        const refreshToken = localStorage.getItem('refresh_token');
-        const rememberMe = localStorage.getItem('remember_me') === 'true';
-        
-        if (refreshToken && rememberMe) {
-          const newToken = await authService.refreshToken();
-          return !!newToken;
-        }
-      }
-      return false;
-    }
-  },
-
-  // Start periodic token validation
-  startTokenValidation: () => {
-    // Check token validity every 5 minutes
-    const interval = setInterval(async () => {
-      const isValid = await authService.validateAndRefreshToken();
-      if (!isValid && authService.isAuthenticated()) {
-        // Token is invalid and couldn't be refreshed, but user thinks they're authenticated
-        authService.logout();
-      }
-    }, 5 * 60 * 1000); // 5 minutes
-
-    // Also check on app focus/visibility change
-    const handleVisibilityChange = async () => {
-      if (!document.hidden && authService.isAuthenticated()) {
-        await authService.validateAndRefreshToken();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Return cleanup function
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  },
 
   setUser: (user: User): void => {
     localStorage.setItem('user', JSON.stringify(user));
@@ -324,9 +275,6 @@ export const authService = {
   }
 };
 
-// Auto-start token validation when the module loads
-if (typeof window !== 'undefined') {
-  authService.startTokenValidation();
-}
+
 
 export { api };

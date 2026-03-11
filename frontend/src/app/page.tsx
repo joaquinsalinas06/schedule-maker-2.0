@@ -1,55 +1,143 @@
 "use client"
 
-import type { Metadata } from "next"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import {
   Calendar,
   Users,
   ArrowRight,
-  CheckCircle,
-  Target,
+  CheckCircle2,
+  Zap,
   Clock,
-  Smartphone,
-  PlusCircle,
+  Sparkles,
+  Building2,
+  LayoutGrid,
+  Download,
+  Star,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import { Navbar } from "@/components/layout/navbar"
-import { useToast } from "@/hooks/use-toast"
 import { Footer } from "@/components/layout/footer"
 
+/** Mini schedule grid preview for the hero section */
+function SchedulePreview() {
+  const days = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
+  const hours = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00"]
+
+  const blocks = [
+    { day: 0, hour: 0, span: 2, label: "Cálculo II", color: "bg-primary/15 border-primary/30 text-primary" },
+    { day: 1, hour: 1, span: 2, label: "Física I", color: "bg-muted border-border text-foreground/70" },
+    { day: 2, hour: 0, span: 2, label: "Cálculo II", color: "bg-primary/15 border-primary/30 text-primary" },
+    { day: 3, hour: 2, span: 2, label: "Programación", color: "bg-foreground/5 border-foreground/10 text-foreground/60" },
+    { day: 4, hour: 1, span: 2, label: "Física I", color: "bg-muted border-border text-foreground/70" },
+    { day: 0, hour: 3, span: 2, label: "Química", color: "bg-foreground/5 border-foreground/10 text-foreground/60" },
+    { day: 2, hour: 4, span: 2, label: "Lab. Física", color: "bg-primary/10 border-primary/20 text-primary/80" },
+    { day: 4, hour: 4, span: 1, label: "Tutoría", color: "bg-muted/80 border-border text-foreground/50" },
+  ]
+
+  return (
+    <div className="relative mx-auto max-w-2xl mt-16">
+      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        {/* Toolbar */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/30">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-destructive/40" />
+            <div className="w-3 h-3 rounded-full bg-warning/40" />
+            <div className="w-3 h-3 rounded-full bg-success/40" />
+          </div>
+          <span className="text-xs text-muted-foreground font-medium">Combinación 1 de 24</span>
+          <div className="flex items-center gap-1.5">
+            <Download className="w-3.5 h-3.5 text-muted-foreground" />
+            <Star className="w-3.5 h-3.5 text-muted-foreground" />
+          </div>
+        </div>
+
+        {/* Grid */}
+        <div className="p-3">
+          {/* Day headers */}
+          <div className="grid grid-cols-[48px_repeat(6,1fr)] gap-0.5 mb-1">
+            <div />
+            {days.map((day) => (
+              <div key={day} className="text-center text-[11px] font-medium text-muted-foreground py-1">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Time grid */}
+          <div className="relative grid grid-cols-[48px_repeat(6,1fr)] gap-0.5">
+            {hours.map((hour, hi) => (
+              <div key={hour} className="contents">
+                <div className="text-[10px] text-muted-foreground/60 text-right pr-2 py-2 leading-none">
+                  {hour}
+                </div>
+                {days.map((_, di) => {
+                  const block = blocks.find(b => b.day === di && b.hour === hi)
+                  if (block) {
+                    return (
+                      <div
+                        key={`${di}-${hi}`}
+                        className={`rounded-md border text-[10px] font-medium px-1.5 py-1 ${block.color}`}
+                        style={{ gridRow: `span ${block.span}` }}
+                      >
+                        {block.label}
+                      </div>
+                    )
+                  }
+                  // Skip cells covered by spanning blocks
+                  const isOccupied = blocks.some(b => b.day === di && hi > b.hour && hi < b.hour + b.span)
+                  if (isOccupied) return null
+                  return (
+                    <div key={`${di}-${hi}`} className="rounded-sm bg-muted/20 min-h-[28px]" />
+                  )
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Decorative glow */}
+      <div className="absolute -inset-4 bg-primary/5 rounded-2xl -z-10 blur-2xl" />
+    </div>
+  )
+}
+
 export default function LandingPage() {
-  const { toast } = useToast();
-  const [isVisible, setIsVisible] = useState(false)
+  const [activeUniversity, setActiveUniversity] = useState("utec")
 
-  useEffect(() => {
-    setIsVisible(true)
-  }, [])
-
-  const benefits = [
+  const features = [
     {
-      icon: Clock,
-      title: "Ahorra Tiempo",
-      description: "De horas a minutos en planificación",
+      icon: Zap,
+      title: "Generación instantánea",
+      description: "Crea múltiples combinaciones de horarios en segundos, no en horas.",
+      stat: "< 1s",
     },
     {
-      icon: Target,
-      title: "Cero Conflictos",
-      description: "Validación automática de horarios",
+      icon: CheckCircle2,
+      title: "Sin conflictos",
+      description: "El algoritmo detecta y elimina automáticamente los cruces de horarios.",
+      stat: "0 cruces",
     },
     {
       icon: Users,
-      title: "Trabajo en Equipo",
-      description: "Coordina con compañeros fácilmente",
+      title: "Colaboración en tiempo real",
+      description: "Trabaja con compañeros para encontrar horarios compatibles.",
+      stat: "En equipo",
     },
     {
-      icon: Smartphone,
-      title: "Multiplataforma",
-      description: "Funciona en cualquier dispositivo",
+      icon: Clock,
+      title: "Siempre actualizado",
+      description: "Base de datos sincronizada con la información oficial de tu universidad.",
+      stat: "2025-1",
     },
+  ]
+
+  const steps = [
+    { num: "01", title: "Selecciona tus cursos", description: "Busca y agrega las secciones que te interesan" },
+    { num: "02", title: "Genera combinaciones", description: "El algoritmo crea todas las opciones sin conflictos" },
+    { num: "03", title: "Elige tu favorito", description: "Compara, guarda y descarga tu horario ideal" },
   ]
 
   const universities = [
@@ -57,219 +145,242 @@ export default function LandingPage() {
       id: "utec",
       name: "UTEC",
       fullName: "Universidad de Ingeniería y Tecnología",
-      logo: "🎓",
-      color: "bg-cyan-600",
-      hoverColor: "hover:bg-cyan-700",
+      status: "available",
     },
     {
       id: "upc",
       name: "UPC",
       fullName: "Universidad Peruana de Ciencias Aplicadas",
-      logo: "🏛️",
-      color: "bg-purple-600",
-      hoverColor: "hover:bg-purple-700",
+      status: "coming-soon",
     },
     {
       id: "pucp",
       name: "PUCP",
       fullName: "Pontificia Universidad Católica del Perú",
-      logo: "⛪",
-      color: "bg-green-600",
-      hoverColor: "hover:bg-green-700",
+      status: "coming-soon",
     },
     {
       id: "uni",
       name: "UNI",
       fullName: "Universidad Nacional de Ingeniería",
-      logo: "🔧",
-      color: "bg-orange-600",
-      hoverColor: "hover:bg-orange-700",
+      status: "coming-soon",
     },
   ]
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 overflow-x-hidden">
+    <div className="min-h-screen bg-background">
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative pt-24 pb-8 px-6 overflow-hidden">
-        {/* Animated Background Gradient */}
-        <div className="absolute inset-0 z-0 bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 animate-gradient-move"></div>
-
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <div
-            className={`transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
-            <Badge className="mb-6 bg-cyan-900/30 text-cyan-300 border-cyan-700/50 px-3 py-1 text-sm font-medium animate-in fade-in slide-in-from-top-4 duration-500">
-              Optimiza tu tiempo académico
-            </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-8 leading-tight tracking-tight animate-in fade-in slide-in-from-top-8 duration-700 delay-100">
-              Crea tu horario perfecto
-              <br />
-              <span className="text-cyan-400">en minutos</span>
-            </h1>
-            <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-top-8 duration-700 delay-200">
-              Genera horarios universitarios optimizados automáticamente. Selecciona tus cursos, evita conflictos de horarios y colabora con compañeros para encontrar las mejores combinaciones.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-top-8 duration-700 delay-300">
-              <Link href="/auth">
-                <Button
-                  size="lg"
-                  className="bg-cyan-600 hover:bg-cyan-700 text-white px-8 py-3 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200 animate-bounce-subtle"
-                >
-                  Comenzar gratis
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-              <Link href="/how-it-works">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="border-gray-700 text-gray-300 hover:bg-gray-800 px-8 py-3 text-base font-medium bg-transparent transition-colors"
-                >
-                  ¿Cómo funciona?
-                </Button>
-              </Link>
-            </div>
+      <section className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 animate-fade-in">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Optimiza tu tiempo académico</span>
           </div>
+
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-5 tracking-tight text-balance leading-[1.15]">
+            Crea tu horario perfecto{" "}
+            <span className="text-primary">en minutos</span>
+          </h1>
+
+          <p className="text-base sm:text-lg text-muted-foreground mb-8 max-w-xl mx-auto leading-relaxed text-pretty">
+            Genera horarios universitarios optimizados automáticamente.
+            Selecciona tus cursos, evita conflictos y colabora con compañeros.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+            <Link href="/auth">
+              <Button size="lg" className="h-11 px-8 text-sm font-medium gap-2 rounded-lg">
+                Comenzar gratis
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+            <Link href="#como-funciona">
+              <Button variant="ghost" size="lg" className="h-11 px-6 text-sm font-medium text-muted-foreground hover:text-foreground">
+                Cómo funciona
+              </Button>
+            </Link>
+          </div>
+
+          {/* Schedule Preview */}
+          <SchedulePreview />
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-20 px-6 bg-gray-950">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16 animate-in fade-in slide-in-from-top-8 duration-700">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">¿Cómo funciona?</h2>
-            <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-              Busca cursos, selecciona secciones y genera automáticamente horarios sin conflictos
-            </p>
+      {/* How it works Section */}
+      <section id="como-funciona" className="py-20 px-4 sm:px-6 border-t border-border">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-sm font-medium text-primary mb-3">Cómo funciona</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+              Tres pasos simples
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {benefits.map((benefit, index) => (
-              <Card
-                key={index}
-                className="group border border-gray-800 bg-gray-900 hover:border-gray-700 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] animate-in fade-in slide-in-from-bottom-4 duration-500"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <CardHeader className="pb-4">
-                  <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center mb-3 group-hover:rotate-6 transition-transform duration-300">
-                    <benefit.icon className="w-5 h-5 text-gray-300 group-hover:text-cyan-400 transition-colors" />
-                  </div>
-                  <CardTitle className="text-white text-lg font-semibold">{benefit.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-400 text-sm">{benefit.description}</p>
-                </CardContent>
-              </Card>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
+            {steps.map((step, i) => (
+              <div key={step.num} className="relative text-center md:text-left">
+                <div className="text-4xl font-bold text-primary/15 mb-3 tabular-nums">{step.num}</div>
+                <h3 className="text-base font-semibold text-foreground mb-2">{step.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
+                {i < steps.length - 1 && (
+                  <ArrowRight className="hidden md:block absolute top-6 -right-3 w-4 h-4 text-border" />
+                )}
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* University Specific Features (Tabbed) */}
-      <section className="py-20 px-6 bg-gray-900">
-        <div className="max-w-6xl mx-auto text-center">
-          <div className="mb-8 animate-in fade-in slide-in-from-top-8 duration-700">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Explora por
-              <span className="text-cyan-400"> Universidad</span>
+      {/* Features Section */}
+      <section className="py-20 px-4 sm:px-6 bg-muted/30 border-t border-border">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-sm font-medium text-primary mb-3">Características</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
+              Todo lo que necesitas para planificar
             </h2>
-            <p className="text-lg text-gray-300 max-w-2xl mx-auto mb-8">
-              Ofrecemos una experiencia personalizada para cada institución.
+            <p className="text-muted-foreground max-w-lg mx-auto text-sm">
+              Herramientas inteligentes que simplifican la creación de horarios académicos.
             </p>
           </div>
 
-          <Tabs defaultValue="utec" className="w-full max-w-4xl mx-auto">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto bg-gray-800 p-1 rounded-lg mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {features.map((feature) => (
+              <div
+                key={feature.title}
+                className="group flex gap-4 p-5 rounded-xl border border-border bg-card hover:border-primary/20 transition-colors duration-200"
+              >
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/15 transition-colors">
+                  <feature.icon className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline justify-between gap-2 mb-1">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      {feature.title}
+                    </h3>
+                    <span className="text-xs font-medium text-primary/70 tabular-nums flex-shrink-0">
+                      {feature.stat}
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    {feature.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Universities Section */}
+      <section className="py-20 px-4 sm:px-6 border-t border-border">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-sm font-medium text-primary mb-3">Universidades</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
+              Soporte para tu universidad
+            </h2>
+            <p className="text-muted-foreground max-w-lg mx-auto text-sm">
+              Estamos expandiendo nuestra cobertura constantemente.
+            </p>
+          </div>
+
+          <Tabs value={activeUniversity} onValueChange={setActiveUniversity} className="w-full">
+            <TabsList className="w-full grid grid-cols-4 h-auto p-1 bg-muted rounded-lg mb-6">
               {universities.map((uni) => (
                 <TabsTrigger
                   key={uni.id}
                   value={uni.id}
-                  className="relative flex flex-col items-center justify-center py-3 px-2 text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700 data-[state=active]:shadow-md rounded-md transition-all duration-200 group"
+                  className="py-2 px-3 text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all cursor-pointer"
                 >
-                  <span className="text-2xl mb-1">{uni.logo}</span>
-                  <span className="text-sm font-medium">{uni.name}</span>
-                  <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-1 bg-cyan-500 rounded-full transition-all duration-300 group-data-[state=active]:w-full"></span>
+                  {uni.name}
                 </TabsTrigger>
               ))}
             </TabsList>
 
             {universities.map((uni) => (
-              <TabsContent key={uni.id} value={uni.id} className="mt-0 animate-in fade-in duration-500">
-                {uni.id === "utec" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-                    <div className="group bg-gray-950 p-6 rounded-lg border border-gray-800 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-                      <CheckCircle className="w-6 h-6 text-green-500 mb-3 group-hover:scale-110 transition-transform duration-300" />
-                      <h3 className="font-semibold text-white mb-2">Base de datos completa</h3>
-                      <p className="text-gray-400 text-sm">Todos los cursos y secciones de UTEC actualizados</p>
+              <TabsContent key={uni.id} value={uni.id} className="mt-0">
+                <div className="rounded-xl border border-border bg-card p-6 sm:p-8">
+                  {uni.status === "available" ? (
+                    <div className="space-y-5">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center flex-shrink-0">
+                          <CheckCircle2 className="w-5 h-5 text-success" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-foreground mb-0.5">{uni.fullName}</h3>
+                          <p className="text-sm text-muted-foreground">Disponible ahora con todas las funcionalidades.</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        {[
+                          { value: "100%", label: "Cursos actualizados" },
+                          { value: "2025-1", label: "Ciclo actual" },
+                          { value: "Completo", label: "Info de profesores" },
+                        ].map((stat) => (
+                          <div key={stat.label} className="p-3 rounded-lg bg-muted/50 text-center sm:text-left">
+                            <div className="text-lg sm:text-xl font-bold text-foreground tabular-nums">{stat.value}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">{stat.label}</div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div className="group bg-gray-950 p-6 rounded-lg border border-gray-800 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-                      <CheckCircle className="w-6 h-6 text-green-500 mb-3 group-hover:scale-110 transition-transform duration-300" />
-                      <h3 className="font-semibold text-white mb-2">Profesores incluidos</h3>
-                      <p className="text-gray-400 text-sm">Información de profesores para cada sección</p>
+                  ) : (
+                    <div className="text-center py-6">
+                      <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mx-auto mb-3">
+                        <Clock className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground mb-1.5">Próximamente en {uni.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-5">
+                        Estamos trabajando para agregar soporte para {uni.fullName}.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="cursor-pointer"
+                        onClick={() => {
+                          window.location.href = `mailto:joaquin.salinas@utec.edu.pe?subject=Solicitud%20de%20universidad%20-%20${uni.name}`
+                        }}
+                      >
+                        Solicitar acceso
+                      </Button>
                     </div>
-                    <div className="group bg-gray-950 p-6 rounded-lg border border-gray-800 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-400">
-                      <CheckCircle className="w-6 h-6 text-green-500 mb-3 group-hover:scale-110 transition-transform duration-300" />
-                      <h3 className="font-semibold text-white mb-2">Siempre actualizado</h3>
-                      <p className="text-gray-400 text-sm">Datos sincronizados cada semestre</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Clock className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-xl font-semibold text-foreground mb-2">¡Próximamente en {uni.name}!</h3>
-                    <p className="text-muted-foreground">
-                      Estamos trabajando para llevar Schedule Maker a tu universidad.
-                    </p>
-                  </div>
-                )}
+                  )}
+                </div>
               </TabsContent>
             ))}
           </Tabs>
-
-          <div className="text-center mt-16 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
-            <h2 className="text-2xl font-bold text-white mb-4">¿Tu universidad no está en la lista?</h2>
-            <p className="text-lg text-gray-300 mb-6">
-              Contáctame para agregar tu universidad o reportar cualquier problema.
-            </p>
-            <Button
-              size="lg"
-              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-              onClick={() => {
-                window.location.href = 'mailto:joaquin.salinas@utec.edu.pe?subject=Solicitud%20de%20universidad%20-%20Schedule%20Maker&body=Hola,%0A%0AMe%20gustaría%20solicitar%20que%20agreguen%20mi%20universidad%20a%20Schedule%20Maker.%0A%0AUniversidad:%20[Nombre%20de%20la%20universidad]%0AUbicación:%20[Ciudad,%20País]%0A%0A¡Gracias!'
-              }}
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Contactar
-            </Button>
-          </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20 px-6 bg-gray-900">
-        <div className="max-w-4xl mx-auto text-center animate-in fade-in slide-in-from-top-8 duration-700">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Listo para crear tu horario perfecto</h2>
-          <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
-            Comienza a generar horarios optimizados y ahorra tiempo en la planificación de tus cursos
+      {/* CTA Section */}
+      <section className="py-20 px-4 sm:px-6 border-t border-border bg-muted/30">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
+            Listo para optimizar tu horario?
+          </h2>
+          <p className="text-sm text-muted-foreground mb-8 max-w-md mx-auto">
+            Únete a estudiantes que ya están ahorrando tiempo en la planificación de sus cursos.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/auth">
-              <Button
-                size="lg"
-                className="bg-cyan-600 hover:bg-cyan-700 text-white px-8 py-3 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200 animate-bounce-subtle"
-              >
-                <Calendar className="w-4 h-4 mr-2" />
+              <Button size="lg" className="h-11 px-8 text-sm font-medium gap-2 rounded-lg">
+                <Calendar className="w-4 h-4" />
                 Comenzar gratis
-                <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
-            <div className="flex items-center gap-2 text-gray-400 text-sm">
-              <CheckCircle className="w-4 h-4 text-green-500" />
+          </div>
+          <div className="mt-8 flex items-center justify-center gap-5 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-success" />
               <span>Gratis para estudiantes</span>
+            </div>
+            <div className="w-px h-3 bg-border" />
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+              <span>Sin tarjeta de crédito</span>
             </div>
           </div>
         </div>

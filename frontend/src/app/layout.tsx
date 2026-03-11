@@ -1,16 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { StructuredData } from "@/components/seo/StructuredData";
-import { generateOrganizationSchema, generateSoftwareApplicationSchema } from "@/lib/seo";
-import { SpeedInsights } from "@vercel/speed-insights/next"
-import { Analytics } from "@vercel/analytics/next"
+import {
+  generateOrganizationSchema,
+  generateSoftwareApplicationSchema,
+} from "@/lib/seo";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -21,18 +27,19 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: {
     default: "Schedule Maker | Generador de Horarios Inteligente",
-    template: "%s | Schedule Maker"
+    template: "%s | Schedule Maker",
   },
-  description: "Crea horarios universitarios optimizados con inteligencia artificial. Colabora en tiempo real, evita conflictos y encuentra la combinación perfecta de clases.",
+  description:
+    "Crea horarios universitarios optimizados con inteligencia artificial. Colabora en tiempo real, evita conflictos y encuentra la combinación perfecta de clases.",
   keywords: [
     "generador de horarios",
-    "horarios universitarios", 
+    "horarios universitarios",
     "planificador académico",
     "schedule maker",
     "university schedule",
     "class planner",
     "horarios UTEC",
-    "colaboración estudiantes"
+    "colaboración estudiantes",
   ],
   authors: [{ name: "Schedule Maker Team" }],
   creator: "Schedule Maker",
@@ -42,13 +49,15 @@ export const metadata: Metadata = {
     locale: "es_PE",
     url: "https://schedule-maker.vercel.app",
     title: "Schedule Maker | Generador de Horarios Inteligente",
-    description: "Crea horarios universitarios optimizados con inteligencia artificial. Colabora en tiempo real, evita conflictos y encuentra la combinación perfecta de clases.",
+    description:
+      "Crea horarios universitarios optimizados con inteligencia artificial. Colabora en tiempo real, evita conflictos y encuentra la combinación perfecta de clases.",
     siteName: "Schedule Maker",
   },
   twitter: {
     card: "summary_large_image",
     title: "Schedule Maker | Generador de Horarios Inteligente",
-    description: "Crea horarios universitarios optimizados con inteligencia artificial.",
+    description:
+      "Crea horarios universitarios optimizados con inteligencia artificial.",
     creator: "@schedule_maker",
   },
   robots: {
@@ -79,7 +88,7 @@ export default function RootLayout({
         <StructuredData data={generateSoftwareApplicationSchema()} />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <ThemeProvider
           attribute="class"
@@ -87,11 +96,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ToastProvider>
-            {children}
-            <SpeedInsights/>
-            <Analytics/>
-          </ToastProvider>
+          <TooltipProvider delayDuration={200}>
+            <ToastProvider>
+              {children}
+              <SpeedInsights />
+              <Analytics />
+            </ToastProvider>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -401,42 +401,49 @@ export function EnhancedCollaborativeBuilder() {
 
   const getUserColor = (userId: number) => {
     const colors = [
-      'bg-purple-500/20 text-purple-300 border border-purple-500/30',
-      'bg-blue-500/20 text-blue-300 border border-blue-500/30', 
-      'bg-green-500/20 text-green-300 border border-green-500/30',
-      'bg-orange-500/20 text-orange-300 border border-orange-500/30',
-      'bg-pink-500/20 text-pink-300 border border-pink-500/30',
-      'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+      "bg-primary/10 text-primary",
+      "bg-muted text-foreground",
+      "bg-foreground/5 text-foreground",
+      "bg-primary/5 text-primary/80",
+      "bg-muted/70 text-muted-foreground",
+      "bg-card text-card-foreground border border-border",
     ];
     return colors[userId % colors.length];
   };
 
-  const getSharedCourses = () => courseSelections.filter(cs => cs.selection_type === 'shared');
-  const getIndividualCourses = () => courseSelections.filter(cs => cs.selection_type === 'individual');
+  const getSharedCourses = () =>
+    courseSelections.filter((cs) => cs.selection_type === "shared");
+  const getIndividualCourses = () =>
+    courseSelections.filter((cs) => cs.selection_type === "individual");
 
   // Sync autocomplete with search results when autocomplete changes
   useEffect(() => {
     if (autocompleteSuggestions.length > 0 && autocompleteQuery.length >= 3) {
-      setSearchResults(autocompleteSuggestions)
+      setSearchResults(autocompleteSuggestions);
     } else if (autocompleteQuery.length === 0) {
-      setSearchResults([])
+      setSearchResults([]);
     }
-  }, [autocompleteSuggestions, autocompleteQuery])
+  }, [autocompleteSuggestions, autocompleteQuery]);
 
   // Sync search query with autocomplete query
   useEffect(() => {
-    setAutocompleteQuery(searchQuery)
-  }, [searchQuery, setAutocompleteQuery])
+    setAutocompleteQuery(searchQuery);
+  }, [searchQuery, setAutocompleteQuery]);
 
   // Update search query when autocomplete query changes
   useEffect(() => {
-    setSearchQuery(autocompleteQuery)
-  }, [autocompleteQuery])
+    setSearchQuery(autocompleteQuery);
+  }, [autocompleteQuery]);
 
   if (!currentSession) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Cargando sesión colaborativa...</p>
+      <div className="space-y-6 animate-pulse p-4">
+        <div className="h-24 w-full bg-muted rounded-xl"></div>
+        <div className="flex gap-4">
+          <div className="h-10 w-32 bg-muted rounded"></div>
+          <div className="h-10 w-32 bg-muted rounded"></div>
+        </div>
+        <div className="h-96 w-full bg-muted/50 rounded-xl mt-4"></div>
       </div>
     );
   }
