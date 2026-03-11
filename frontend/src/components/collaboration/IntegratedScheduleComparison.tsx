@@ -19,6 +19,7 @@ import { ScheduleComparisonVisualization } from '@/components/ScheduleComparison
 import { comparisonService } from '@/services/comparisonService';
 import { ScheduleComparison, ComparisonParticipant } from '@/types/comparison';
 import { useCollaborationStore } from '@/stores/collaborationStore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 export function IntegratedScheduleComparison() {
@@ -206,9 +207,17 @@ export function IntegratedScheduleComparison() {
   if (!activeComparison) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin h-8 w-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p>Cargando comparación...</p>
+        <div className="w-full max-w-md space-y-4 px-4">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-10 h-10 rounded-lg" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+          </div>
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-10 w-full rounded-md" />
         </div>
       </div>
     );
@@ -262,7 +271,7 @@ export function IntegratedScheduleComparison() {
               </Button>
             </div>
             {error && (
-              <p className="text-red-500 text-sm">{error}</p>
+              <p className="text-destructive text-sm">{error}</p>
             )}
           </div>
         </CardContent>
@@ -310,7 +319,7 @@ export function IntegratedScheduleComparison() {
                       size="sm"
                       variant="ghost"
                       onClick={() => removeParticipant(participant.id)}
-                      className="p-1 text-red-500 hover:text-red-700"
+                      className="p-1 text-destructive hover:text-destructive/80"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>

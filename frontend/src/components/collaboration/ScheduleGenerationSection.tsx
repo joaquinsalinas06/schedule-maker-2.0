@@ -1,16 +1,11 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { 
-  Calendar,
-  Zap,
-  Clock,
-  Eye,
-  EyeOff
-} from 'lucide-react';
-import { ScheduleVisualization } from '@/components/ScheduleVisualization';
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Calendar, Zap, Clock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ScheduleVisualization } from "@/components/ScheduleVisualization";
+import { ButtonLoader } from "@/components/ui/loading-skeletons";
 
 interface CollaborativeCourseSelection {
   id?: number;
@@ -19,7 +14,7 @@ interface CollaborativeCourseSelection {
   section_code: string;
   professor?: string;
   schedule_data: any;
-  selection_type: 'shared' | 'individual';
+  selection_type: "shared" | "individual";
   shared_with_users: number[];
   priority: number;
   added_by: number;
@@ -47,7 +42,7 @@ export function ScheduleGenerationSection({
   setShowScheduleVisualization,
   conflicts,
   getSharedCourses,
-  getIndividualCourses
+  getIndividualCourses,
 }: ScheduleGenerationSectionProps) {
   return (
     <>
@@ -59,7 +54,8 @@ export function ScheduleGenerationSection({
             Generación de Horario Personal
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Genera tu horario personalizado combinando cursos compartidos e individuales
+            Genera tu horario personalizado combinando cursos compartidos e
+            individuales
           </p>
         </CardHeader>
 
@@ -67,8 +63,12 @@ export function ScheduleGenerationSection({
           {courseSelections.length === 0 ? (
             <div className="text-center text-muted-foreground py-6">
               <Clock className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-              <p className="text-lg font-medium">Selecciona cursos para generar horarios</p>
-              <p className="text-sm">Necesitas al menos un curso para generar un horario</p>
+              <p className="text-lg font-medium">
+                Selecciona cursos para generar horarios
+              </p>
+              <p className="text-sm">
+                Necesitas al menos un curso para generar un horario
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -76,19 +76,25 @@ export function ScheduleGenerationSection({
                 <h4 className="font-medium mb-2">Resumen de tu selección:</h4>
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
-                    <span className="font-medium text-blue-600">
-                      {getSharedCourses().length} 
+                    <span className="font-medium text-primary">
+                      {getSharedCourses().length}
                     </span>
-                    <span className="text-muted-foreground"> cursos compartidos</span>
+                    <span className="text-muted-foreground">
+                      {" "}
+                      cursos compartidos
+                    </span>
                   </div>
                   <div>
-                    <span className="font-medium text-green-600">
+                    <span className="font-medium text-primary">
                       {getIndividualCourses().length}
                     </span>
-                    <span className="text-muted-foreground"> cursos individuales</span>
+                    <span className="text-muted-foreground">
+                      {" "}
+                      cursos individuales
+                    </span>
                   </div>
                   <div>
-                    <span className="font-medium text-purple-600">
+                    <span className="font-medium text-foreground">
                       {courseSelections.length}
                     </span>
                     <span className="text-muted-foreground"> total</span>
@@ -96,15 +102,14 @@ export function ScheduleGenerationSection({
                 </div>
               </div>
 
-              <Button 
+              <Button
                 onClick={generateSchedules}
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Generando...
+                    <ButtonLoader />
                   </>
                 ) : (
                   <>
@@ -116,10 +121,14 @@ export function ScheduleGenerationSection({
 
               {conflicts.length > 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <h4 className="font-medium text-red-800 mb-1">Conflictos detectados:</h4>
+                  <h4 className="font-medium text-red-800 mb-1">
+                    Conflictos detectados:
+                  </h4>
                   <ul className="text-sm text-red-700 space-y-1">
                     {conflicts.map((conflict, index) => (
-                      <li key={index}>• {conflict.message || 'Conflicto de horario'}</li>
+                      <li key={index}>
+                        • {conflict.message || "Conflicto de horario"}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -140,13 +149,16 @@ export function ScheduleGenerationSection({
                   Tu Horario Generado
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Tu horario personalizado colaborativo con {generatedSchedule.selected_courses_count} cursos
+                  Tu horario personalizado colaborativo con{" "}
+                  {generatedSchedule.selected_courses_count} cursos
                 </p>
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowScheduleVisualization(!showScheduleVisualization)}
+                onClick={() =>
+                  setShowScheduleVisualization(!showScheduleVisualization)
+                }
               >
                 {showScheduleVisualization ? (
                   <>
@@ -166,34 +178,38 @@ export function ScheduleGenerationSection({
             <CardContent>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  <div className="text-center p-3 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">
+                  <div className="text-center p-3 bg-muted rounded-lg">
+                    <div className="text-2xl font-bold text-foreground">
                       {getSharedCourses().length}
                     </div>
-                    <div className="text-sm text-blue-600">Compartidos</div>
+                    <div className="text-sm text-muted-foreground">
+                      Compartidos
+                    </div>
                   </div>
-                  <div className="text-center p-3 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">
+                  <div className="text-center p-3 bg-muted rounded-lg">
+                    <div className="text-2xl font-bold text-foreground">
                       {getIndividualCourses().length}
                     </div>
-                    <div className="text-sm text-green-600">Individuales</div>
+                    <div className="text-sm text-muted-foreground">
+                      Individuales
+                    </div>
                   </div>
-                  <div className="text-center p-3 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">
+                  <div className="text-center p-3 bg-muted rounded-lg">
+                    <div className="text-2xl font-bold text-foreground">
                       {generatedSchedule.selected_courses_count}
                     </div>
-                    <div className="text-sm text-purple-600">Total</div>
+                    <div className="text-sm text-muted-foreground">Total</div>
                   </div>
-                  <div className="text-center p-3 bg-orange-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">
+                  <div className="text-center p-3 bg-destructive/10 rounded-lg">
+                    <div className="text-2xl font-bold text-destructive">
                       {conflicts.length}
                     </div>
-                    <div className="text-sm text-orange-600">Conflictos</div>
+                    <div className="text-sm text-destructive">Conflictos</div>
                   </div>
                 </div>
-                
+
                 {/* Schedule Canvas Visualization */}
-                <ScheduleVisualization 
+                <ScheduleVisualization
                   scheduleData={generatedSchedule}
                   showBackButton={false}
                 />

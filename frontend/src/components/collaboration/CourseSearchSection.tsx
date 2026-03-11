@@ -59,9 +59,9 @@ export function CourseSearchSection({
         <Badge 
           variant="default"
           className={`cursor-pointer transition-colors ${
-            activeSearchType === 'shared' 
-              ? 'bg-blue-500 hover:bg-blue-600' 
-              : 'bg-green-500 hover:bg-green-600'
+            activeSearchType === 'shared'
+              ? 'bg-secondary hover:bg-accent text-foreground'
+              : 'bg-primary hover:bg-primary/90 text-primary-foreground'
           }`}
           onClick={() => setActiveSearchType(activeSearchType === 'shared' ? 'individual' : 'shared')}
         >

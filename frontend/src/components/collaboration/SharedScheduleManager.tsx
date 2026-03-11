@@ -174,17 +174,17 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
                     return transformedData ? (
                       <div className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <div className="text-center p-3 bg-cyan-500/20 border border-cyan-500/30 rounded-lg backdrop-blur-sm">
-                            <div className="text-2xl font-bold text-cyan-400">
+                          <div className="text-center p-3 bg-primary/10 border border-primary/20 rounded-lg backdrop-blur-sm">
+                            <div className="text-2xl font-bold text-primary">
                               {transformedData.selected_courses_count}
                             </div>
-                            <div className="text-sm text-cyan-300">Materias</div>
+                            <div className="text-sm text-muted-foreground">Materias</div>
                           </div>
-                          <div className="text-center p-3 bg-purple-500/20 border border-purple-500/30 rounded-lg backdrop-blur-sm">
-                            <div className="text-2xl font-bold text-purple-400">
+                          <div className="text-center p-3 bg-muted border border-border rounded-lg backdrop-blur-sm">
+                            <div className="text-2xl font-bold text-foreground">
                               {viewScheduleToken}
                             </div>
-                            <div className="text-sm text-purple-300">Código Compartir</div>
+                            <div className="text-sm text-muted-foreground">Código Compartir</div>
                           </div>
                         </div>
                         

@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { 
+import {
   Users,
   Search,
   UserPlus,
@@ -20,6 +20,7 @@ import {
   Send,
   Check
 } from 'lucide-react';
+import { FriendListSkeleton } from '@/components/ui/loading-skeletons';
 import { useToast } from '@/hooks/use-toast';
 import { friendsAPI } from '@/services/friendsAPI';
 
@@ -175,23 +176,30 @@ export function FriendInviteModal({ isOpen, onClose, sessionCode, sessionName, o
             Invitar Amigos a la Sesión
           </DialogTitle>
           <DialogDescription>
-            Invita a tus amigos a unirse a la sesión de colaboración &quot;{sessionName}&quot;
+            Invita a tus amigos a unirse a la sesión de colaboración &quot;
+            {sessionName}&quot;
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Session Info */}
-          <Card className="bg-gradient-to-r from-gray-800/80 to-gray-700/80 border-gray-600/50">
+          <Card className="bg-card border-border">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-gray-100">{sessionName}</h3>
-                  <p className="text-sm text-gray-300">Código de sesión: <span className="font-mono font-bold text-gray-100">{sessionCode}</span></p>
+                  <h3 className="font-semibold text-foreground">
+                    {sessionName}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Código de sesión:{" "}
+                    <span className="font-mono font-bold text-foreground">
+                      {sessionCode}
+                    </span>
+                  </p>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-gray-500 text-gray-100 hover:bg-gray-700/50 bg-gray-800/30"
                   onClick={() => {
                     navigator.clipboard.writeText(sessionCode);
                     toast({
@@ -219,11 +227,13 @@ export function FriendInviteModal({ isOpen, onClose, sessionCode, sessionName, o
 
           {/* Selected Friends Summary */}
           {selectedFriends.size > 0 && (
-            <Card className="bg-blue-900/20 border-blue-700/50">
+            <Card className="bg-muted border-border">
               <CardContent className="p-3">
-                <p className="text-sm text-blue-200">
+                <p className="text-sm text-foreground">
                   <Users className="w-4 h-4 inline mr-1" />
-                  {selectedFriends.size} amigo{selectedFriends.size !== 1 ? 's' : ''} seleccionado{selectedFriends.size !== 1 ? 's' : ''}
+                  {selectedFriends.size} amigo
+                  {selectedFriends.size !== 1 ? "s" : ""} seleccionado
+                  {selectedFriends.size !== 1 ? "s" : ""}
                 </p>
               </CardContent>
             </Card>
@@ -232,44 +242,48 @@ export function FriendInviteModal({ isOpen, onClose, sessionCode, sessionName, o
           {/* Friends List */}
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              </div>
+              <FriendListSkeleton count={4} />
             ) : filteredFriends.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="h-12 w-12 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">
-                  {friends.length === 0 ? 'No tienes amigos aún' : 'No se encontraron amigos'}
+                  {friends.length === 0
+                    ? "No tienes amigos aún"
+                    : "No se encontraron amigos"}
                 </h3>
                 <p>
-                  {friends.length === 0 
-                    ? 'Agrega amigos para poder invitarlos a sesiones' 
-                    : 'Intenta con diferentes términos de búsqueda'}
+                  {friends.length === 0
+                    ? "Agrega amigos para poder invitarlos a sesiones"
+                    : "Intenta con diferentes términos de búsqueda"}
                 </p>
               </div>
             ) : (
               filteredFriends.map((friend) => {
                 const isSelected = selectedFriends.has(friend.id);
                 const isInvited = invitedFriends.has(friend.id);
-                
+
                 return (
-                  <Card 
-                    key={friend.id} 
+                  <Card
+                    key={friend.id}
                     className={`cursor-pointer transition-all ${
-                      isSelected 
-                        ? 'border-rose-600 bg-rose-900/20' 
-                        : isInvited 
-                          ? 'border-green-600 bg-green-900/20' 
-                          : 'hover:shadow-md hover:border-gray-600'
+                      isSelected
+                        ? "border-destructive bg-destructive/10"
+                        : isInvited
+                          ? "border-primary bg-primary/10"
+                          : "hover:shadow-md hover:border-border"
                     }`}
-                    onClick={() => !isInvited && toggleFriendSelection(friend.id)}
+                    onClick={() =>
+                      !isInvited && toggleFriendSelection(friend.id)
+                    }
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                           <Avatar className="h-12 w-12">
                             <AvatarImage src={friend.profile_photo} />
-                            <AvatarFallback>{getInitials(friend)}</AvatarFallback>
+                            <AvatarFallback>
+                              {getInitials(friend)}
+                            </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">
@@ -285,17 +299,17 @@ export function FriendInviteModal({ isOpen, onClose, sessionCode, sessionName, o
                             )}
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center">
                           {isInvited ? (
-                            <div className="flex items-center text-green-600">
+                            <div className="flex items-center text-primary">
                               <Check className="h-4 w-4 mr-1" />
                               <span className="text-sm">Invitado</span>
                             </div>
                           ) : isSelected ? (
                             <Button
                               size="sm"
-                              className="bg-rose-600 hover:bg-rose-700"
+                              className="bg-destructive hover:bg-destructive/90"
                             >
                               <X className="h-4 w-4 mr-1" />
                               Quitar
@@ -304,7 +318,7 @@ export function FriendInviteModal({ isOpen, onClose, sessionCode, sessionName, o
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-rose-600 text-rose-100 hover:bg-rose-900/30 bg-rose-900/20"
+                              className="border-destructive text-destructive hover:bg-destructive/10 bg-destructive/5"
                             >
                               <UserPlus className="h-4 w-4 mr-1" />
                               Seleccionar
@@ -328,10 +342,12 @@ export function FriendInviteModal({ isOpen, onClose, sessionCode, sessionName, o
             <Button
               onClick={sendInvitations}
               disabled={loading || selectedFriends.size === 0}
-              className="bg-rose-600 hover:bg-rose-700"
+              className="bg-destructive hover:bg-destructive/90"
             >
               <Send className="w-4 h-4 mr-2" />
-              {loading ? 'Enviando...' : `Invitar ${selectedFriends.size > 0 ? `(${selectedFriends.size})` : ''}`}
+              {loading
+                ? "Enviando..."
+                : `Invitar ${selectedFriends.size > 0 ? `(${selectedFriends.size})` : ""}`}
             </Button>
           </div>
         </div>
