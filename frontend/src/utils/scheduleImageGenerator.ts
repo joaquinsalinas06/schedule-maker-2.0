@@ -1,32 +1,32 @@
 // Use the specific types from ScheduleVisualization component
 interface Session {
-  session_id: number
-  session_type: string
-  day: string | number // Can be either string name or number
+  session_id?: number
+  session_type?: string
+  day?: string | number
+  day_of_week?: number
   start_time: string
   end_time: string
-  location: string
-  modality: string
+  location?: string
+  classroom?: string
+  modality?: string
 }
 
 interface CourseSection {
-  course_id: number
+  course_id?: number
   course_code: string
   course_name: string
-  section_id: number
+  section_id?: number
   section_number: string
   professor: string
-  sessions: Session[]
+  sessions?: Session[]
 }
 
-interface ScheduleCombination {
-  combination_id: string
-  course_count: number
-  courses: CourseSection[]
+interface RenderableSchedule {
+  courses?: CourseSection[]
 }
 
 interface GenerateScheduleImageOptions {
-  schedule: ScheduleCombination
+  schedule: RenderableSchedule
   width?: number
   height?: number
   startTime?: number // in minutes from midnight
@@ -436,7 +436,7 @@ export const generateScheduleImage = ({
 
 // Generate multiple schedule images for batching
 export const generateScheduleImages = async (
-  schedules: ScheduleCombination[],
+  schedules: RenderableSchedule[],
   options: Omit<GenerateScheduleImageOptions, 'schedule'> = {}
 ): Promise<ScheduleImageResult[]> => {
   const images: ScheduleImageResult[] = []
