@@ -70,7 +70,7 @@ function Toast({
   
   const variantClasses = {
     default: "bg-white border-gray-200 text-gray-900",
-    success: "bg-green-50 border-green-200 text-green-900",
+    success: "bg-primary/5 border-primary/20 text-primary",
     destructive: "bg-red-50 border-red-200 text-red-900"
   }
 

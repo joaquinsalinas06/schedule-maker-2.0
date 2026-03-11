@@ -20,17 +20,19 @@ export function MobileHeader({ setMobileMenuOpen }: MobileHeaderProps) {
         >
           <Menu className="w-5 h-5" />
         </Button>
-        
+
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center">
+          <div className="w-7 h-7 bg-foreground rounded-md flex items-center justify-center">
             <Calendar className="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="font-semibold text-foreground text-sm">Schedule Maker</span>
+          <span className="font-semibold text-foreground text-sm">
+            Schedule Maker
+          </span>
         </div>
-        
+
         {/* Empty div for spacing */}
         <div className="w-8" />
       </div>
     </header>
-  )
+  );
 }

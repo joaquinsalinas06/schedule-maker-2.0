@@ -18,7 +18,6 @@ export interface SidebarSection {
   title: string;
   shortTitle: string;
   icon: any; // Lucide icon component
-  color: string;
 }
 
 // Component Props Types

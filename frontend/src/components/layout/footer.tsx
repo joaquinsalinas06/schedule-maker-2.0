@@ -9,31 +9,36 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-foreground rounded-md flex items-center justify-center">
                 <Calendar className="w-4 h-4 text-primary-foreground" />
               </div>
-              <span className="font-semibold text-foreground">Schedule Maker</span>
+              <span className="font-semibold text-foreground">
+                Schedule Maker
+              </span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              La herramienta inteligente para crear horarios universitarios optimizados.
+              La herramienta inteligente para crear horarios universitarios
+              optimizados.
             </p>
           </div>
 
           {/* Product */}
           <div>
-            <h4 className="text-sm font-medium text-foreground mb-4">Producto</h4>
+            <h4 className="text-sm font-medium text-foreground mb-4">
+              Producto
+            </h4>
             <ul className="space-y-3">
               <li>
-                <Link 
-                  href="/how-it-works" 
+                <Link
+                  href="/how-it-works"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Como funciona
                 </Link>
               </li>
               <li>
-                <Link 
-                  href="/universities" 
+                <Link
+                  href="/universities"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Universidades
@@ -44,19 +49,21 @@ export function Footer() {
 
           {/* Support */}
           <div>
-            <h4 className="text-sm font-medium text-foreground mb-4">Soporte</h4>
+            <h4 className="text-sm font-medium text-foreground mb-4">
+              Soporte
+            </h4>
             <ul className="space-y-3">
               <li>
-                <Link 
-                  href="mailto:joaquin.salinas@utec.edu.pe" 
+                <Link
+                  href="mailto:joaquin.salinas@utec.edu.pe"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Contacto
                 </Link>
               </li>
               <li>
-                <Link 
-                  href="mailto:joaquin.salinas@utec.edu.pe?subject=Reportar%20problema" 
+                <Link
+                  href="mailto:joaquin.salinas@utec.edu.pe?subject=Reportar%20problema"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Reportar problema
@@ -70,16 +77,16 @@ export function Footer() {
             <h4 className="text-sm font-medium text-foreground mb-4">Legal</h4>
             <ul className="space-y-3">
               <li>
-                <Link 
-                  href="#" 
+                <Link
+                  href="#"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Privacidad
                 </Link>
               </li>
               <li>
-                <Link 
-                  href="#" 
+                <Link
+                  href="#"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Terminos
@@ -92,10 +99,11 @@ export function Footer() {
         {/* Bottom */}
         <div className="mt-12 pt-8 border-t border-border">
           <p className="text-sm text-muted-foreground text-center">
-            {new Date().getFullYear()} Schedule Maker. Creado por Joaquin Salinas.
+            {new Date().getFullYear()} Schedule Maker. Creado por Joaquin
+            Salinas.
           </p>
         </div>
       </div>
     </footer>
-  )
+  );
 }

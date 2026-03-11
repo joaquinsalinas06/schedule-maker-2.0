@@ -13,7 +13,7 @@ export function Navbar() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-foreground rounded-md flex items-center justify-center">
             <Calendar className="w-4 h-4 text-primary-foreground" />
           </div>
           <span className="font-semibold text-foreground">Schedule Maker</span>
@@ -21,14 +21,14 @@ export function Navbar() {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-1">
-          <Link 
-            href="/how-it-works" 
+          <Link
+            href="/how-it-works"
             className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent"
           >
             Como funciona
           </Link>
-          <Link 
-            href="/universities" 
+          <Link
+            href="/universities"
             className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent"
           >
             Universidades
@@ -47,7 +47,11 @@ export function Navbar() {
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label={mobileMenuOpen ? "Cerrar menu" : "Abrir menu"}
         >
-          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {mobileMenuOpen ? (
+            <X className="w-5 h-5" />
+          ) : (
+            <Menu className="w-5 h-5" />
+          )}
         </button>
       </div>
 
@@ -80,5 +84,5 @@ export function Navbar() {
         </div>
       )}
     </nav>
-  )
+  );
 }

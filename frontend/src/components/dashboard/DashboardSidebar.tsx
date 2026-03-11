@@ -63,20 +63,21 @@ export function DashboardSidebar({
     <>
       {/* Mobile overlay */}
       {isMobile && mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
-      
+
       {/* Sidebar */}
       <aside
         className={`
-          ${isMobile 
-            ? `fixed left-0 top-0 h-screen z-50 transform transition-transform duration-200 ease-out ${
-                mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-              } w-64`
-            : `${sidebarCollapsed ? "w-16" : "w-64"} h-screen transition-all duration-200 ease-out`
+          ${
+            isMobile
+              ? `fixed left-0 top-0 h-screen z-50 transform transition-transform duration-200 ease-out ${
+                  mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+                } w-64`
+              : `${sidebarCollapsed ? "w-16" : "w-64"} h-screen transition-all duration-200 ease-out`
           } 
           bg-sidebar border-r border-sidebar-border flex flex-col
         `}
@@ -85,10 +86,12 @@ export function DashboardSidebar({
         <div className="h-14 flex items-center justify-between px-3 border-b border-sidebar-border">
           {(!sidebarCollapsed || isMobile) && (
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center">
+              <div className="w-7 h-7 bg-foreground rounded-md flex items-center justify-center">
                 <Calendar className="w-4 h-4 text-primary-foreground" />
               </div>
-              <span className="font-semibold text-sidebar-foreground text-sm">Schedule Maker</span>
+              <span className="font-semibold text-sidebar-foreground text-sm">
+                Schedule Maker
+              </span>
             </div>
           )}
           <Button
@@ -96,9 +99,9 @@ export function DashboardSidebar({
             size="icon"
             onClick={() => {
               if (isMobile) {
-                setMobileMenuOpen(false)
+                setMobileMenuOpen(false);
               } else {
-                setSidebarCollapsed(!sidebarCollapsed)
+                setSidebarCollapsed(!sidebarCollapsed);
               }
             }}
             className="h-8 w-8 text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
@@ -115,32 +118,41 @@ export function DashboardSidebar({
         <nav className="flex-1 py-3 px-2 overflow-y-auto">
           <div className="space-y-1">
             {sidebarSections.map((section) => {
-              const Icon = section.icon
-              const isActive = activeSection === section.id
-              
+              const Icon = section.icon;
+              const isActive = activeSection === section.id;
+
               return (
                 <button
                   key={section.id}
                   onClick={() => handleNavClick(section.id)}
-                  title={sidebarCollapsed && !isMobile ? section.title : undefined}
+                  title={
+                    sidebarCollapsed && !isMobile ? section.title : undefined
+                  }
                   className={`
-                    w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors
-                    ${isActive 
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground" 
-                      : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                    w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer
+                    ${
+                      isActive
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                        : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                     }
                     ${sidebarCollapsed && !isMobile ? "justify-center px-0" : ""}
                   `}
                 >
-                  <Icon className={`w-4 h-4 flex-shrink-0 ${sidebarCollapsed && !isMobile ? "" : ""}`} />
+                  <Icon
+                    className="w-4 h-4 flex-shrink-0"
+                  />
                   {(!sidebarCollapsed || isMobile) && (
                     <>
-                      <span className="flex-1 text-left truncate">{section.shortTitle}</span>
-                      {isActive && <ChevronRight className="w-3 h-3 opacity-50" />}
+                      <span className="flex-1 text-left truncate">
+                        {section.shortTitle}
+                      </span>
+                      {isActive && (
+                        <ChevronRight className="w-3 h-3 opacity-50" />
+                      )}
                     </>
                   )}
                 </button>
-              )
+              );
             })}
           </div>
         </nav>
@@ -166,11 +178,11 @@ export function DashboardSidebar({
               </div>
             </div>
           )}
-          
+
           <button
-            onClick={() => handleNavClick('profile')}
+            onClick={() => handleNavClick("profile")}
             className={`
-              w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
+              w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer
               text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent
               ${sidebarCollapsed && !isMobile ? "justify-center px-0" : ""}
             `}
@@ -179,11 +191,11 @@ export function DashboardSidebar({
             <User className="w-4 h-4" />
             {(!sidebarCollapsed || isMobile) && <span>Perfil</span>}
           </button>
-          
+
           <button
             onClick={() => authService.logout()}
             className={`
-              w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
+              w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer
               text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10
               ${sidebarCollapsed && !isMobile ? "justify-center px-0" : ""}
             `}
@@ -195,5 +207,5 @@ export function DashboardSidebar({
         </div>
       </aside>
     </>
-  )
+  );
 }

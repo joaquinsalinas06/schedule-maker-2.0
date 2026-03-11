@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Calendar, Grid3X3, Users, Star, UserPlus, Database, Loader2 } from "lucide-react"
+import { Calendar, Grid3X3, Users, Star, UserPlus, Database } from "lucide-react"
 import { authService } from "@/services/auth"
 import { SidebarSection } from "@/types"
 import { useFirstTimeUser } from "@/hooks/useFirstTimeUser"
@@ -12,6 +12,7 @@ import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar'
 import { MobileHeader } from '@/components/dashboard/MobileHeader'
 import { FirstTimeUserPopup } from '@/components/dashboard/FirstTimeUserPopup'
 import { HelpButton } from '@/components/dashboard/HelpButton'
+import { DashboardSkeleton } from '@/components/ui/loading-skeletons'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -41,44 +42,42 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       title: "Generar Horarios",
       shortTitle: "Generar",
       icon: Calendar,
-      color: "from-cyan-500 to-teal-600",
     },
     {
       id: "schedules",
       title: "Ver Horarios",
       shortTitle: "Horarios",
       icon: Grid3X3,
-      color: "from-fuchsia-500 to-pink-600",
     },
     {
       id: "my-schedules",
       title: "Mis Horarios",
       shortTitle: "Favoritos",
       icon: Star,
-      color: "from-amber-500 to-orange-600",
     },
     {
       id: "collaboration",
       title: "Colaboracion",
       shortTitle: "Colaborar",
       icon: Users,
-      color: "from-green-500 to-emerald-600",
     },
     {
       id: "friends",
       title: "Mis Amigos",
       shortTitle: "Amigos",
       icon: UserPlus,
-      color: "from-rose-500 to-pink-600",
     },
-    ...(currentUser?.role === 'admin' ? [{
-      id: "admin",
-      title: "Importar Datos",
-      shortTitle: "Admin",
-      icon: Database,
-      color: "from-red-500 to-orange-600",
-    }] : []),
-  ]
+    ...(currentUser?.role === "admin"
+      ? [
+          {
+            id: "admin",
+            title: "Importar Datos",
+            shortTitle: "Admin",
+            icon: Database,
+          },
+        ]
+      : []),
+  ];
 
   const getActiveSection = () => {
     const path = pathname.split('/')[2]
@@ -119,14 +118,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [])
 
   if (authLoading || firstTimeLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Cargando...</p>
-        </div>
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   return (
