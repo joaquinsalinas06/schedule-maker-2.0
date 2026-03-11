@@ -129,7 +129,11 @@ class ScheduleResponse(ScheduleBase, BaseResponse):
 # Schedule generation and management schemas
 class GenerateScheduleRequest(BaseModel):
     """Request to generate all possible schedule combinations from selected sections"""
-    selected_sections: List[int]  # List of specific section IDs user wants to consider
+    selected_sections: List[int]  # Required sections (must appear in every combo)
+    optional_sections: List[int] = []  # Optional sections (pick N of M courses)
+    max_optional_courses: Optional[int] = None  # How many optional courses to include
+    sort_by: Optional[str] = "score"  # "score", "earliest", "compact", "spread", "gaps"
+    max_results: Optional[int] = 200  # Cap on returned combinations
 
 class SaveScheduleRequest(BaseModel):
     """Request to save a schedule combination"""

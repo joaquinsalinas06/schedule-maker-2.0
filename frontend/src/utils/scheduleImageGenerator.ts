@@ -61,16 +61,9 @@ const dayNameToIndex: { [key: string]: number } = {
   "Sunday": 6
 }
 
-const courseColors = [
-  { bg: 'rgba(99, 102, 241, 0.9)', text: '#fff', name: 'indigo' },
-  { bg: 'rgba(16, 185, 129, 0.9)', text: '#fff', name: 'emerald' },
-  { bg: 'rgba(245, 101, 101, 0.9)', text: '#fff', name: 'red' },
-  { bg: 'rgba(139, 92, 246, 0.9)', text: '#fff', name: 'violet' },
-  { bg: 'rgba(236, 72, 153, 0.9)', text: '#fff', name: 'pink' },
-  { bg: 'rgba(34, 197, 94, 0.9)', text: '#fff', name: 'green' },
-  { bg: 'rgba(249, 115, 22, 0.9)', text: '#fff', name: 'orange' },
-  { bg: 'rgba(6, 182, 212, 0.9)', text: '#fff', name: 'cyan' },
-]
+import { SCHEDULE_COLORS } from '@/lib/schedule-colors'
+
+const courseColors = SCHEDULE_COLORS
 
 const timeToMinutes = (timeStr: string): number => {
   if (!timeStr || typeof timeStr !== 'string') {

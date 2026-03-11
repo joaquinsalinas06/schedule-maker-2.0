@@ -2,9 +2,14 @@
 
 import { useState, useCallback, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, Loader2, RefreshCw, Database, X, Clock, ArrowLeft, ChevronDown, ChevronRight, MapPin, User, Users } from "lucide-react"
+import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, RefreshCw, Database, X, Clock, ArrowLeft, ChevronDown, ChevronRight, MapPin, User, Users } from "lucide-react"
 import { authService } from "@/services/auth"
 import { adminAPI, ImportAnalysis, ImportStats, AuditLogEntry, CoursePreview } from "@/services/adminAPI"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { ImportCardSkeleton } from "@/components/ui/loading-skeletons"
 
 type ImportMode = 'reset' | 'update'
 type PageState = 'upload' | 'analyzing' | 'preview' | 'confirming' | 'importing' | 'results' | 'error'
@@ -27,7 +32,6 @@ export default function AdminImportPage() {
   const [showHistory, setShowHistory] = useState(false)
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set())
 
-  // Check admin access on mount
   useEffect(() => {
     const checkAdmin = async () => {
       try {
@@ -161,8 +165,8 @@ export default function AdminImportPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+      <div className="flex-1 flex items-center justify-center p-8">
+        <ImportCardSkeleton />
       </div>
     )
   }
@@ -170,470 +174,607 @@ export default function AdminImportPage() {
   if (!isAdmin) return null
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Database className="w-7 h-7 text-cyan-400" />
-            Panel de Importacion
-          </h1>
-          <p className="text-slate-400 mt-1">Sube un archivo CSV o Excel para importar cursos</p>
+    <div className="flex-1 overflow-y-auto">
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-3">
+              <Database className="w-6 h-6" />
+              Panel de Importacion
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Sube un archivo CSV o Excel para importar cursos
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={loadHistory}>
+            <Clock className="w-4 h-4 mr-2" />
+            Historial
+          </Button>
         </div>
-        <button
-          onClick={loadHistory}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-300 hover:bg-slate-700/50 transition-colors text-sm"
-        >
-          <Clock className="w-4 h-4" />
-          Historial
-        </button>
-      </div>
 
-      {/* History Modal */}
-      {showHistory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowHistory(false)}>
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">Historial de Importaciones</h2>
-              <button onClick={() => setShowHistory(false)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
+        {/* History Modal */}
+        {showHistory && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            onClick={() => setShowHistory(false)}
+          >
+            <Card
+              className="max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <CardHeader className="flex flex-row items-center justify-between border-b">
+                <CardTitle className="text-lg">
+                  Historial de Importaciones
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowHistory(false)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </CardHeader>
+              <CardContent className="p-0 max-h-[60vh] overflow-y-auto">
+                {history.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-12">
+                    No hay importaciones registradas
+                  </p>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {history.map((log) => (
+                      <div key={log.id} className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <Badge
+                            variant={
+                              log.status === "success"
+                                ? "default"
+                                : "destructive"
+                            }
+                            className="text-xs"
+                          >
+                            {log.status === "success" ? "Exitoso" : "Fallido"}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {log.executed_at
+                              ? new Date(log.executed_at).toLocaleString(
+                                  "es-PE",
+                                )
+                              : "-"}
+                          </span>
+                        </div>
+                        <p className="text-sm">
+                          {log.action === "csv_import_reset"
+                            ? "Reset (Nuevo Ciclo)"
+                            : "Update (Actualizacion)"}
+                          {log.file_name && (
+                            <span className="text-muted-foreground ml-2">
+                              - {log.file_name}
+                            </span>
+                          )}
+                        </p>
+                        {log.details && log.status === "success" && (
+                          <div className="mt-2 text-xs text-muted-foreground grid grid-cols-2 gap-1">
+                            {Object.entries(log.details)
+                              .filter(
+                                ([key]) => key !== "mode" && key !== "errors",
+                              )
+                              .map(([key, value]) => (
+                                <span key={key}>
+                                  {key.replace(/_/g, " ")}:{" "}
+                                  <span className="text-foreground">
+                                    {String(value)}
+                                  </span>
+                                </span>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Upload State */}
+        {pageState === "upload" && (
+          <div className="space-y-6">
+            {/* Mode Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button
+                onClick={() => setImportMode("update")}
+                className={`p-5 rounded-lg border-2 text-left transition-all ${
+                  importMode === "update"
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-muted-foreground/30"
+                }`}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <RefreshCw
+                    className={`w-5 h-5 ${importMode === "update" ? "text-primary" : "text-muted-foreground"}`}
+                  />
+                  <h3
+                    className={`font-medium ${importMode === "update" ? "text-primary" : "text-foreground"}`}
+                  >
+                    Actualizar Datos
+                  </h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Actualiza horarios, vacantes, profesores y agrega nuevos
+                  cursos sin borrar los existentes.
+                </p>
+              </button>
+
+              <button
+                onClick={() => setImportMode("reset")}
+                className={`p-5 rounded-lg border-2 text-left transition-all ${
+                  importMode === "reset"
+                    ? "border-destructive bg-destructive/5"
+                    : "border-border hover:border-muted-foreground/30"
+                }`}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <AlertTriangle
+                    className={`w-5 h-5 ${importMode === "reset" ? "text-destructive" : "text-muted-foreground"}`}
+                  />
+                  <h3
+                    className={`font-medium ${importMode === "reset" ? "text-destructive" : "text-foreground"}`}
+                  >
+                    Nuevo Ciclo
+                  </h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Desactiva todos los cursos anteriores e importa datos frescos.
+                  Usar al iniciar un nuevo ciclo.
+                </p>
               </button>
             </div>
-            {history.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">No hay importaciones registradas</p>
-            ) : (
-              <div className="space-y-3">
-                {history.map(log => (
-                  <div key={log.id} className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`text-sm font-medium px-2 py-0.5 rounded ${
-                        log.status === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                      }`}>
-                        {log.status === 'success' ? 'Exitoso' : 'Fallido'}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        {log.executed_at ? new Date(log.executed_at).toLocaleString('es-PE') : '-'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-300">
-                      {log.action === 'csv_import_reset' ? 'Reset (Nuevo Ciclo)' : 'Update (Actualizacion)'}
-                      {log.file_name && <span className="text-slate-500 ml-2">- {log.file_name}</span>}
-                    </p>
-                    {log.details && log.status === 'success' && (
-                      <div className="mt-2 text-xs text-slate-400 grid grid-cols-2 gap-1">
-                        {Object.entries(log.details)
-                          .filter(([key]) => key !== 'mode' && key !== 'errors')
-                          .map(([key, value]) => (
-                            <span key={key}>{key.replace(/_/g, ' ')}: <span className="text-slate-300">{String(value)}</span></span>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* Upload State */}
-      {pageState === 'upload' && (
-        <div className="space-y-6">
-          {/* Mode Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button
-              onClick={() => setImportMode('update')}
-              className={`p-5 rounded-xl border-2 text-left transition-all ${
-                importMode === 'update'
-                  ? 'border-cyan-500 bg-cyan-500/10'
-                  : 'border-slate-700 bg-slate-800/30 hover:border-slate-600'
+            {/* Drop Zone */}
+            <div
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onClick={() => fileInputRef.current?.click()}
+              className={`relative border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-all ${
+                dragOver
+                  ? "border-primary bg-primary/5"
+                  : selectedFile
+                    ? "border-primary/50 bg-primary/5"
+                    : "border-border hover:border-muted-foreground/50 hover:bg-muted/30"
               }`}
             >
-              <div className="flex items-center gap-3 mb-2">
-                <RefreshCw className={`w-5 h-5 ${importMode === 'update' ? 'text-cyan-400' : 'text-slate-400'}`} />
-                <h3 className={`font-semibold ${importMode === 'update' ? 'text-cyan-300' : 'text-slate-300'}`}>
-                  Actualizar Datos
-                </h3>
-              </div>
-              <p className="text-sm text-slate-400">
-                Actualiza horarios, vacantes, profesores y agrega nuevos cursos sin borrar los existentes. Ideal para cambios durante la matricula.
-              </p>
-            </button>
-
-            <button
-              onClick={() => setImportMode('reset')}
-              className={`p-5 rounded-xl border-2 text-left transition-all ${
-                importMode === 'reset'
-                  ? 'border-orange-500 bg-orange-500/10'
-                  : 'border-slate-700 bg-slate-800/30 hover:border-slate-600'
-              }`}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <AlertTriangle className={`w-5 h-5 ${importMode === 'reset' ? 'text-orange-400' : 'text-slate-400'}`} />
-                <h3 className={`font-semibold ${importMode === 'reset' ? 'text-orange-300' : 'text-slate-300'}`}>
-                  Nuevo Ciclo
-                </h3>
-              </div>
-              <p className="text-sm text-slate-400">
-                Desactiva todos los cursos anteriores e importa datos frescos. Usar al iniciar un nuevo ciclo academico (ej: 2025-1 a 2025-2).
-              </p>
-            </button>
-          </div>
-
-          {/* Drop Zone */}
-          <div
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onClick={() => fileInputRef.current?.click()}
-            className={`relative border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all ${
-              dragOver
-                ? 'border-cyan-400 bg-cyan-500/10'
-                : selectedFile
-                  ? 'border-green-500/50 bg-green-500/5'
-                  : 'border-slate-600 bg-slate-800/20 hover:border-slate-500 hover:bg-slate-800/30'
-            }`}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,.xlsx,.xls"
-              onChange={handleFileInput}
-              className="hidden"
-            />
-            {selectedFile ? (
-              <div className="space-y-2">
-                <FileSpreadsheet className="w-12 h-12 text-green-400 mx-auto" />
-                <p className="text-green-300 font-medium">{selectedFile.name}</p>
-                <p className="text-sm text-slate-400">
-                  {(selectedFile.size / 1024).toFixed(1)} KB - Click para cambiar archivo
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <Upload className="w-12 h-12 text-slate-500 mx-auto" />
-                <p className="text-slate-300">Arrastra un archivo aqui o haz click para seleccionar</p>
-                <p className="text-sm text-slate-500">CSV, XLSX o XLS (max 10MB)</p>
-              </div>
-            )}
-          </div>
-
-          {/* Error */}
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
-              <p className="text-red-300 text-sm">{error}</p>
-            </div>
-          )}
-
-          {/* Analyze Button */}
-          <button
-            onClick={handleAnalyze}
-            disabled={!selectedFile}
-            className={`w-full py-3 rounded-xl font-semibold transition-all ${
-              selectedFile
-                ? 'bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white shadow-lg shadow-cyan-500/25'
-                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-            }`}
-          >
-            Analizar Archivo
-          </button>
-        </div>
-      )}
-
-      {/* Analyzing State */}
-      {pageState === 'analyzing' && (
-        <div className="flex flex-col items-center justify-center py-16 space-y-4">
-          <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
-          <p className="text-slate-300 font-medium">Analizando archivo...</p>
-          <p className="text-sm text-slate-500">Esto puede tomar unos segundos</p>
-        </div>
-      )}
-
-      {/* Preview State */}
-      {pageState === 'preview' && analysis && (
-        <div className="space-y-6">
-          <button onClick={handleReset} className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            Volver
-          </button>
-
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-cyan-400">{analysis.unique_courses}</p>
-              <p className="text-xs text-slate-400 mt-1">Cursos</p>
-            </div>
-            <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-teal-400">{analysis.total_sections}</p>
-              <p className="text-xs text-slate-400 mt-1">Secciones</p>
-            </div>
-            <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-purple-400">{analysis.total_sessions}</p>
-              <p className="text-xs text-slate-400 mt-1">Sesiones</p>
-            </div>
-            <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-amber-400">{Object.keys(analysis.departments).length}</p>
-              <p className="text-xs text-slate-400 mt-1">Departamentos</p>
-            </div>
-          </div>
-
-          {/* Mode-specific info */}
-          {analysis.mode === 'update' && (
-            <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4 space-y-2">
-              <h3 className="font-semibold text-cyan-300">Modo Actualizar</h3>
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="text-slate-400">Cursos existentes: </span>
-                  <span className="text-white font-medium">{analysis.existing_courses_count}</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={handleFileInput}
+                className="hidden"
+              />
+              {selectedFile ? (
+                <div className="space-y-2">
+                  <FileSpreadsheet className="w-12 h-12 text-primary mx-auto" />
+                  <p className="font-medium">{selectedFile.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {(selectedFile.size / 1024).toFixed(1)} KB - Click para
+                    cambiar
+                  </p>
                 </div>
-                <div>
-                  <span className="text-slate-400">Nuevos a agregar: </span>
-                  <span className="text-green-400 font-medium">{analysis.courses_to_add}</span>
+              ) : (
+                <div className="space-y-3">
+                  <Upload className="w-12 h-12 text-muted-foreground/50 mx-auto" />
+                  <p className="text-muted-foreground">
+                    Arrastra un archivo aqui o haz click para seleccionar
+                  </p>
+                  <p className="text-sm text-muted-foreground/60">
+                    CSV, XLSX o XLS (max 10MB)
+                  </p>
                 </div>
-                <div>
-                  <span className="text-slate-400">A actualizar: </span>
-                  <span className="text-cyan-400 font-medium">{analysis.courses_to_update}</span>
-                </div>
-              </div>
-              {(analysis.courses_not_in_file ?? 0) > 0 && (
-                <p className="text-xs text-amber-400">
-                  {analysis.courses_not_in_file} curso(s) existente(s) no estan en el archivo (no seran eliminados)
-                </p>
               )}
             </div>
-          )}
 
-          {analysis.mode === 'reset' && (
-            <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4 space-y-2">
-              <h3 className="font-semibold text-orange-300 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" />
-                Modo Nuevo Ciclo (Reset)
-              </h3>
-              <p className="text-sm text-slate-300">
-                Se desactivaran <span className="text-orange-400 font-bold">{analysis.existing_courses_to_deactivate}</span> curso(s) existente(s) y se importaran {analysis.unique_courses} cursos nuevos.
+            {/* Error */}
+            {error && (
+              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0" />
+                <p className="text-destructive text-sm">{error}</p>
+              </div>
+            )}
+
+            {/* Analyze Button */}
+            <Button
+              onClick={handleAnalyze}
+              disabled={!selectedFile}
+              className="w-full"
+              size="lg"
+            >
+              Analizar Archivo
+            </Button>
+          </div>
+        )}
+
+        {/* Analyzing State */}
+        {pageState === "analyzing" && (
+          <div className="space-y-6">
+            <ImportCardSkeleton />
+            <div className="text-center">
+              <p className="font-medium">Analizando archivo...</p>
+              <p className="text-sm text-muted-foreground">
+                Esto puede tomar unos segundos
               </p>
             </div>
-          )}
-
-          {/* Departments */}
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
-            <h3 className="font-semibold text-slate-200 mb-3">Departamentos</h3>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(analysis.departments)
-                .sort(([, a], [, b]) => b - a)
-                .map(([dept, count]) => (
-                  <span key={dept} className="px-3 py-1 rounded-full bg-slate-700/50 text-sm text-slate-300">
-                    {dept} <span className="text-slate-500">({count})</span>
-                  </span>
-                ))}
-            </div>
           </div>
+        )}
 
-          {/* Courses Preview - Expandable */}
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-slate-200">
-                Vista previa de cursos ({analysis.courses_preview.length}{analysis.courses_preview.length === 50 ? '+' : ''})
-              </h3>
-              <div className="flex gap-2">
-                <button onClick={expandAll} className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors">
-                  Expandir todos
-                </button>
-                <span className="text-slate-600">|</span>
-                <button onClick={collapseAll} className="text-xs text-slate-400 hover:text-slate-300 transition-colors">
-                  Colapsar
-                </button>
-              </div>
+        {/* Preview State */}
+        {pageState === "preview" && analysis && (
+          <div className="space-y-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReset}
+              className="text-muted-foreground"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Volver
+            </Button>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="border-border/50">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl font-bold">
+                    {analysis.unique_courses}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Cursos</p>
+                </CardContent>
+              </Card>
+              <Card className="border-border/50">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl font-bold">
+                    {analysis.total_sections}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Secciones
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-border/50">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl font-bold">
+                    {analysis.total_sessions}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Sesiones</p>
+                </CardContent>
+              </Card>
+              <Card className="border-border/50">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl font-bold">
+                    {Object.keys(analysis.departments).length}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Departamentos
+                  </p>
+                </CardContent>
+              </Card>
             </div>
-            <div className="max-h-[500px] overflow-y-auto space-y-1">
-              {analysis.courses_preview.map((course) => (
-                <div key={course.code} className="border border-slate-700/30 rounded-lg overflow-hidden">
-                  {/* Course Header - Clickable */}
-                  <button
-                    onClick={() => toggleCourse(course.code)}
-                    className="w-full flex items-center justify-between py-2.5 px-3 hover:bg-slate-700/30 transition-colors text-sm text-left"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {expandedCourses.has(course.code)
-                        ? <ChevronDown className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                        : <ChevronRight className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                      }
-                      <span className="text-cyan-400 font-mono text-xs flex-shrink-0">{course.code}</span>
-                      <span className="text-slate-300 truncate">{course.name}</span>
-                    </div>
-                    <span className="text-slate-500 text-xs flex-shrink-0 ml-2">
-                      {course.sections_count} sec / {course.sessions_count} ses
-                    </span>
-                  </button>
 
-                  {/* Expanded: Sections & Sessions */}
-                  {expandedCourses.has(course.code) && course.sections && (
-                    <div className="border-t border-slate-700/30 bg-slate-900/30 px-3 py-2 space-y-3">
-                      {course.sections.map((section, sIdx) => (
-                        <div key={sIdx} className="space-y-1.5">
-                          {/* Section Header */}
-                          <div className="flex items-center gap-2 text-xs">
-                            <span className="bg-teal-500/20 text-teal-400 px-2 py-0.5 rounded font-medium">
-                              Seccion {section.number}
-                            </span>
-                            <span className="text-slate-400 flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              {section.professor}
-                            </span>
-                            <span className="text-slate-500 flex items-center gap-1 ml-auto">
-                              <Users className="w-3 h-3" />
-                              {section.enrolled}/{section.capacity}
-                            </span>
-                          </div>
-                          {/* Sessions Table */}
-                          <div className="ml-2 space-y-0.5">
-                            {section.sessions.map((sess, sessIdx) => (
-                              <div key={sessIdx} className="flex items-center gap-2 text-xs py-0.5 px-2 rounded bg-slate-800/40">
-                                <span className="text-purple-400 font-medium w-28 truncate flex-shrink-0" title={sess.type}>
-                                  {sess.type}
-                                </span>
-                                <span className="text-amber-400 w-8 flex-shrink-0">
-                                  {dayTranslations[sess.day] || sess.day}
-                                </span>
-                                <span className="text-white font-mono">
-                                  {sess.start_time} - {sess.end_time}
-                                </span>
-                                {sess.location && (
-                                  <span className="text-slate-500 flex items-center gap-1 truncate" title={sess.location}>
-                                    <MapPin className="w-3 h-3 flex-shrink-0" />
-                                    {sess.location}
+            {/* Mode info */}
+            {analysis.mode === "update" && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardContent className="pt-4 space-y-2">
+                  <h3 className="font-medium text-primary">Modo Actualizar</h3>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">
+                        Existentes:{" "}
+                      </span>
+                      <span className="font-medium">
+                        {analysis.existing_courses_count}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Nuevos: </span>
+                      <span className="font-medium text-primary">
+                        {analysis.courses_to_add}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">
+                        A actualizar:{" "}
+                      </span>
+                      <span className="font-medium">
+                        {analysis.courses_to_update}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {analysis.mode === "reset" && (
+              <Card className="border-destructive/30 bg-destructive/5">
+                <CardContent className="pt-4 space-y-2">
+                  <h3 className="font-medium text-destructive flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    Modo Nuevo Ciclo (Reset)
+                  </h3>
+                  <p className="text-sm">
+                    Se desactivaran{" "}
+                    <span className="font-bold text-destructive">
+                      {analysis.existing_courses_to_deactivate}
+                    </span>{" "}
+                    curso(s) existente(s).
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Departments */}
+            <Card className="border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-medium">
+                  Departamentos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(analysis.departments)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([dept, count]) => (
+                      <Badge
+                        key={dept}
+                        variant="secondary"
+                        className="font-normal"
+                      >
+                        {dept}{" "}
+                        <span className="text-muted-foreground ml-1">
+                          ({count})
+                        </span>
+                      </Badge>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Courses Preview */}
+            <Card className="border-border/50">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-base font-medium">
+                  Vista previa ({analysis.courses_preview.length}
+                  {analysis.courses_preview.length === 50 ? "+" : ""})
+                </CardTitle>
+                <div className="flex gap-3 text-xs">
+                  <button
+                    onClick={expandAll}
+                    className="text-primary hover:underline"
+                  >
+                    Expandir
+                  </button>
+                  <button
+                    onClick={collapseAll}
+                    className="text-muted-foreground hover:underline"
+                  >
+                    Colapsar
+                  </button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="max-h-[400px] overflow-y-auto divide-y divide-border">
+                  {analysis.courses_preview.map((course) => (
+                    <div key={course.code}>
+                      <button
+                        onClick={() => toggleCourse(course.code)}
+                        className="w-full flex items-center justify-between py-3 px-4 hover:bg-muted/30 transition-colors text-sm text-left"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {expandedCourses.has(course.code) ? (
+                            <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          )}
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {course.code}
+                          </span>
+                          <span className="font-medium truncate">
+                            {course.name}
+                          </span>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="text-xs font-normal ml-2 flex-shrink-0"
+                        >
+                          {course.sections_count} sec
+                        </Badge>
+                      </button>
+
+                      {expandedCourses.has(course.code) && course.sections && (
+                        <div className="bg-muted/20 px-4 pb-4 pt-2">
+                          <div className="space-y-2">
+                            {course.sections.map((section, idx) => (
+                              <div
+                                key={idx}
+                                className="bg-background rounded-lg p-3 border border-border/50 text-sm"
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium">
+                                    Seccion {section.number}
                                   </span>
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <Users className="w-3 h-3" />
+                                    {section.capacity}
+                                  </div>
+                                </div>
+                                {section.professor && (
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                                    <User className="w-3 h-3" />
+                                    {section.professor}
+                                  </div>
                                 )}
-                                <span className={`ml-auto text-xs px-1.5 py-0.5 rounded ${
-                                  sess.modality === 'Presencial'
-                                    ? 'bg-green-500/15 text-green-400'
-                                    : 'bg-blue-500/15 text-blue-400'
-                                }`}>
-                                  {sess.modality === 'Presencial' ? 'Pres' : 'Virt'}
-                                </span>
+                                {section.sessions &&
+                                  section.sessions.length > 0 && (
+                                    <div className="space-y-1">
+                                      {section.sessions.map((s, i) => (
+                                        <div
+                                          key={i}
+                                          className="flex items-center gap-2 text-xs"
+                                        >
+                                          <span className="font-medium w-8">
+                                            {dayTranslations[s.day] || s.day}
+                                          </span>
+                                          <span className="text-muted-foreground">
+                                            {s.start_time}-{s.end_time}
+                                          </span>
+                                          {s.location && (
+                                            <span className="text-muted-foreground flex items-center gap-1">
+                                              <MapPin className="w-3 h-3" />
+                                              {s.location}
+                                            </span>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                               </div>
                             ))}
                           </div>
                         </div>
-                      ))}
+                      )}
                     </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </CardContent>
+            </Card>
 
-          {/* Reset Confirmation */}
-          {importMode === 'reset' && (
-            <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4 space-y-3">
-              <p className="text-sm text-red-300">
-                Escribe <span className="font-bold font-mono bg-red-500/20 px-2 py-0.5 rounded">CONFIRMAR</span> para proceder con el reset:
+            {/* Confirmation for Reset */}
+            {importMode === "reset" && (
+              <Card className="border-destructive/30">
+                <CardContent className="pt-4 space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Para confirmar la operacion de reset, escribe{" "}
+                    <span className="font-mono font-bold">CONFIRMAR</span>
+                  </p>
+                  <Input
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    placeholder="Escribe CONFIRMAR"
+                    className="max-w-xs"
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Execute Button */}
+            <Button
+              onClick={handleExecute}
+              disabled={importMode === "reset" && confirmText !== "CONFIRMAR"}
+              className="w-full"
+              size="lg"
+              variant={importMode === "reset" ? "destructive" : "default"}
+            >
+              {importMode === "reset"
+                ? "Ejecutar Reset"
+                : "Ejecutar Importacion"}
+            </Button>
+          </div>
+        )}
+
+        {/* Importing State */}
+        {pageState === "importing" && (
+          <div className="space-y-6">
+            <ImportCardSkeleton />
+            <div className="text-center">
+              <p className="font-medium">Importando datos...</p>
+              <p className="text-sm text-muted-foreground">
+                No cierres esta ventana
               </p>
-              <input
-                type="text"
-                value={confirmText}
-                onChange={e => setConfirmText(e.target.value)}
-                placeholder="Escribe CONFIRMAR"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-red-500/50"
-              />
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Action Buttons */}
-          <div className="flex gap-4">
-            <button
+        {/* Results State */}
+        {pageState === "results" && importResult && (
+          <div className="space-y-6">
+            <div className="text-center py-8">
+              <CheckCircle2 className="w-16 h-16 text-primary mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">
+                Importacion Exitosa
+              </h2>
+              <p className="text-muted-foreground">{importResult.message}</p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="border-border/50">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl font-bold">
+                    {String(importResult.stats.courses_created)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Cursos creados
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-border/50">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl font-bold">
+                    {String(importResult.stats.courses_updated)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Cursos actualizados
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-border/50">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl font-bold">
+                    {String(importResult.stats.sections_created)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Secciones creadas
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-border/50">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl font-bold">
+                    {String(importResult.stats.sessions_created)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sesiones creadas
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Button onClick={handleReset} className="w-full" size="lg">
+              Nueva Importacion
+            </Button>
+          </div>
+        )}
+
+        {/* Error State */}
+        {pageState === "error" && (
+          <div className="space-y-6">
+            <div className="text-center py-8">
+              <AlertTriangle className="w-16 h-16 text-destructive mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">
+                Error en la Importacion
+              </h2>
+              <p className="text-muted-foreground">{error}</p>
+            </div>
+            <Button
               onClick={handleReset}
-              className="flex-1 py-3 rounded-xl font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+              variant="outline"
+              className="w-full"
+              size="lg"
             >
-              Cancelar
-            </button>
-            <button
-              onClick={importMode === 'reset' ? () => { if (confirmText === 'CONFIRMAR') handleExecute() } : handleExecute}
-              disabled={importMode === 'reset' && confirmText !== 'CONFIRMAR'}
-              className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-                importMode === 'reset'
-                  ? confirmText === 'CONFIRMAR'
-                    ? 'bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white shadow-lg shadow-orange-500/25'
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white shadow-lg shadow-cyan-500/25'
-              }`}
-            >
-              {importMode === 'reset' ? 'Ejecutar Reset' : 'Ejecutar Actualizacion'}
-            </button>
+              Intentar de Nuevo
+            </Button>
           </div>
-        </div>
-      )}
-
-      {/* Importing State */}
-      {pageState === 'importing' && (
-        <div className="flex flex-col items-center justify-center py-16 space-y-4">
-          <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
-          <p className="text-slate-300 font-medium">
-            {importMode === 'reset' ? 'Ejecutando reset e importacion...' : 'Actualizando datos...'}
-          </p>
-          <p className="text-sm text-slate-500">No cierres esta pagina</p>
-        </div>
-      )}
-
-      {/* Results State */}
-      {pageState === 'results' && importResult && (
-        <div className="space-y-6">
-          <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-6 text-center space-y-3">
-            <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto" />
-            <h2 className="text-xl font-bold text-green-300">Importacion Exitosa</h2>
-            <p className="text-slate-400">{importResult.message}</p>
-          </div>
-
-          {/* Stats */}
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5">
-            <h3 className="font-semibold text-slate-200 mb-4">Resumen</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {Object.entries(importResult.stats)
-                .filter(([key]) => key !== 'mode' && key !== 'errors')
-                .map(([key, value]) => (
-                  <div key={key} className="bg-slate-900/50 rounded-lg p-3">
-                    <p className="text-xs text-slate-500 capitalize">{key.replace(/_/g, ' ')}</p>
-                    <p className="text-lg font-bold text-white mt-0.5">{String(value)}</p>
-                  </div>
-                ))}
-            </div>
-          </div>
-
-          {importResult.stats.errors && Array.isArray(importResult.stats.errors) && importResult.stats.errors.length > 0 && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
-              <h3 className="font-semibold text-red-300 mb-2">Errores</h3>
-              {importResult.stats.errors.map((err: string, idx: number) => (
-                <p key={idx} className="text-sm text-red-400">{err}</p>
-              ))}
-            </div>
-          )}
-
-          <button
-            onClick={handleReset}
-            className="w-full py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white shadow-lg shadow-cyan-500/25 transition-all"
-          >
-            Nueva Importacion
-          </button>
-        </div>
-      )}
-
-      {/* Error State */}
-      {pageState === 'error' && (
-        <div className="space-y-6">
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center space-y-3">
-            <AlertTriangle className="w-16 h-16 text-red-400 mx-auto" />
-            <h2 className="text-xl font-bold text-red-300">Error</h2>
-            <p className="text-slate-400">{error}</p>
-          </div>
-          <button
-            onClick={handleReset}
-            className="w-full py-3 rounded-xl font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
-          >
-            Intentar de nuevo
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
-  )
+  );
 }

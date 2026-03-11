@@ -1,18 +1,19 @@
 "use client"
 
 import React, { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
-  Heart, 
+  Star, 
   Trash2, 
   Edit2, 
   Calendar, 
-  BookOpen, 
   Eye,
   Download,
-  Share2
+  Share2,
+  X,
+  Check,
+  MoreHorizontal,
 } from "lucide-react"
 import { FavoriteSchedule } from "@/types"
 import html2canvas from 'html2canvas'
@@ -35,11 +36,13 @@ export function FavoriteSchedules({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [editNotes, setEditNotes] = useState('')
+  const [menuOpen, setMenuOpen] = useState<string | null>(null)
 
   const startEdit = (favorite: FavoriteSchedule) => {
     setEditingId(favorite.id)
     setEditName(favorite.name)
     setEditNotes(favorite.notes || '')
+    setMenuOpen(null)
   }
 
   const saveEdit = () => {
@@ -58,396 +61,252 @@ export function FavoriteSchedules({
   }
 
   const downloadSchedule = async (favorite: FavoriteSchedule) => {
-    // Create a downloadable image of the schedule
-    const scheduleData = createScheduleHTML(favorite);
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = scheduleData;
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.left = '-9999px';
-    tempDiv.style.top = '-9999px';
-    tempDiv.style.background = 'transparent';
-    tempDiv.style.padding = '0';
-    tempDiv.style.width = '900px';
-    document.body.appendChild(tempDiv);
+    setMenuOpen(null)
+    const scheduleData = createScheduleHTML(favorite)
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = scheduleData
+    tempDiv.style.position = 'absolute'
+    tempDiv.style.left = '-9999px'
+    tempDiv.style.top = '-9999px'
+    tempDiv.style.background = 'transparent'
+    tempDiv.style.padding = '0'
+    tempDiv.style.width = '900px'
+    document.body.appendChild(tempDiv)
 
     try {
-      // Use html2canvas to generate image
-      const canvas = await html2canvas(tempDiv);
-
-      // Convert canvas to blob and download
+      const canvas = await html2canvas(tempDiv)
       canvas.toBlob((blob) => {
         if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `${favorite.name.replace(/\s+/g, '_')}.png`;
-          link.click();
-          URL.revokeObjectURL(url);
+          const url = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `${favorite.name.replace(/\s+/g, '_')}.png`
+          link.click()
+          URL.revokeObjectURL(url)
         }
-      }, 'image/png');
-    } catch (error) {
-      console.error('Error generating schedule image:', error)
-      // Failed to generate image, falling back to text
-      // Fallback to text-based download
-      createScheduleTextDownload(favorite);
+      }, 'image/png')
+    } catch {
+      createScheduleTextDownload(favorite)
     } finally {
-      document.body.removeChild(tempDiv);
+      document.body.removeChild(tempDiv)
     }
   }
 
   const createScheduleHTML = (favorite: FavoriteSchedule) => {
     return `
-      <div style="
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-        padding: 30px; 
-        width: 900px; 
-        min-height: 600px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        border-radius: 12px;
-      ">
-        <div style="
-          background: white; 
-          padding: 30px; 
-          border-radius: 8px; 
-          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        ">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="
-              color: #2d3748; 
-              margin: 0 0 10px 0; 
-              font-size: 28px; 
-              font-weight: 600;
-              text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            ">${favorite.name}</h1>
-            <div style="
-              display: inline-flex; 
-              gap: 30px; 
-              background: #f7fafc; 
-              padding: 15px 25px; 
-              border-radius: 25px;
-              border: 2px solid #e2e8f0;
-            ">
-              <div style="text-align: center;">
-                <div style="font-size: 24px; font-weight: bold; color: #667eea;">${favorite.combination.courses?.length || favorite.combination.course_count || 0}</div>
-                <div style="font-size: 12px; color: #718096; text-transform: uppercase; letter-spacing: 1px;">Courses</div>
-              </div>
-              <div style="text-align: center;">
-                <div style="font-size: 24px; font-weight: bold; color: #764ba2;">${favorite.combination.courses?.length || favorite.combination.sections?.length || 0}</div>
-                <div style="font-size: 12px; color: #718096; text-transform: uppercase; letter-spacing: 1px;">Courses</div>
-              </div>
-            </div>
-          </div>
-          
-          <table style="
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 25px;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-          ">
-            <thead>
-              <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Course</th>
-                <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Section</th>
-                <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Professor</th>
-                <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Section</th>
-                <th style="padding: 15px 12px; text-align: left; color: white; font-weight: 600; font-size: 14px;">Schedule</th>
+      <div style="font-family: system-ui, -apple-system, sans-serif; background: #ffffff; padding: 24px; width: 900px;">
+        <div style="margin-bottom: 24px;">
+          <h1 style="color: #0a0a0a; margin: 0 0 8px 0; font-size: 24px; font-weight: 600;">${favorite.name}</h1>
+          <p style="color: #737373; font-size: 14px; margin: 0;">${favorite.combination.courses?.length || 0} cursos</p>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #e5e5e5;">
+          <thead>
+            <tr style="background: #fafafa;">
+              <th style="padding: 12px; text-align: left; border-bottom: 1px solid #e5e5e5; font-weight: 500; font-size: 13px; color: #737373;">Curso</th>
+              <th style="padding: 12px; text-align: left; border-bottom: 1px solid #e5e5e5; font-weight: 500; font-size: 13px; color: #737373;">Seccion</th>
+              <th style="padding: 12px; text-align: left; border-bottom: 1px solid #e5e5e5; font-weight: 500; font-size: 13px; color: #737373;">Profesor</th>
+              <th style="padding: 12px; text-align: left; border-bottom: 1px solid #e5e5e5; font-weight: 500; font-size: 13px; color: #737373;">Horario</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(favorite.combination.courses || []).map((course) => `
+              <tr style="border-bottom: 1px solid #e5e5e5;">
+                <td style="padding: 12px;">
+                  <div style="font-weight: 500; color: #0a0a0a; font-size: 14px;">${course.course_code}</div>
+                  <div style="color: #737373; font-size: 13px;">${course.course_name}</div>
+                </td>
+                <td style="padding: 12px; color: #0a0a0a; font-size: 14px;">${course.section_number}</td>
+                <td style="padding: 12px; color: #0a0a0a; font-size: 14px;">${course.professor}</td>
+                <td style="padding: 12px; font-size: 13px;">
+                  ${course.sessions?.map(session => {
+                    const dayNames = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab']
+                    const dayName = dayNames[session.day_of_week] || 'N/A'
+                    return `<div style="color: #0a0a0a;">${dayName} ${session.start_time}-${session.end_time}</div>`
+                  }).join('') || '<span style="color: #a3a3a3;">N/A</span>'}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              ${(favorite.combination.courses || []).map((course, index) => `
-                <tr style="background: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #e2e8f0;">
-                  <td style="padding: 15px 12px; vertical-align: top;">
-                    <div style="font-weight: 600; color: #2d3748; font-size: 14px; margin-bottom: 4px;">${course.course_code}</div>
-                    <div style="color: #718096; font-size: 12px; line-height: 1.4;">${course.course_name}</div>
-                  </td>
-                  <td style="padding: 15px 12px; vertical-align: top;">
-                    <div style="
-                      background: #e6fffa; 
-                      color: #234e52; 
-                      padding: 4px 8px; 
-                      border-radius: 12px; 
-                      font-size: 12px; 
-                      font-weight: 600;
-                      display: inline-block;
-                    ">${course.section_number}</div>
-                  </td>
-                  <td style="padding: 15px 12px; color: #4a5568; font-size: 13px; vertical-align: top;">${course.professor}</td>
-                  <td style="padding: 15px 12px; vertical-align: top;">
-                    <div style="
-                      background: #fed7d7; 
-                      color: #742a2a; 
-                      padding: 4px 8px; 
-                      border-radius: 12px; 
-                      font-size: 12px; 
-                      font-weight: 600;
-                      display: inline-block;
-                    ">Sección</div>
-                  </td>
-                  <td style="padding: 15px 12px; font-size: 12px; line-height: 1.6; vertical-align: top;">
-                    ${course.sessions?.map(session => {
-                      const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-                      const dayName = dayNames[session.day_of_week] || 'N/A';
-                      return `
-                        <div style="
-                          margin-bottom: 6px; 
-                          padding: 6px 10px; 
-                          background: #edf2f7; 
-                          border-radius: 6px;
-                          color: #4a5568;
-                        ">
-                          <strong style="color: #2d3748;">${dayName}:</strong> ${session.start_time}-${session.end_time}<br>
-                          <span style="color: #718096; font-size: 11px;">📍 ${session.classroom}</span>
-                        </div>
-                      `;
-                    }).join('') || '<span style="color: #a0aec0;">N/A</span>'}
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          
-          <div style="
-            margin-top: 30px; 
-            text-align: center; 
-            padding: 15px;
-            background: #f7fafc;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-          ">
-            <div style="color: #4a5568; font-size: 13px; margin-bottom: 5px;">
-              📅 Generated on ${new Date().toLocaleDateString('es-ES', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </div>
-            <div style="color: #718096; font-size: 11px;">
-              Schedule Maker 2.0 - UTEC
-            </div>
-          </div>
+            `).join('')}
+          </tbody>
+        </table>
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e5e5; color: #a3a3a3; font-size: 12px;">
+          Schedule Maker - ${new Date().toLocaleDateString('es-ES')}
         </div>
       </div>
-    `;
+    `
   }
 
   const createScheduleTextDownload = (favorite: FavoriteSchedule) => {
-    // Fallback: create a simple text-based download since we don't have html2canvas
     const scheduleText = `
 ${favorite.name}
 ${'='.repeat(favorite.name.length)}
 
-Total Courses: ${favorite.combination.courses?.length || favorite.combination.sections?.length || 0}
-Number of Courses: ${favorite.combination.courses?.length || favorite.combination.sections?.length || 0}
-Created: ${new Date(favorite.created_at).toLocaleDateString()}
+Total Cursos: ${favorite.combination.courses?.length || 0}
+Creado: ${new Date(favorite.created_at).toLocaleDateString()}
 
-COURSES:
+CURSOS:
 ${(favorite.combination.courses || []).map((course, index) => `
 ${index + 1}. ${course.course_code}: ${course.course_name}
-   Section: ${course.section_number}
-   Professor: ${course.professor}
-   Schedule: ${course.sessions?.map(session => {
-     const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-     const dayName = dayNames[session.day_of_week] || 'N/A';
-     return `${dayName} ${session.start_time}-${session.end_time} (${session.classroom})`;
-   }).join(', ') || 'N/A'}
+   Seccion: ${course.section_number}
+   Profesor: ${course.professor}
 `).join('')}
+    `.trim()
 
-Generated on ${new Date().toLocaleDateString()}
-    `.trim();
-
-    const blob = new Blob([scheduleText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${favorite.name.replace(/\s+/g, '_')}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const blob = new Blob([scheduleText], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${favorite.name.replace(/\s+/g, '_')}.txt`
+    link.click()
+    URL.revokeObjectURL(url)
   }
-
 
   if (favorites.length === 0) {
     return (
-      <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
-        <CardHeader className="pb-3 sm:pb-6">
-          <CardTitle className="flex items-center gap-2 text-foreground text-base sm:text-lg">
-            <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-pink-500" />
-            <span className="hidden sm:inline">Mis Horarios Favoritos</span>
-            <span className="sm:hidden">Favoritos</span>
-          </CardTitle>
-          <CardDescription className="text-sm sm:text-base">
-            Guarda tus horarios favoritos para acceder rápidamente
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 sm:py-12 text-muted-foreground px-4">
-            <Heart className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 opacity-50" />
-            <p className="text-sm sm:text-base">No tienes horarios favoritos guardados.</p>
-            <p className="text-xs sm:text-sm mt-2 max-w-sm mx-auto leading-relaxed">
-              Ve a &quot;Generar Horarios&quot; y marca algunos como favoritos para verlos aquí.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+          <Star className="w-5 h-5 text-muted-foreground" />
+        </div>
+        <h3 className="font-semibold text-foreground mb-1">Sin horarios guardados</h3>
+        <p className="text-sm text-muted-foreground max-w-xs">
+          Genera horarios y guardalos como favoritos para acceder a ellos rapidamente.
+        </p>
+      </div>
     )
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
-        <CardHeader className="pb-3 sm:pb-6">
-          <CardTitle className="flex items-center gap-2 text-foreground text-base sm:text-lg">
-            <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-pink-500" />
-            <span className="hidden sm:inline">Mis Horarios Favoritos</span>
-            <span className="sm:hidden">Favoritos</span>
-          </CardTitle>
-          <CardDescription className="text-sm sm:text-base">
-            {favorites.length} horario{favorites.length !== 1 ? 's' : ''} guardado{favorites.length !== 1 ? 's' : ''}
-          </CardDescription>
-        </CardHeader>
-      </Card>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-        {favorites.map((favorite) => (
-          <Card key={favorite.id} className="bg-card/80 backdrop-blur-sm border-border shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
-              {editingId === favorite.id ? (
-                <div className="space-y-2 sm:space-y-3">
-                  <Input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    placeholder="Nombre del horario"
-                    className="font-semibold text-sm sm:text-base"
-                  />
-                  <Input
-                    value={editNotes}
-                    onChange={(e) => setEditNotes(e.target.value)}
-                    placeholder="Notas (opcional)"
-                    className="text-xs sm:text-sm"
-                  />
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={saveEdit} className="text-xs sm:text-sm px-2 sm:px-3">
-                      Guardar
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={cancelEdit} className="text-xs sm:text-sm px-2 sm:px-3">
-                      Cancelar
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="flex justify-between items-start gap-2">
-                    <CardTitle className="text-sm sm:text-lg text-foreground line-clamp-2 flex-1 min-w-0 break-words">
-                      {favorite.name}
-                    </CardTitle>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEdit(favorite)}
-                        className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-muted/50"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => onRemove(favorite.id)}
-                        className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-500/10"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {favorite.notes && (
-                    <CardDescription className="text-xs sm:text-sm line-clamp-2 mt-1 sm:mt-2">
-                      {favorite.notes}
-                    </CardDescription>
-                  )}
-                </>
-              )}
-            </CardHeader>
-
-            <CardContent className="space-y-3 sm:space-y-4 px-3 sm:px-6 pb-3 sm:pb-6">
-              {/* Schedule Stats */}
-              <div className="flex gap-3 sm:gap-4 text-xs sm:text-sm">
-                <div className="flex items-center gap-1">
-                  <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-500 flex-shrink-0" />
-                  <span className="truncate">{favorite.combination?.courses?.length || favorite.combination?.sections?.length || 0} cursos</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500 flex-shrink-0" />
-                  <span className="truncate">{favorite.combination?.courses?.length || favorite.combination?.sections?.length || 0} cursos</span>
-                </div>
-              </div>
-
-              {/* Course List */}
-              <div className="space-y-1 sm:space-y-2">
-                <div className="text-xs sm:text-sm font-medium text-foreground">Cursos:</div>
-                <div className="space-y-0.5 sm:space-y-1">
-                  {(favorite.combination.courses || []).slice(0, 3).map((course, index) => (
-                    <div key={index} className="text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">{course.course_code}:</span>{' '}
-                      <span className="break-words">{course.course_name}</span>
-                    </div>
-                  ))}
-                  {(favorite.combination.courses?.length || 0) > 3 && (
-                    <div className="text-xs text-muted-foreground">
-                      +{(favorite.combination.courses?.length || 0) - 3} cursos más
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Created Date */}
-              <div className="text-xs text-muted-foreground">
-                Guardado: {new Date(favorite.created_at).toLocaleDateString()}
-              </div>
-
-              {/* Actions */}
-              <div className="flex flex-col sm:flex-row gap-2 pt-1 sm:pt-2">
-                <Button 
-                  size="sm" 
-                  onClick={() => onView(favorite)}
-                  className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white text-xs sm:text-sm py-2 sm:py-1.5"
-                >
-                  <Eye className="w-3 h-3 mr-1 sm:mr-2" />
-                  Ver
+    <div className="space-y-3">
+      {favorites.map((favorite) => (
+        <div 
+          key={favorite.id} 
+          className="group rounded-lg border border-border bg-card p-4 hover:border-primary/30 transition-colors"
+        >
+          {editingId === favorite.id ? (
+            <div className="space-y-3">
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Nombre del horario"
+                className="h-9"
+                autoFocus
+              />
+              <Input
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder="Notas (opcional)"
+                className="h-9"
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={saveEdit} className="h-8 gap-1.5">
+                  <Check className="w-3.5 h-3.5" />
+                  Guardar
                 </Button>
-                <div className="flex gap-2 sm:flex-shrink-0">
+                <Button size="sm" variant="outline" onClick={cancelEdit} className="h-8 gap-1.5">
+                  <X className="w-3.5 h-3.5" />
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-medium text-foreground truncate">{favorite.name}</h3>
+                  <span className="text-xs text-muted-foreground">
+                    {favorite.combination.courses?.length || 0} cursos
+                  </span>
+                </div>
+                
+                {favorite.notes && (
+                  <p className="text-sm text-muted-foreground mb-2 line-clamp-1">{favorite.notes}</p>
+                )}
+                
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {(favorite.combination.courses || []).slice(0, 4).map((course, index) => (
+                    <span 
+                      key={index} 
+                      className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-secondary text-secondary-foreground"
+                    >
+                      {course.course_code}
+                    </span>
+                  ))}
+                  {(favorite.combination.courses?.length || 0) > 4 && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-secondary text-muted-foreground">
+                      +{(favorite.combination.courses?.length || 0) - 4}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button size="sm" onClick={() => onView(favorite)} className="h-8 gap-1.5">
+                    <Eye className="w-3.5 h-3.5" />
+                    Ver horario
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => downloadSchedule(favorite)}
+                    className="h-8 gap-1.5"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Descargar
+                  </Button>
                   {onShare && (
                     <Button 
                       size="sm" 
                       variant="outline"
                       onClick={() => onShare(favorite)}
-                      className="border-border text-foreground hover:bg-muted text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-1.5 flex-1 sm:flex-initial"
-                      title="Compartir horario para comparación"
+                      className="h-8 gap-1.5"
                     >
-                      <Share2 className="w-3 h-3 sm:mr-1" />
-                      <span className="hidden sm:inline">Compartir</span>
+                      <Share2 className="w-3.5 h-3.5" />
+                      Compartir
                     </Button>
                   )}
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => downloadSchedule(favorite)}
-                    className="border-border text-foreground hover:bg-muted text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-1.5 flex-1 sm:flex-initial"
-                    title="Descargar horario"
-                  >
-                    <Download className="w-3 h-3 sm:mr-1" />
-                    <span className="hidden sm:inline">Descargar</span>
-                  </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              
+              <div className="relative">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  onClick={() => setMenuOpen(menuOpen === favorite.id ? null : favorite.id)}
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+                
+                {menuOpen === favorite.id && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setMenuOpen(null)}
+                    />
+                    <div className="absolute right-0 top-full mt-1 z-50 w-36 rounded-md border border-border bg-popover shadow-md py-1 animate-scale-in">
+                      <button
+                        className="w-full px-3 py-1.5 text-sm text-left hover:bg-accent flex items-center gap-2"
+                        onClick={() => startEdit(favorite)}
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        Editar
+                      </button>
+                      <button
+                        className="w-full px-3 py-1.5 text-sm text-left hover:bg-destructive/10 text-destructive flex items-center gap-2"
+                        onClick={() => {
+                          setMenuOpen(null)
+                          onRemove(favorite.id)
+                        }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Eliminar
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   )
 }

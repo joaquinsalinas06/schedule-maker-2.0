@@ -6,9 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Mail, CheckCircle, AlertCircle, Clock } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useEmailVerification, EmailVerificationStatus } from '@/hooks/useEmailVerification';
+import { Mail, CheckCircle, AlertCircle, Clock } from "lucide-react";
+import { ButtonLoader } from "@/components/ui/loading-skeletons";
+import { useToast } from "@/hooks/use-toast";
+import {
+  useEmailVerification,
+  EmailVerificationStatus,
+} from "@/hooks/useEmailVerification";
 
 interface EmailVerificationProps {
   email: string;
@@ -17,26 +21,26 @@ interface EmailVerificationProps {
   isEmbedded?: boolean;
 }
 
-export default function EmailVerification({ 
-  email, 
-  onVerificationComplete, 
+export default function EmailVerification({
+  email,
+  onVerificationComplete,
   onEmailChange,
-  isEmbedded = false 
+  isEmbedded = false,
 }: EmailVerificationProps) {
-  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationCode, setVerificationCode] = useState("");
   const [isVerified, setIsVerified] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [hasCodeSent, setHasCodeSent] = useState(false);
   const { toast } = useToast();
-  
-  const { 
-    isLoading, 
-    isResending, 
-    status, 
-    sendVerification, 
+
+  const {
+    isLoading,
+    isResending,
+    status,
+    sendVerification,
     verifyCodeAndLogin,
     resendVerification,
-    checkStatus 
+    checkStatus,
   } = useEmailVerification();
 
   // Check verification status on component mount
@@ -68,8 +72,8 @@ export default function EmailVerification({
       const expiresAt = new Date(status.expires_at!);
       const now = new Date();
       const diff = expiresAt.getTime() - now.getTime();
-      console.log('Time left:', diff);
-      
+      console.log("Time left:", diff);
+
       if (diff <= 0) {
         setTimeLeft(0);
         checkVerificationStatus(); // Refresh status when expired
@@ -86,18 +90,18 @@ export default function EmailVerification({
 
   const checkVerificationStatus = async () => {
     if (!email) return;
-    
+
     const newStatus = await checkStatus(email);
     if (newStatus) {
       setIsVerified(newStatus.is_verified);
       setHasCodeSent(newStatus.has_verification);
-      
+
       if (newStatus.is_verified) {
         onVerificationComplete();
       }
     } else {
       // If status check fails, don't block the functionality
-      console.warn('Status check failed for email:', email);
+      console.warn("Status check failed for email:", email);
     }
   };
 
@@ -120,21 +124,21 @@ export default function EmailVerification({
     }
 
     const result = await verifyCodeAndLogin(email, verificationCode.trim());
-    
+
     if (result.success) {
       setIsVerified(true);
-      
+
       if (result.hasUser && result.tokens) {
         // User exists and is now logged in - store tokens and redirect
-        localStorage.setItem('token', result.tokens.access_token);
-        localStorage.setItem('user', JSON.stringify(result.tokens.user));
+        localStorage.setItem("token", result.tokens.access_token);
+        localStorage.setItem("user", JSON.stringify(result.tokens.user));
         if (result.tokens.refresh_token) {
-          localStorage.setItem('refresh_token', result.tokens.refresh_token);
+          localStorage.setItem("refresh_token", result.tokens.refresh_token);
         }
-        
+
         // Redirect to dashboard (toast already shown by verifyCodeAndLogin)
         setTimeout(() => {
-          window.location.href = '/dashboard';
+          window.location.href = "/dashboard";
         }, 1000);
       } else {
         // Email verified but user needs to complete registration
@@ -142,32 +146,32 @@ export default function EmailVerification({
         onVerificationComplete();
       }
     } else {
-      setVerificationCode('');
+      setVerificationCode("");
     }
   };
 
   const handleResendCode = async () => {
     const success = await resendVerification(email);
     if (success) {
-      setVerificationCode('');
+      setVerificationCode("");
     }
   };
 
   const formatTimeLeft = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
   if (isVerified) {
     return (
-      <Card className={isEmbedded ? "border-green-200 bg-green-50" : ""}>
+      <Card className={isEmbedded ? "border-primary/20 bg-primary/5" : ""}>
         <CardContent className="pt-6">
-          <div className="flex items-center gap-3 text-green-600">
+          <div className="flex items-center gap-3 text-primary">
             <CheckCircle className="h-5 w-5" />
             <div>
               <p className="font-medium">Email verified successfully!</p>
-              <p className="text-sm text-green-600/80">{email}</p>
+              <p className="text-sm text-primary/80">{email}</p>
             </div>
           </div>
         </CardContent>
@@ -176,17 +180,16 @@ export default function EmailVerification({
   }
 
   return (
-    <Card className={isEmbedded ? "border-blue-200" : ""}>
+    <Card className={isEmbedded ? "border-border" : ""}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Mail className="h-5 w-5" />
           Email Verification
         </CardTitle>
         <CardDescription>
-          {hasCodeSent 
+          {hasCodeSent
             ? "Enter the 6-digit code sent to your email"
-            : "Verify your email address to continue"
-          }
+            : "Verify your email address to continue"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -201,29 +204,30 @@ export default function EmailVerification({
               onChange={(e) => onEmailChange(e.target.value)}
               placeholder="Enter your email address"
               disabled={hasCodeSent}
-              className="border-slate-600 bg-slate-800/50 backdrop-blur-sm focus:border-cyan-400 focus:ring-cyan-400/20 disabled:bg-slate-700 disabled:text-slate-400 text-white placeholder:text-slate-400"
+              className="border-border bg-card focus:border-primary focus:ring-primary/20 disabled:bg-muted disabled:text-muted-foreground"
             />
           </div>
         )}
 
         {/* Send verification button - only show for non-embedded components */}
         {!hasCodeSent && !isEmbedded && (
-          <Button 
-            onClick={handleSendVerification} 
+          <Button
+            onClick={handleSendVerification}
             disabled={isLoading || !email}
-            className="w-full h-12 bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isLoading ? 'Enviando...' : 'Enviar Código de Verificación'}
+            {isLoading ? <ButtonLoader /> : "Enviar Código de Verificación"}
           </Button>
         )}
 
         {/* Auto-sending message for embedded components */}
         {!hasCodeSent && isEmbedded && (
           <div className="text-center py-4">
-            <div className="flex items-center justify-center gap-2 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Enviando código de verificación...</span>
+            <div className="flex items-center justify-center gap-2 text-muted-foreground w-full">
+              <span className="text-sm">
+                Enviando código de verificación...
+              </span>
+              <ButtonLoader />
             </div>
           </div>
         )}
@@ -232,31 +236,32 @@ export default function EmailVerification({
         {hasCodeSent && !isVerified && (
           <>
             <div className="space-y-2">
-              <Label htmlFor="code" className="text-foreground font-medium">Código de Verificación</Label>
+              <Label htmlFor="code" className="text-foreground font-medium">
+                Código de Verificación
+              </Label>
               <Input
                 id="code"
                 type="text"
                 value={verificationCode}
                 onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                  const value = e.target.value.replace(/\D/g, "").slice(0, 6);
                   setVerificationCode(value);
                 }}
                 placeholder="000000"
                 maxLength={6}
-                className="text-center text-2xl font-bold tracking-[0.5em] h-14 border-2 border-slate-600 bg-gradient-to-r from-slate-800 to-slate-700 shadow-inner rounded-xl focus:border-cyan-400 focus:ring-4 focus:ring-cyan-400/20 focus:shadow-lg transition-all duration-200 text-white placeholder:text-slate-400 placeholder:font-normal"
+                className="text-center text-2xl font-bold tracking-[0.5em] h-14 border-2 border-border bg-card rounded-xl focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all duration-200 placeholder:font-normal"
               />
               <p className="text-xs text-muted-foreground text-center">
                 Ingresa el código de 6 dígitos enviado a tu email
               </p>
             </div>
 
-            <Button 
-              onClick={handleVerifyCode} 
+            <Button
+              onClick={handleVerifyCode}
               disabled={isLoading || verificationCode.length !== 6}
-              className="w-full h-12 bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLoading ? 'Verificando...' : 'Verificar Email'}
+              {isLoading ? <ButtonLoader /> : "Verificar Email"}
             </Button>
 
             {/* Status information */}
@@ -277,7 +282,8 @@ export default function EmailVerification({
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      El código de verificación ha expirado. Por favor solicita uno nuevo.
+                      El código de verificación ha expirado. Por favor solicita
+                      uno nuevo.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -294,14 +300,13 @@ export default function EmailVerification({
 
                 {/* Resend button */}
                 {status.can_resend && (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={handleResendCode}
                     disabled={isResending}
-                    className="w-full h-10 border-2 border-slate-600 bg-slate-800/50 hover:bg-slate-700 text-slate-200 hover:text-white font-medium transition-all duration-200 hover:border-slate-500 hover:shadow-md"
+                    className="w-full h-10 border-2 border-border bg-card hover:bg-accent font-medium transition-colors"
                   >
-                    {isResending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isResending ? 'Reenviando...' : 'Reenviar Código'}
+                    {isResending ? <ButtonLoader /> : "Reenviar Código"}
                   </Button>
                 )}
 
@@ -310,7 +315,8 @@ export default function EmailVerification({
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      Se alcanzó el máximo de intentos de verificación. Por favor intenta más tarde o usa un email diferente.
+                      Se alcanzó el máximo de intentos de verificación. Por
+                      favor intenta más tarde o usa un email diferente.
                     </AlertDescription>
                   </Alert>
                 )}

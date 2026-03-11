@@ -3,15 +3,27 @@ import { Section, Session, CourseSection } from './academic';
 // Schedule Generation Types
 export interface ScheduleRequest {
   selected_sections: number[];
+  optional_sections?: number[];
+  max_optional_courses?: number;
+  sort_by?: 'score' | 'earliest' | 'compact' | 'spread' | 'gaps';
+  max_results?: number;
+}
+
+export interface ScheduleScores {
+  earliest: number;
+  gaps: number;
+  spread: number;
+  compactness: number;
+  composite: number;
 }
 
 export interface ScheduleCombination {
   combination_id: number | string;
   sections: Section[];
   conflicts: ScheduleConflict[];
-  // Also support the format expected by FavoriteSchedules component
   course_count?: number;
   courses?: CourseSection[];
+  scores?: ScheduleScores;
 }
 
 export interface ScheduleResponse {

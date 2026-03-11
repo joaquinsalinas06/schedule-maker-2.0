@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { 
+import {
   User as UserIcon,
   Mail,
   Building2,
@@ -19,8 +19,12 @@ import {
   BookOpen,
   X,
   Eye,
-  BarChart3
+  BarChart3,
+  ArrowLeft
 } from 'lucide-react';
+import { ButtonLoader } from "@/components/ui/loading-skeletons";
+import { format } from "date-fns";
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { friendsAPI } from '@/services/friendsAPI';
 import { User, Schedule, ScheduleDetail, FriendProfileModalProps } from '@/types';
@@ -107,221 +111,260 @@ export function FriendProfileModal({ friendId, isOpen, onClose, onViewSchedules 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserIcon className="w-5 h-5" />
-            Perfil de Amigo
-          </DialogTitle>
-          <DialogDescription>
-            Información del perfil y horarios disponibles
-          </DialogDescription>
-        </DialogHeader>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserIcon className="w-5 h-5" />
+              Perfil de Amigo
+            </DialogTitle>
+            <DialogDescription>
+              Información del perfil y horarios disponibles
+            </DialogDescription>
+          </DialogHeader>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        ) : friend ? (
-          <div className="space-y-6">
-            {/* Profile Header */}
-                        <div className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-800/80 to-gray-700/80 rounded-lg border border-gray-600/50">
-              <Avatar className="w-16 h-16">
-                <AvatarImage src={friend.profile_photo} alt={friend.first_name} />
-                <AvatarFallback className="text-lg font-semibold bg-gray-700 text-gray-100">
-                  {getInitials(friend)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold text-foreground">
-                  {getDisplayName(friend)}
-                </h3>
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  <Building2 className="w-4 h-4" />
-                  {friend.university?.short_name}
-                </p>
-                {friend.student_id && (
-                  <p className="text-xs text-muted-foreground">
-                    ID: {friend.student_id}
-                  </p>
-                )}
+          {loading ? (
+            <div className="space-y-6 py-4">
+              <div className="flex items-center space-x-4 p-4">
+                <Skeleton className="w-16 h-16 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+              <div className="space-y-3 px-4">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
               </div>
             </div>
-
-            {/* Profile Details */}
-            <div className="grid gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Mail className="w-5 h-5" />
-                    Información de Contacto
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Email:</span>
-                    <span className="font-medium text-foreground">{friend.email}</span>
-                  </div>
+          ) : friend ? (
+            <div className="space-y-6">
+              {/* Profile Header */}
+              <div className="flex items-center space-x-4 p-4 bg-card rounded-lg border border-border">
+                <Avatar className="w-16 h-16">
+                  <AvatarImage
+                    src={friend.profile_photo}
+                    alt={friend.first_name}
+                  />
+                  <AvatarFallback className="text-lg font-semibold bg-muted text-foreground">
+                    {getInitials(friend)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-foreground">
+                    {getDisplayName(friend)}
+                  </h3>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Building2 className="w-4 h-4" />
+                    {friend.university?.short_name}
+                  </p>
                   {friend.student_id && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Código:</span>
-                      <span className="font-medium text-foreground">{friend.student_id}</span>
-                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      ID: {friend.student_id}
+                    </p>
                   )}
-                  {friend.last_login && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Último acceso:</span>
-                      <span className="font-medium text-foreground">{formatDate(friend.last_login)}</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              {/* Description */}
-              {friend.description && (
+              {/* Profile Details */}
+              <div className="grid gap-4">
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <UserIcon className="w-5 h-5" />
-                      Acerca de
+                      <Mail className="w-5 h-5" />
+                      Información de Contacto
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-foreground leading-relaxed">{friend.description}</p>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Stats */}
-              {friend.stats && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5" />
-                      Estadísticas
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-blue-900/20 rounded-lg border border-blue-700/30">
-                        <div className="text-2xl font-bold text-blue-400">
-                          {friend.stats.friend_count}
-                        </div>
-                        <div className="text-sm text-blue-300">Amigos</div>
-                      </div>
-                      <div className="text-center p-3 bg-green-900/20 rounded-lg border border-green-700/30">
-                        <div className="text-2xl font-bold text-green-400">
-                          {friend.stats.schedules_count}
-                        </div>
-                        <div className="text-sm text-green-300">Horarios</div>
-                      </div>
+                  <CardContent className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Email:</span>
+                      <span className="font-medium text-foreground">
+                        {friend.email}
+                      </span>
                     </div>
+                    {friend.student_id && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Código:</span>
+                        <span className="font-medium text-foreground">
+                          {friend.student_id}
+                        </span>
+                      </div>
+                    )}
+                    {friend.last_login && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          Último acceso:
+                        </span>
+                        <span className="font-medium text-foreground">
+                          {formatDate(friend.last_login)}
+                        </span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
-              )}
 
-              {/* Schedules Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Calendar className="w-5 h-5" />
-                    Horarios Disponibles
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {schedules.length > 0 ? (
-                    <div className="space-y-2">
-                      {schedules.map((schedule, index) => {
-                        // Assign different gradient colors to schedule cards
-                        const scheduleGradients = [
-                          'from-purple-900/20 to-blue-900/20 border-purple-500/30 hover:from-purple-900/30 hover:to-blue-900/30',
-                          'from-cyan-900/20 to-teal-900/20 border-cyan-500/30 hover:from-cyan-900/30 hover:to-teal-900/30',
-                          'from-emerald-900/20 to-green-900/20 border-emerald-500/30 hover:from-emerald-900/30 hover:to-green-900/30',
-                          'from-amber-900/20 to-orange-900/20 border-amber-500/30 hover:from-amber-900/30 hover:to-orange-900/30',
-                          'from-pink-900/20 to-rose-900/20 border-pink-500/30 hover:from-pink-900/30 hover:to-rose-900/30'
-                        ];
-                        const scheduleGradient = scheduleGradients[index % scheduleGradients.length];
-                        
-                        return (
-                          <div key={schedule.id} className={`flex items-center justify-between p-3 border rounded-lg bg-gradient-to-r ${scheduleGradient} transition-all duration-200`}>
-                            <div className="flex-1">
-                              <p className="font-medium text-white">{schedule.name}</p>
-                              <p className="text-sm text-gray-200">{schedule.description}</p>
-                              <p className="text-xs text-gray-300">
-                                Creado: {formatDate(schedule.created_at)}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {schedule.is_favorite && (
-                                <span className="px-2 py-1 bg-yellow-900/40 text-yellow-300 text-xs rounded-full border border-yellow-600/40">
-                                  Favorito
-                                </span>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                                onClick={async () => {
-                                  try {
-                                    const response = await friendsAPI.getFriendScheduleDetail(friendId!, schedule.id);
-                                    setSelectedScheduleDetail(response.data);
-                                    setShowScheduleDetail(true);
-                                  } catch (error: unknown) {
-                                    toast({
-                                      title: "Error",
-                                      description: (error as { message?: string }).message || "No se pudo cargar el horario",
-                                      variant: "destructive"
-                                    });
-                                  }
-                                }}
-                              >
-                                <Eye className="w-4 h-4 mr-1" />
-                                Ver
-                              </Button>
-                            </div>
+                {/* Description */}
+                {friend.description && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <UserIcon className="w-5 h-5" />
+                        Acerca de
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-foreground leading-relaxed">
+                        {friend.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Stats */}
+                {friend.stats && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5" />
+                        Estadísticas
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-3 bg-muted rounded-lg border border-border">
+                          <div className="text-2xl font-bold text-foreground">
+                            {friend.stats.friend_count}
                           </div>
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-center py-6">
-                      <Button
-                        onClick={loadFriendSchedules}
-                        disabled={schedulesLoading}
-                        variant="outline"
-                      >
-                        <BookOpen className="w-4 h-4 mr-2" />
-                        {schedulesLoading ? 'Cargando...' : 'Ver Horarios'}
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                          <div className="text-sm text-muted-foreground">
+                            Amigos
+                          </div>
+                        </div>
+                        <div className="text-center p-3 bg-muted rounded-lg border border-border">
+                          <div className="text-2xl font-bold text-foreground">
+                            {friend.stats.schedules_count}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Horarios
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
-            {/* Actions */}
-            <div className="flex justify-end space-x-2 pt-4 border-t">
-              {schedules.length > 0 && onViewSchedules && (
-                <Button
-                  onClick={() => onViewSchedules(friendId!, schedules)}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  Comparar Horarios
+                {/* Schedules Section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Calendar className="w-5 h-5" />
+                      Horarios Disponibles
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {schedules.length > 0 ? (
+                      <div className="space-y-2">
+                        {schedules.map((schedule) => {
+                          return (
+                            <div
+                              key={schedule.id}
+                              className="flex items-center justify-between p-3 border border-border rounded-lg bg-card hover:bg-accent transition-colors"
+                            >
+                              <div className="flex-1">
+                                <p className="font-medium text-foreground">
+                                  {schedule.name}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {schedule.description}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Creado: {formatDate(schedule.created_at)}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {schedule.is_favorite && (
+                                  <span className="px-2 py-1 bg-warning/10 text-warning text-xs rounded-full border border-warning/20">
+                                    Favorito
+                                  </span>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className=""
+                                  onClick={async () => {
+                                    try {
+                                      const response =
+                                        await friendsAPI.getFriendScheduleDetail(
+                                          friendId!,
+                                          schedule.id,
+                                        );
+                                      setSelectedScheduleDetail(response.data);
+                                      setShowScheduleDetail(true);
+                                    } catch (error: unknown) {
+                                      toast({
+                                        title: "Error",
+                                        description:
+                                          (error as { message?: string })
+                                            .message ||
+                                          "No se pudo cargar el horario",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  Ver
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6">
+                        <Button
+                          onClick={loadFriendSchedules}
+                          disabled={schedulesLoading}
+                          variant="outline"
+                        >
+                          {schedulesLoading ? (
+                            <span className="flex items-center gap-1"><ButtonLoader /></span>
+                          ) : (
+                            <>
+                              <BookOpen className="w-4 h-4 mr-2" />
+                              Ver Horarios
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end space-x-2 pt-4 border-t">
+                {schedules.length > 0 && onViewSchedules && (
+                  <Button
+                    onClick={() => onViewSchedules(friendId!, schedules)}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Comparar Horarios
+                  </Button>
+                )}
+                <Button variant="outline" onClick={onClose}>
+                  <X className="w-4 h-4 mr-2" />
+                  Cerrar
                 </Button>
-              )}
-              <Button variant="outline" onClick={onClose}>
-                <X className="w-4 h-4 mr-2" />
-                Cerrar
-              </Button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No se pudo cargar el perfil del amigo</p>
-          </div>
-        )}
-      </DialogContent>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No se pudo cargar el perfil del amigo</p>
+            </div>
+          )}
+        </DialogContent>
       </Dialog>
 
       {/* Schedule Detail Modal */}
@@ -340,16 +383,20 @@ export function FriendProfileModal({ friendId, isOpen, onClose, onViewSchedules 
           {selectedScheduleDetail && (
             <div className="space-y-4">
               {/* Schedule Info */}
-              <div className="p-4 bg-blue-900/20 rounded-lg border border-blue-700/30">
+              <div className="p-4 bg-muted rounded-lg border border-border">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-semibold text-foreground">{selectedScheduleDetail.name}</h3>
+                    <h3 className="font-semibold text-foreground">
+                      {selectedScheduleDetail.name}
+                    </h3>
                     {selectedScheduleDetail.description && (
-                      <p className="text-sm text-muted-foreground">{selectedScheduleDetail.description}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedScheduleDetail.description}
+                      </p>
                     )}
                   </div>
                   {selectedScheduleDetail.is_favorite && (
-                    <span className="px-2 py-1 bg-yellow-900/30 text-yellow-400 text-xs rounded-full font-medium border border-yellow-700/30">
+                    <span className="px-2 py-1 bg-warning/10 text-warning text-xs rounded-full font-medium border border-warning/20">
                       Favorito
                     </span>
                   )}
@@ -362,76 +409,80 @@ export function FriendProfileModal({ friendId, isOpen, onClose, onViewSchedules 
                   <BookOpen className="w-4 h-4" />
                   Cursos ({selectedScheduleDetail.courses.length})
                 </h4>
-                
-                {selectedScheduleDetail.courses.map((course, courseIndex) => {
-                  // Assign different gradient colors based on course index  
-                  const courseGradients = [
-                    'from-purple-900/30 to-blue-900/30 border-purple-500/50',
-                    'from-cyan-900/30 to-teal-900/30 border-cyan-500/50',
-                    'from-emerald-900/30 to-green-900/30 border-emerald-500/50', 
-                    'from-amber-900/30 to-orange-900/30 border-amber-500/50',
-                    'from-pink-900/30 to-rose-900/30 border-pink-500/50',
-                    'from-indigo-900/30 to-violet-900/30 border-indigo-500/50'
-                  ];
-                  const courseGradient = courseGradients[courseIndex % courseGradients.length];
-                  
+
+                {selectedScheduleDetail.courses.map((course) => {
                   return (
-                    <Card key={course.id} className={`bg-gradient-to-r ${courseGradient} border`}>
+                    <Card
+                      key={course.id}
+                      className="bg-card border border-border"
+                    >
                       <CardHeader>
-                        <CardTitle className="text-lg text-white">{course.code} - {course.name}</CardTitle>
+                        <CardTitle className="text-lg text-foreground">
+                          {course.code} - {course.name}
+                        </CardTitle>
                         {course.description && (
-                          <p className="text-sm text-gray-200">{course.description}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {course.description}
+                          </p>
                         )}
                       </CardHeader>
                       <CardContent>
                         {course.sections.map((section) => (
-                        <div key={section.id} className="mb-4 p-3 border rounded-lg bg-gradient-to-r from-purple-900/20 to-blue-900/20 border-purple-500/30">
-                          <div className="flex justify-between items-center mb-2">
-                            <h5 className="font-medium text-purple-100">Sección {section.section_number}</h5>
-                            <div className="text-sm text-purple-300">
-                              {section.enrolled}/{section.capacity} estudiantes
+                          <div
+                            key={section.id}
+                            className="mb-4 p-3 border rounded-lg bg-muted border-border"
+                          >
+                            <div className="flex justify-between items-center mb-2">
+                              <h5 className="font-medium text-foreground">
+                                Sección {section.section_number}
+                              </h5>
+                              <div className="text-sm text-muted-foreground">
+                                {section.enrolled}/{section.capacity}{" "}
+                                estudiantes
+                              </div>
+                            </div>
+                            {section.professor && (
+                              <p className="text-sm text-muted-foreground mb-2">
+                                Profesor: {section.professor}
+                              </p>
+                            )}
+                            <div className="space-y-1">
+                              {section.sessions.map((session) => {
+                                return (
+                                  <div
+                                    key={session.id}
+                                    className="flex justify-between items-center text-sm p-3 bg-accent border border-border rounded-lg"
+                                  >
+                                    <div className="text-foreground">
+                                      <span className="font-medium">
+                                        {session.session_type}
+                                      </span>
+                                      <span className="mx-2 text-muted-foreground">
+                                        •
+                                      </span>
+                                      <span>{session.day}</span>
+                                      <span className="mx-2 text-muted-foreground">
+                                        •
+                                      </span>
+                                      <span>
+                                        {session.start_time} -{" "}
+                                        {session.end_time}
+                                      </span>
+                                    </div>
+                                    <div className="text-muted-foreground">
+                                      {session.building && session.room
+                                        ? `${session.building} - ${session.room}`
+                                        : session.location || "Sin ubicación"}
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
-                          {section.professor && (
-                            <p className="text-sm text-purple-200 mb-2">
-                              Profesor: {section.professor}
-                            </p>
-                          )}
-                          <div className="space-y-1">
-                            {section.sessions.map((session, sessionIndex) => {
-                              // Assign different gradient colors based on session index
-                              const gradients = [
-                                'from-cyan-900/40 to-blue-900/40 border-cyan-500/40',
-                                'from-purple-900/40 to-pink-900/40 border-purple-500/40', 
-                                'from-emerald-900/40 to-teal-900/40 border-emerald-500/40',
-                                'from-amber-900/40 to-orange-900/40 border-amber-500/40',
-                                'from-indigo-900/40 to-violet-900/40 border-indigo-500/40'
-                              ];
-                              const gradient = gradients[sessionIndex % gradients.length];
-                              
-                              return (
-                                <div key={session.id} className={`flex justify-between items-center text-sm p-3 bg-gradient-to-r ${gradient} border rounded-lg`}>
-                                  <div className="text-white">
-                                    <span className="font-medium">{session.session_type}</span>
-                                    <span className="mx-2 text-gray-300">•</span>
-                                    <span>{session.day}</span>
-                                    <span className="mx-2 text-gray-300">•</span>
-                                    <span>{session.start_time} - {session.end_time}</span>
-                                  </div>
-                                  <div className="text-gray-200">
-                                    {session.building && session.room ? 
-                                      `${session.building} - ${session.room}` : 
-                                      session.location || 'Sin ubicación'}
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                  )
+                        ))}
+                      </CardContent>
+                    </Card>
+                  );
                 })}
               </div>
 
@@ -507,12 +558,15 @@ export function FriendProfileModal({ friendId, isOpen, onClose, onViewSchedules 
                       });
                     }
                   }}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground border-0"
                 >
                   <BarChart3 className="w-4 h-4 mr-2" />
                   Comparar
                 </Button>*/}
-                <Button variant="outline" onClick={() => setShowScheduleDetail(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowScheduleDetail(false)}
+                >
                   <X className="w-4 h-4 mr-2" />
                   Cerrar
                 </Button>
