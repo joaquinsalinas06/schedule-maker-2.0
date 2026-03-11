@@ -300,20 +300,20 @@ class CSVUpdater:
             for session_meta in all_sessions
         )
         
-        is_finanzas = any(
-            "Finanzas" in session_meta.get('course_name', '')
+        is_hierarchical = any(
+            any(kw in session_meta.get('course_name', '') for kw in ["Finanzas", "Ecuaciones"])
             for session_meta in all_sessions
         )
         
-        if is_finanzas:
-            return self._create_finanzas_sections(all_sessions)
+        if is_hierarchical:
+            return self._create_prefix_hierarchical_sections(all_sessions)
         elif has_decimal_pattern:
             return self._create_decimal_pattern_sections(all_sessions)
         else:
             return self._create_standard_sections(all_sessions)
             
-    def _create_finanzas_sections(self, all_sessions: List[dict]) -> List[SectionImportData]:
-        """Handle Finanzas Empresariales and Finanzas Corporativas pattern where TEORÍA 1 is shared among TEORÍA 11, TEORÍA 12, etc."""
+    def _create_prefix_hierarchical_sections(self, all_sessions: List[dict]) -> List[SectionImportData]:
+        """Handle courses where TEORÍA 1/TEORÍA VIRTUAL 1 is shared among sub-theories like 11, 12, etc."""
         # Group sessions by session type
         sessions_by_type = defaultdict(list)
         for session_meta in all_sessions:
@@ -324,15 +324,21 @@ class CSVUpdater:
         sub_theory_sessions = {}
         
         for session_group, sessions in sessions_by_type.items():
-            match = re.match(r'^TEORÍA\s+(\d+)$', session_group)
+            # Match both "TEORÍA X" and "TEORÍA VIRTUAL X"
+            match = re.match(r'^(TEORÍA|TEORÍA VIRTUAL)\s+(\d+)$', session_group)
             if match:
-                num = int(match.group(1))
-                if num < 10:
+                prefix = match.group(1)
+                num = int(match.group(2))
+                
+                # If num < 10, it's a "master" theory (e.g. 1, 2)
+                # Unless it's virtual, which is always master if it represents a master group
+                # For Ecuaciones: TEORÍA VIRTUAL 1 is master, TEORÍA 11 is sub
+                if num < 10 or "VIRTUAL" in prefix:
                     main_theory_sessions[num] = sessions
                 else:
                     sub_theory_sessions[num] = sessions
             else:
-                # E.g. LABORATORIO
+                # E.g. LABORATORIO 11
                 sub_theory_sessions[session_group] = sessions
                 
         sections = []

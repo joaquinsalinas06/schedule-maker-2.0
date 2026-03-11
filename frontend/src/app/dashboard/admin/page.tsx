@@ -175,7 +175,7 @@ export default function AdminImportPage() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-[1400px] mx-auto px-4 py-8 space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -570,7 +570,7 @@ export default function AdminImportPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="max-h-[400px] overflow-y-auto divide-y divide-border">
+                <div className="max-h-[650px] overflow-y-auto divide-y divide-border">
                   {analysis.courses_preview.map((course) => (
                     <div key={course.code}>
                       <button

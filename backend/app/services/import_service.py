@@ -164,40 +164,44 @@ class ImportService:
     def _detect_diffs(self, new_c, old_c, sections_by_course, sessions_by_section):
         """Determine if course contents changed significantly."""
         diffs = []
-        if new_c.name != old_c.name: diffs.append("Nombre")
-        if new_c.department != old_c.department: diffs.append("Departamento")
+        if new_c.name != old_c.name: 
+            diffs.append(f"Nombre: {old_c.name[:15]}... → {new_c.name[:15]}...")
+        if new_c.department != old_c.department: 
+            diffs.append(f"Depto: {old_c.department} → {new_c.department}")
 
         existing_sections = sections_by_course.get(old_c.id, [])
         old_sects_map = {s.section_number: s for s in existing_sections}
         new_sects_map = {s.section_number: s for s in new_c.sections}
 
         if set(old_sects_map.keys()) != set(new_sects_map.keys()):
-            added = len(set(new_sects_map.keys()) - set(old_sects_map.keys()))
-            removed = len(set(old_sects_map.keys()) - set(new_sects_map.keys()))
-            if added: diffs.append(f"+{added} Secciones")
-            if removed: diffs.append(f"-{removed} Secciones")
+            added = set(new_sects_map.keys()) - set(old_sects_map.keys())
+            removed = set(old_sects_map.keys()) - set(new_sects_map.keys())
+            if added: diffs.append(f"+Secc: {', '.join(sorted(added))}")
+            if removed: diffs.append(f"-Secc: {', '.join(sorted(removed))}")
         
         # Check existing section details
         for num, old_s in old_sects_map.items():
             if num in new_sects_map:
                 new_s = new_sects_map[num]
                 if old_s.professor != new_s.professor:
-                    diffs.append(f"Secc {num}: Profesor")
+                    old_p = (old_s.professor or "TBD").split(',')[0]
+                    new_p = (new_s.professor or "TBD").split(',')[0]
+                    diffs.append(f"Secc {num} Prof: {old_p} → {new_p}")
                 if old_s.capacity != new_s.capacity:
-                    diffs.append(f"Secc {num}: Vacantes")
+                    diffs.append(f"Secc {num} Vac: {old_s.capacity} → {new_s.capacity}")
                 
                 # Compare sessions
                 old_sessions = sessions_by_section.get(old_s.id, [])
                 new_sessions = new_s.sessions
                 if len(old_sessions) != len(new_sessions):
-                    diffs.append(f"Secc {num}: Horarios(cant)")
+                    diffs.append(f"Secc {num} Horarios: {len(old_sessions)} → {len(new_sessions)} sess")
                 else:
                     # Compare session details (day, time, etc)
                     # For simplicity, count signatures
-                    old_sigs = {f"{s.day}|{s.start_time}|{s.end_time}" for s in old_sessions}
-                    new_sigs = {f"{s.day}|{s.start_time}|{s.end_time}" for s in new_sessions}
+                    old_sigs = sorted([f"{s.day[0:2]} {s.start_time.strftime('%H:%M')}" for s in old_sessions])
+                    new_sigs = sorted([f"{s.day[0:2]} {s.start_time.strftime('%H:%M')}" for s in new_sessions])
                     if old_sigs != new_sigs:
-                         diffs.append(f"Secc {num}: Horarios")
+                         diffs.append(f"Secc {num}: Horarios cambian")
 
         return diffs
 
