@@ -50,11 +50,13 @@ class UserProfileUpdate(BaseModel):
     profile_photo: Optional[str] = None
     description: Optional[str] = None
     student_id: Optional[str] = None
+    curriculum_id: Optional[int] = None
 
 class UserResponse(UserBase, BaseResponse):
     role: str
     is_verified: bool
     last_login: Optional[datetime] = None
+    curriculum_id: Optional[int] = None
     university: UniversityResponse
 
 class Token(BaseModel):
@@ -141,6 +143,20 @@ class SaveScheduleRequest(BaseModel):
     name: str
     description: Optional[str] = None
     combination: Optional[dict] = None  # Include the actual course data
+
+# Carga Habil schemas
+class CargaHabilCourse(BaseModel):
+    code: str
+    name: str
+    type: str
+
+class ParseCargaHabilResponse(BaseModel):
+    mandatory: List[CargaHabilCourse]
+    electives: List[CargaHabilCourse]
+
+class BulkCourseDetailsRequest(BaseModel):
+    course_codes: List[str]
+    university_id: Optional[int] = 1
 
 # Search filters
 class CourseSearchFilters(BaseModel):
@@ -341,6 +357,81 @@ class CSVAnalysisResponse(BaseModel):
     success: bool
     analysis: Optional[CSVAnalysisData] = None
     error: Optional[str] = None
+
+# Curriculum schemas
+class CurriculumListResponse(BaseModel):
+    id: int
+    name: str
+    code: str
+    year: int
+    total_credits: int
+    total_semesters: int
+
+    class Config:
+        from_attributes = True
+
+class CurriculumPrerequisiteResponse(BaseModel):
+    id: int
+    prerequisite_course_id: Optional[int] = None
+    prerequisite_type: str
+    required_credits: Optional[int] = None
+    prerequisite_course_name: Optional[str] = None
+
+class CurriculumCourseResponse(BaseModel):
+    id: int
+    course_name: str
+    semester: int
+    credits: int
+    is_elective: bool
+    elective_group: Optional[str] = None
+    linked_course_id: Optional[int] = None
+    prerequisites: List[CurriculumPrerequisiteResponse] = []
+
+class CurriculumTreeResponse(BaseModel):
+    id: int
+    name: str
+    code: str
+    year: int
+    total_credits: int
+    total_semesters: int
+    courses: List[CurriculumCourseResponse] = []
+
+class CourseProgressItem(BaseModel):
+    curriculum_course_id: int
+    status: str
+    completed_at: Optional[str] = None
+
+class ProgressSummary(BaseModel):
+    completed: int
+    in_progress: int
+    total: int
+    credits_earned: int
+    credits_total: int
+    percentage: float
+    unlocked_count: int
+
+class CurriculumProgressResponse(BaseModel):
+    curriculum_id: int
+    progress: List[CourseProgressItem] = []
+    summary: ProgressSummary
+
+class UpdateCourseStatusRequest(BaseModel):
+    curriculum_course_id: int
+    status: str  # "completed", "in_progress", "pending"
+
+class BulkUpdateItem(BaseModel):
+    curriculum_course_id: int
+    status: str
+
+class BulkUpdateStatusRequest(BaseModel):
+    updates: List[BulkUpdateItem]
+
+class UnlockedCoursesResponse(BaseModel):
+    unlocked_curriculum_course_ids: List[int] = []
+    unlocked_course_ids: List[int] = []
+
+class SetCurriculumRequest(BaseModel):
+    curriculum_id: Optional[int] = None
 
 # Friend request schemas
 class FriendRequestCreate(BaseModel):

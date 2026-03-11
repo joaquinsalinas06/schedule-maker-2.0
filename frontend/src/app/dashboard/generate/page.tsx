@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { apiService } from "@/services/api";
+import { authService } from "@/services/auth";
 import {
   Course,
   SelectedSection,
@@ -10,11 +11,14 @@ import {
   SectionPopupState,
   GroupedCourse,
 } from "@/types";
+import { useCurriculumStore } from "@/stores/curriculumStore";
 
 import { CourseSearchCard } from "@/components/dashboard/CourseSearchCard";
 import { CourseResultsGrid } from "@/components/dashboard/CourseResultsGrid";
 import { SelectedSectionsCard } from "@/components/dashboard/SelectedSectionsCard";
 import { SectionSelectionPopup } from "@/components/dashboard/SectionSelectionPopup";
+import { CargaHabilModal } from "@/components/dashboard/CargaHabilModal";
+import { Upload } from "lucide-react";
 
 export default function GeneratePage() {
   const router = useRouter();
@@ -43,6 +47,29 @@ export default function GeneratePage() {
     new Set(),
   );
   const [maxOptionalCourses, setMaxOptionalCourses] = useState<number>(1);
+  const [curriculumFilterEnabled, setCurriculumFilterEnabled] = useState(false);
+  const [isCargaHabilModalOpen, setIsCargaHabilModalOpen] = useState(false);
+
+  // Curriculum integration
+  const { unlockedCourseDbIds, fetchProgress } = useCurriculumStore();
+  const currentUser = authService.getCurrentUser();
+  const hasCurriculum = !!currentUser?.curriculum_id;
+
+  useEffect(() => {
+    if (hasCurriculum && currentUser?.curriculum_id) {
+      fetchProgress(currentUser.curriculum_id);
+    }
+  }, [hasCurriculum, currentUser?.curriculum_id, fetchProgress]);
+
+  // Filter search results by unlocked courses when curriculum filter is enabled
+  const filteredSearchResults = useMemo(() => {
+    if (!curriculumFilterEnabled || unlockedCourseDbIds.length === 0) {
+      return searchResults;
+    }
+    return searchResults.filter((course) =>
+      unlockedCourseDbIds.includes(course.id),
+    );
+  }, [searchResults, curriculumFilterEnabled, unlockedCourseDbIds]);
 
   const groupSectionsByCourse = (): GroupedCourse[] => {
     const grouped = selectedSections.reduce(
@@ -151,6 +178,32 @@ export default function GeneratePage() {
     setSelectedSections((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleCargaHabilImport = (courses: Course[]) => {
+    setSelectedSections((prev) => {
+      let newSelected = [...prev];
+      courses.forEach((course) => {
+        // Automatically open the course visually if not already by un-collapsing if needed later
+        // or just let them manage it
+        course.sections.forEach((section) => {
+          const alreadySelected = newSelected.some(
+            (s) => s.sectionId === section.id,
+          );
+          if (!alreadySelected) {
+            newSelected.push({
+              sectionId: section.id,
+              courseCode: course.code,
+              courseName: course.name,
+              sectionCode: section.section_number,
+              professor: section.professor,
+              sessions: section.sessions,
+            });
+          }
+        });
+      });
+      return newSelected;
+    });
+  };
+
   const uniqueCourses = [
     ...new Set(selectedSections.map((section) => section.courseCode)),
   ];
@@ -219,8 +272,16 @@ export default function GeneratePage() {
       <header className="px-6 py-4 border-b border-border bg-background/50 backdrop-blur-sm sticky top-0 z-10 transition-colors">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-foreground">
+            <h1 className="text-xl font-semibold text-foreground flex items-center gap-3">
               Generar Horarios
+              <button
+                onClick={() => setIsCargaHabilModalOpen(true)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors mt-0.5"
+                title="Importar desde PDF de Carga Hábil"
+              >
+                <Upload className="w-4 h-4" />
+                Carga Hábil
+              </button>
             </h1>
             <p className="text-sm text-muted-foreground">
               Busca y selecciona cursos para crear tu horario
@@ -256,10 +317,15 @@ export default function GeneratePage() {
               setSearchQuery={setSearchQuery}
               handleSearch={handleSearch}
               isLoading={isLoading}
+              hasCurriculum={hasCurriculum}
+              curriculumFilterEnabled={curriculumFilterEnabled}
+              onCurriculumFilterToggle={() =>
+                setCurriculumFilterEnabled((v) => !v)
+              }
             />
 
             <CourseResultsGrid
-              searchResults={searchResults}
+              searchResults={filteredSearchResults}
               displayPage={displayPage}
               resultsPerPage={resultsPerPage}
               setSectionPopup={setSectionPopup}
@@ -315,6 +381,13 @@ export default function GeneratePage() {
         selectedSections={selectedSections}
         addSection={addSection}
         removeSection={removeSection}
+      />
+
+      {/* Carga Habil Modal */}
+      <CargaHabilModal
+        isOpen={isCargaHabilModalOpen}
+        onClose={() => setIsCargaHabilModalOpen(false)}
+        onImportComplete={handleCargaHabilImport}
       />
     </div>
   );

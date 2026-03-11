@@ -27,7 +27,28 @@ export const apiService = {
     return response.data;
   },
 
+  // Carga Habil
+  parseCargaHabil: async (file: File): Promise<{
+    mandatory: { code: string; name: string; type: string }[];
+    electives: { code: string; name: string; type: string }[];
+  }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/api/courses/parse-carga-habil', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 
+  getBulkCourseDetails: async (courseCodes: string[], universityId: number = 1): Promise<Course[]> => {
+    const response = await api.post('/api/courses/bulk-details', {
+      course_codes: courseCodes,
+      university_id: universityId
+    });
+    return response.data;
+  },
   // Schedule Generation
   generateSchedules: async (request: ScheduleRequest): Promise<any> => {
     const response = await api.post('/api/schedules/generate', request);

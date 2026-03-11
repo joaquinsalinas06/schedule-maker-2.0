@@ -19,3 +19,6 @@ class CourseService:
             limit=limit
         )
 
+    def get_courses_by_codes(self, codes: List[str], university_id: int = 1) -> List[Course]:
+        return self.course_repo.get_by_codes(codes, university_id)
+

@@ -102,3 +102,17 @@ class CourseRepository(BaseRepository[Course]):
             Course.university_id == university_id,
             Course.is_active == True
         ).all()
+
+    def get_by_codes(self, codes: List[str], university_id: int) -> List[Course]:
+        """Get full active course details matching exact codes for a university"""
+        if not codes:
+            return []
+            
+        return self.db.query(Course).join(University).options(
+            joinedload(Course.university),
+            joinedload(Course.sections).joinedload(Section.sessions)
+        ).filter(
+            Course.code.in_(codes),
+            Course.university_id == university_id,
+            Course.is_active == True
+        ).all()
