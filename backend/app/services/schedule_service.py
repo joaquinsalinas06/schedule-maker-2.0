@@ -21,20 +21,22 @@ class ScheduleService:
     def generate_schedule_combinations(self, request, user: User) -> Dict:
         """
         Generate all possible schedule combinations from selected sections.
-        This method handles validation and business logic.
+        Supports required + optional courses.
         """
-        # Validate request
-        if not request.selected_sections:
+        if not request.selected_sections and not request.optional_sections:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Must select at least one section"
             )
         
         try:
-            # Use existing method with proper validation
             return self.generate_schedule_combinations_from_sections(
                 user=user,
-                selected_sections=request.selected_sections
+                selected_sections=request.selected_sections,
+                optional_sections=getattr(request, 'optional_sections', []),
+                max_optional_courses=getattr(request, 'max_optional_courses', None),
+                sort_by=getattr(request, 'sort_by', 'score'),
+                max_results=getattr(request, 'max_results', 200),
             )
         except HTTPException:
             raise
@@ -44,28 +46,44 @@ class ScheduleService:
                 detail=f"Error generating combinations: {str(e)}"
             )
 
-    def generate_schedule_combinations_from_sections(self, user: User, selected_sections: List[int]) -> Dict:
-        """Generate all possible schedule combinations from selected sections (user picks specific sections)"""
-        if not selected_sections:
+    def generate_schedule_combinations_from_sections(
+        self,
+        user: User,
+        selected_sections: List[int],
+        optional_sections: List[int] = None,
+        max_optional_courses: int = None,
+        sort_by: str = "score",
+        max_results: int = 200,
+    ) -> Dict:
+        """Generate all possible schedule combinations from selected sections."""
+        if not selected_sections and not optional_sections:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Must select at least one section"
             )
         
-        # Verify all sections belong to user's university and are active
+        # Verify required sections belong to user's university
+        all_section_ids = list(selected_sections or [])
+        if optional_sections:
+            all_section_ids.extend(optional_sections)
+        
         sections = self.schedule_repo.get_sections_for_user_university(
-            selected_sections, user.university_id
+            all_section_ids, user.university_id
         )
         
-        if len(sections) != len(selected_sections):
+        if len(sections) != len(all_section_ids):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Some sections not found or don't belong to your university"
             )
         
-        # Use the schedule generator with mandatory course combinations
+        # Use the optimized schedule generator
         all_combinations = self.schedule_generator.generate_schedule_combinations_from_selected_sections(
-            selected_section_ids=selected_sections
+            selected_section_ids=selected_sections or [],
+            optional_section_ids=optional_sections or [],
+            max_optional_courses=max_optional_courses,
+            sort_by=sort_by,
+            max_results=max_results,
         )
         
         # Count unique courses
