@@ -5,9 +5,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import EmailVerification from "@/components/EmailVerification"
-import { useEmailVerification } from "@/hooks/useEmailVerification"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Calendar,
   Mail,
@@ -17,7 +15,6 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import { authService } from "@/services/auth";
@@ -28,10 +25,6 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [registrationStep, setRegistrationStep] = useState<
-    "form" | "verify" | "complete"
-  >("form");
-  const { checkStatus } = useEmailVerification();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -119,55 +112,20 @@ export default function AuthPage() {
         });
         window.location.href = "/dashboard";
       } else {
-        if (registrationStep === "form") {
-          const status = await checkStatus(formData.email);
-          if (status?.is_verified) {
-            setRegistrationStep("complete");
-            await authService.register({
-              first_name: formData.firstName,
-              last_name: formData.lastName,
-              email: formData.email,
-              password: formData.password,
-              student_id: formData.studentId,
-              university_id: 1,
-            });
-            localStorage.removeItem("schedule-maker-first-time-user");
-            window.location.href = "/dashboard";
-          } else {
-            setRegistrationStep("verify");
-          }
-        }
+        await authService.register({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          student_id: formData.studentId,
+          university_id: 1,
+        });
+        localStorage.removeItem("schedule-maker-first-time-user");
+        window.location.href = "/dashboard";
       }
     } catch (error) {
       console.error("Authentication error:", error);
       setErrors({ general: "Error en la autenticacion. Intenta nuevamente." });
-      if (activeTab === "register") {
-        setRegistrationStep("form");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleEmailVerificationComplete = async () => {
-    setRegistrationStep("complete");
-    setIsLoading(true);
-
-    try {
-      await authService.register({
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        email: formData.email,
-        password: formData.password,
-        student_id: formData.studentId,
-        university_id: 1,
-      });
-      localStorage.removeItem("schedule-maker-first-time-user");
-      window.location.href = "/dashboard";
-    } catch (error) {
-      console.error("Registration error:", error);
-      setErrors({ general: "Error al crear la cuenta. Intenta nuevamente." });
-      setRegistrationStep("form");
     } finally {
       setIsLoading(false);
     }
@@ -274,63 +232,8 @@ export default function AuthPage() {
               </div>
             )}
 
-            {/* Email Verification Step */}
-            {activeTab === "register" && registrationStep === "verify" && (
-              <div className="space-y-4">
-                <div className="text-center mb-4">
-                  <h3 className="text-lg font-semibold text-foreground mb-2">
-                    Verificar Email
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Necesitamos verificar tu email antes de crear tu cuenta
-                  </p>
-                </div>
-
-                <EmailVerification
-                  email={formData.email}
-                  onVerificationComplete={handleEmailVerificationComplete}
-                  isEmbedded={true}
-                />
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setRegistrationStep("form")}
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Cambiar Email
-                </Button>
-              </div>
-            )}
-
-            {/* Registration Complete Step */}
-            {activeTab === "register" && registrationStep === "complete" && (
-              <div className="text-center py-8">
-                <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
-                  {isLoading ? (
-                    <div className="text-success">
-                      <ButtonLoader />
-                    </div>
-                  ) : (
-                    <CheckCircle2 className="w-6 h-6 text-success" />
-                  )}
-                </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  {isLoading ? "Creando tu cuenta..." : "Cuenta creada!"}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {isLoading
-                    ? "Configurando tu perfil..."
-                    : "Redirigiendo al dashboard..."}
-                </p>
-              </div>
-            )}
-
             {/* Login and Registration Forms */}
-            {(activeTab === "login" ||
-              (activeTab === "register" && registrationStep === "form")) && (
+            {(activeTab === "login" || activeTab === "register") && (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <TabsContent value="login" className="space-y-4 mt-0">
                   <div className="space-y-2">

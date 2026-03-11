@@ -466,7 +466,7 @@ export default function AdminImportPage() {
               <Card className="border-primary/30 bg-primary/5">
                 <CardContent className="pt-4 space-y-2">
                   <h3 className="font-medium text-primary">Modo Actualizar</h3>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground">
                         Existentes:{" "}
@@ -483,10 +483,18 @@ export default function AdminImportPage() {
                     </div>
                     <div>
                       <span className="text-muted-foreground">
-                        A actualizar:{" "}
+                        Con cambios:{" "}
+                      </span>
+                      <span className="font-medium text-amber-600">
+                        {analysis.courses_to_update}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">
+                        Sin cambios:{" "}
                       </span>
                       <span className="font-medium">
-                        {analysis.courses_to_update}
+                        {analysis.unchanged_courses_count}
                       </span>
                     </div>
                   </div>
@@ -581,6 +589,29 @@ export default function AdminImportPage() {
                           <span className="font-medium truncate">
                             {course.name}
                           </span>
+                          {course.is_new && (
+                            <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] h-4 leading-none">
+                              NUEVO
+                            </Badge>
+                          )}
+                          {course.diffs && course.diffs.length > 0 && (
+                            <div className="flex gap-1 overflow-hidden ml-1">
+                              {course.diffs.slice(0, 3).map((d, i) => (
+                                <Badge
+                                  key={i}
+                                  variant="outline"
+                                  className="text-[10px] h-4 font-normal whitespace-nowrap bg-amber-500/5 border-amber-500/20 text-amber-700"
+                                >
+                                  {d}
+                                </Badge>
+                              ))}
+                              {course.diffs.length > 3 && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  +{course.diffs.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <Badge
                           variant="outline"

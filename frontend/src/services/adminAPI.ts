@@ -22,7 +22,9 @@ export interface CoursePreview {
   name: string;
   department: string;
   sections_count: number;
-  sessions_count: number;
+  sessions_count?: number;
+  is_new?: boolean;
+  diffs?: string[];
   sections: SectionPreview[];
 }
 
@@ -38,6 +40,7 @@ export interface ImportAnalysis {
   existing_courses_count?: number;
   courses_to_add?: number;
   courses_to_update?: number;
+  unchanged_courses_count?: number;
   courses_not_in_file?: number;
   // Reset mode fields
   existing_courses_to_deactivate?: number;
