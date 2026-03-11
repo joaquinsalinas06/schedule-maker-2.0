@@ -301,7 +301,8 @@ class CSVImporter:
         )
         
         is_hierarchical = any(
-            any(kw in session_meta.get('course_name', '') for kw in ["Finanzas", "Ecuaciones"])
+            any(kw in session_meta.get('course_name', '') for kw in ["Finanzas", "Ecuaciones"]) or
+            "VIRTUAL" in str(session_meta.get('session_group', ''))
             for session_meta in all_sessions
         )
         
