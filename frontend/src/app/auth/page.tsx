@@ -15,6 +15,7 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import { authService } from "@/services/auth";
