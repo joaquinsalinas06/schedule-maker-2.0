@@ -398,14 +398,22 @@ class ImportService:
 
         try:
             updater = CSVUpdater(self.db)
-            updated_count, changes = updater.update_courses(courses_data, university_id)
+            updated_count, changes, update_errors = updater.update_courses(courses_data, university_id)
             self.db.commit()
 
             return {
                 "mode": "update",
+                "courses_created": changes.get('courses_created', 0),
+                "courses_updated": changes.get('courses_updated', 0),
+                "sections_created": changes.get('sections_created', 0),
+                "sessions_created": changes.get('sessions_created', 0),
+                "errors": update_errors,
+                # Include others for audit log completeness
+                "sections_updated": changes.get('sections_updated', 0),
+                "sections_deactivated": changes.get('sections_deactivated', 0),
+                "sessions_updated": changes.get('sessions_updated', 0),
+                "sessions_deactivated": changes.get('sessions_deactivated', 0),
                 "courses_processed": updated_count,
-                **changes,
-                "errors": [],
             }
         except Exception as e:
             self.db.rollback()

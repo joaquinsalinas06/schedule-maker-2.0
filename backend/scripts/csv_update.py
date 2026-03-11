@@ -300,8 +300,10 @@ class CSVUpdater:
             for session_meta in all_sessions
         )
         
+        # Check for hierarchical pattern: explicitly named courses or any course using TEORÍA VIRTUAL
         is_hierarchical = any(
-            any(kw in session_meta.get('course_name', '') for kw in ["Finanzas", "Ecuaciones"])
+            any(kw in session_meta.get('course_name', '') for kw in ["Finanzas", "Ecuaciones"]) or
+            "VIRTUAL" in str(session_meta.get('session_group', ''))
             for session_meta in all_sessions
         )
         
@@ -651,13 +653,15 @@ class CSVUpdater:
     def update_courses(self, courses_data: List[CourseImportData], university_id: int):
         """Update courses in database with change detection"""
         updated_count = 0
+        errors = []
         changes_detected = {
+            'courses_created': 0,
             'courses_updated': 0,
+            'sections_created': 0,
             'sections_updated': 0,
-            'sections_added': 0,
             'sections_deactivated': 0,
+            'sessions_created': 0,
             'sessions_updated': 0,
-            'sessions_added': 0,
             'sessions_deactivated': 0
         }
         
@@ -700,7 +704,7 @@ class CSVUpdater:
                         "is_active": True
                     }
                     course = self.course_repo.create(course_dict)
-                    changes_detected['courses_updated'] += 1
+                    changes_detected['courses_created'] += 1
                     print(f"✅ Created course: {course_data.code} - {course_data.name}")
                 
                 # Get all existing sections for this course to track which ones are removed
@@ -769,36 +773,41 @@ class CSVUpdater:
                             "is_active": True
                         }
                         section = self.section_repo.create(section_dict)
-                        changes_detected['sections_added'] += 1
+                        changes_detected['sections_created'] += 1
                         print(f"  ✅ Created section {section_data.section_number} ({len(section_data.sessions)} sessions)")
                     
                     # Update sessions with change detection
                     existing_sessions = self.session_repo.get_by_section(section.id)
-                    
+
+                    # Helper to normalize signatures for robust comparison
+                    def get_sig(stype, day, start, end):
+                        # Normalize time to HH:MM (ignore seconds for better matching)
+                        s_str = start.strftime("%H:%M") if hasattr(start, 'strftime') else str(start)[:5]
+                        e_str = end.strftime("%H:%M") if hasattr(end, 'strftime') else str(end)[:5]
+                        # Remove accents and lowercase everything
+                        sig = f"{stype}|{day}|{s_str}|{e_str}".lower()
+                        return sig.replace('í', 'i').replace('á', 'a').replace('é', 'e').replace('ó', 'o').replace('ú', 'u')
+
                     # Create a set of session signatures from CSV for comparison
-                    csv_session_signatures = set()
-                    for session_data in section_data.sessions:
-                        signature = f"{session_data.session_type}|{session_data.day}|{session_data.start_time}|{session_data.end_time}"
-                        csv_session_signatures.add(signature)
+                    csv_session_signatures = {get_sig(s.session_type, s.day, s.start_time, s.end_time) for s in section_data.sessions}
                     
                     # Deactivate sessions that are no longer in CSV
                     for existing_session in existing_sessions:
                         if existing_session.is_active:
-                            existing_signature = f"{existing_session.session_type}|{existing_session.day}|{existing_session.start_time}|{existing_session.end_time}"
-                            if existing_signature not in csv_session_signatures:
-                                print(f"      ❌ Session {existing_session.day} {existing_session.start_time}-{existing_session.end_time} no longer in CSV, deactivating...")
+                            existing_sig = get_sig(existing_session.session_type, existing_session.day, existing_session.start_time, existing_session.end_time)
+                            if existing_sig not in csv_session_signatures:
+                                print(f"      ❌ Session {existing_session.day} {existing_session.start_time} (Type: {existing_session.session_type}) no longer in CSV, deactivating...")
                                 self.session_repo.update(existing_session, {"is_active": False})
                                 changes_detected['sessions_deactivated'] += 1
                     
                     # Process each session from CSV
                     for session_data in section_data.sessions:
-                        # Find matching existing session
+                        # Find matching existing session using normalized signature
+                        session_data_sig = get_sig(session_data.session_type, session_data.day, session_data.start_time, session_data.end_time)
                         matching_session = None
                         for existing_session in existing_sessions:
-                            if (existing_session.session_type == session_data.session_type and
-                                existing_session.day == session_data.day and
-                                existing_session.start_time == session_data.start_time and
-                                existing_session.end_time == session_data.end_time):
+                            existing_sig = get_sig(existing_session.session_type, existing_session.day, existing_session.start_time, existing_session.end_time)
+                            if existing_sig == session_data_sig:
                                 matching_session = existing_session
                                 break
                         
@@ -857,26 +866,30 @@ class CSVUpdater:
                                 "is_active": True
                             }
                             self.session_repo.create(session_dict)
-                            changes_detected['sessions_added'] += 1
+                            changes_detected['sessions_created'] += 1
                             print(f"      ✅ Created session {session_data.day} {session_data.start_time}-{session_data.end_time}")
                 
                 updated_count += 1
                 
             except Exception as e:
-                print(f"❌ Error updating course {course_data.code}: {str(e)}")
+                err_msg = f"Error updating course {course_data.code}: {str(e)}"
+                print(f"❌ {err_msg}")
+                errors.append(err_msg)
                 continue
         
         # Print summary of all changes
         print(f"\n📊 Update Summary:")
         print(f"  🔄 Courses updated: {changes_detected['courses_updated']}")
         print(f"  📝 Sections updated: {changes_detected['sections_updated']}")
-        print(f"  ➕ Sections added: {changes_detected['sections_added']}")
+        print(f"  ➕ Sections added: {changes_detected['sections_created']}")
         print(f"  ❌ Sections deactivated: {changes_detected['sections_deactivated']}")
         print(f"  📅 Sessions updated: {changes_detected['sessions_updated']}")
-        print(f"  ➕ Sessions added: {changes_detected['sessions_added']}")
+        print(f"  ➕ Sessions added: {changes_detected['sessions_created']}")
         print(f"  ❌ Sessions deactivated: {changes_detected['sessions_deactivated']}")
+        if errors:
+            print(f"  ⚠️ Errors: {len(errors)}")
         
-        return updated_count, changes_detected
+        return updated_count, changes_detected, errors
 
 
 def main():

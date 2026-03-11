@@ -779,6 +779,36 @@ export default function AdminImportPage() {
               </Card>
             </div>
 
+            {importResult.stats.errors &&
+              (importResult.stats.errors as any[]).length > 0 && (
+                <Card className="border-destructive/30 bg-destructive/5">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2 text-destructive">
+                      <AlertTriangle className="w-4 h-4" />
+                      <CardTitle className="text-sm font-medium">
+                        Errores durante la importacion
+                      </CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="text-xs space-y-1 text-destructive/80 font-mono">
+                      {(importResult.stats.errors as any[])
+                        .slice(0, 10)
+                        .map((err, i) => (
+                          <li key={i}>• {String(err)}</li>
+                        ))}
+                      {(importResult.stats.errors as any[]).length > 10 && (
+                        <li className="list-none pt-1">
+                          ... y{" "}
+                          {(importResult.stats.errors as any[]).length - 10}{" "}
+                          errores mas
+                        </li>
+                      )}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+
             <Button onClick={handleReset} className="w-full" size="lg">
               Nueva Importacion
             </Button>
