@@ -91,6 +91,17 @@ const minutesToTime = (minutes: number): string => {
   return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
 }
 
+function hexToRgba(hex: string, alpha: number): string {
+  const c = hex.replace('#', '')
+  if (c.length === 3) {
+    return `rgba($parseInt(c[0]+c[0], 16)}, ${parseInt(c[1]+c[1], 16)}, ${parseInt(c[2]+c[2], 16)}, ${alpha})`
+  }
+  if (c.length === 6) {
+    return `rgba(${parseInt(c.slice(0, 2), 16)}, ${parseInt(c.slice(2, 4), 16)}, ${parseInt(c.slice(4, 6), 16)}, ${alpha})`
+  }
+  return hex; // Fallback
+}
+
 export const generateScheduleImage = ({
   schedule,
   width = DEFAULT_WIDTH,
@@ -301,25 +312,31 @@ export const generateScheduleImage = ({
           
           if (!isFinite(xPos) || !isFinite(yPos) || !isFinite(blockHeight) || blockHeight <= 0) return
 
-          // Get course color
+          // Get course color and ensure it's RGBA for opacity manipulation
           const courseIndex = scheduleCourses.findIndex(c => c.course_code === course.course_code)
           const fallbackColor = courseColors[courseIndex % courseColors.length]
           const color = customCourseColors[course.course_code] || fallbackColor
+          
+          let baseRgba = color.bg
+          if (color.bg.startsWith('#')) {
+            baseRgba = hexToRgba(color.bg, 0.9)
+          }
 
           // Draw shadow
           ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'
           ctx.fillRect(xPos + 6, yPos + 4, blockWidth - 8, blockHeight - 6)
 
           // Draw main block
-          ctx.fillStyle = color.bg
+          ctx.fillStyle = baseRgba
           ctx.fillRect(xPos + 4, yPos + 2, blockWidth - 8, blockHeight - 4)
 
-          // Draw highlight
-          ctx.fillStyle = color.bg.replace('0.9', '0.7')
+          // Draw highlight (70% opacity of the base color)
+          // For legacy rgba: replace '0.9' or '0.25' with a smaller value. For our hexToRgba it always has 0.9.
+          ctx.fillStyle = baseRgba.replace(/[\d.]+\)$/g, '0.7)')
           ctx.fillRect(xPos + 4, yPos + 2, blockWidth - 8, 3)
 
-          // Draw border
-          ctx.strokeStyle = color.bg.replace('0.9', '1')
+          // Draw border (100% opacity of the base color)
+          ctx.strokeStyle = baseRgba.replace(/[\d.]+\)$/g, '1)')
           ctx.lineWidth = 2
           ctx.strokeRect(xPos + 4, yPos + 2, blockWidth - 8, blockHeight - 4)
 

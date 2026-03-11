@@ -26,6 +26,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { HexColorPicker } from "react-colorful";
 import { generateScheduleImage } from "@/utils/scheduleImageGenerator";
 import { ScheduleCanvasSkeleton } from "@/components/ui/loading-skeletons";
 
@@ -1445,15 +1446,53 @@ export function ScheduleVisualization({
                                             presetColor,
                                         }));
                                         // Force redraw immediately
-                                        setTimeout(
-                                          () =>
-                                            drawSchedule(currentScheduleIndex),
-                                          0,
-                                        );
+                                        requestAnimationFrame(() => {
+                                          if (isMobile) {
+                                            generateImageForIndex(
+                                              currentScheduleIndex,
+                                            );
+                                          } else {
+                                            drawSchedule(currentScheduleIndex);
+                                          }
+                                        });
                                       }}
                                       title="Seleccionar color"
                                     />
                                   ))}
+                                </div>
+
+                                <div className="pt-3 border-t border-border mt-3">
+                                  <label className="text-xs text-muted-foreground mb-3 block">
+                                    O usa un color personalizado:
+                                  </label>
+                                  <div className="flex flex-col items-center gap-3">
+                                    <HexColorPicker
+                                      color={color.bg.startsWith('#') ? color.bg : '#64748b'}
+                                      onChange={(hex) => {
+                                        setCustomColors((prev) => ({
+                                          ...prev,
+                                          [courseSection.course_code]: {
+                                            bg: hex,
+                                            border: hex,
+                                            text: '#ffffff',
+                                            name: 'custom'
+                                          },
+                                        }));
+                                        requestAnimationFrame(() => {
+                                          if (isMobile) {
+                                            generateImageForIndex(currentScheduleIndex);
+                                          } else {
+                                            drawSchedule(currentScheduleIndex);
+                                          }
+                                        });
+                                      }}
+                                      style={{ width: "100%", height: "120px" }}
+                                    />
+                                    <div className="w-full flex justify-between items-center text-xs font-mono bg-background/50 border border-border px-2 py-1 rounded">
+                                      <span>HEX</span>
+                                      <span>{color.bg.startsWith('#') ? color.bg.toUpperCase() : '#CUSTOM'}</span>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             </PopoverContent>

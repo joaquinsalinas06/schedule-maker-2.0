@@ -21,14 +21,18 @@ export const SCHEDULE_COLORS_LIGHT = [
 ] as const
 
 export const SCHEDULE_COLORS_DARK = [
-  { bg: 'rgba(16, 185, 129, 0.25)', border: '#059669', text: '#a7f3d0', name: 'emerald' },
-  { bg: 'rgba(168, 162, 158, 0.20)', border: '#78716c', text: '#e7e5e4', name: 'stone' },
-  { bg: 'rgba(161, 161, 170, 0.20)', border: '#71717a', text: '#e4e4e7', name: 'zinc' },
-  { bg: 'rgba(163, 163, 163, 0.20)', border: '#737373', text: '#e5e5e5', name: 'neutral' },
-  { bg: 'rgba(34, 197, 94, 0.20)',   border: '#16a34a', text: '#bbf7d0', name: 'green' },
-  { bg: 'rgba(120, 113, 108, 0.25)', border: '#57534e', text: '#fafaf9', name: 'warm' },
-  { bg: 'rgba(148, 163, 184, 0.20)', border: '#64748b', text: '#e2e8f0', name: 'cool' },
-  { bg: 'rgba(220, 38, 38, 0.20)',   border: '#dc2626', text: '#fecaca', name: 'conflict' },
+  { bg: 'rgba(59, 130, 246, 0.25)', border: '#1d4ed8', text: '#bfdbfe', name: 'blue' },
+  { bg: 'rgba(16, 185, 129, 0.25)', border: '#047857', text: '#a7f3d0', name: 'emerald' },
+  { bg: 'rgba(245, 158, 11, 0.25)', border: '#b45309', text: '#fde68a', name: 'amber' },
+  { bg: 'rgba(139, 92, 246, 0.25)', border: '#6d28d9', text: '#ddd6fe', name: 'violet' },
+  { bg: 'rgba(239, 68, 68, 0.25)', border: '#b91c1c', text: '#fecaca', name: 'red' },
+  { bg: 'rgba(6, 182, 212, 0.25)', border: '#0e7490', text: '#a5f3fc', name: 'cyan' },
+  { bg: 'rgba(99, 102, 241, 0.25)', border: '#4338ca', text: '#e0e7ff', name: 'indigo' },
+  { bg: 'rgba(249, 115, 22, 0.25)', border: '#c2410c', text: '#ffedd5', name: 'orange' },
+  { bg: 'rgba(20, 184, 166, 0.25)', border: '#0f766e', text: '#ccfbf1', name: 'teal' },
+  { bg: 'rgba(236, 72, 153, 0.25)', border: '#be185d', text: '#fbcfe8', name: 'pink' },
+  { bg: 'rgba(34, 197, 94, 0.25)', border: '#15803d', text: '#bbf7d0', name: 'green' },
+  { bg: 'rgba(14, 165, 233, 0.25)', border: '#0369a1', text: '#bae6fd', name: 'sky' },
 ] as const
 
 /** Get color palette based on dark/light mode */
