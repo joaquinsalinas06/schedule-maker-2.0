@@ -10,6 +10,7 @@ from .collaboration import CollaborativeSession, SessionParticipant, ScheduleSha
 from .friendship import FriendRequest, Friendship
 from .email_verification import EmailVerification
 from .admin_audit_log import AdminAuditLog
+from .curriculum import Curriculum, CurriculumCourse, CurriculumPrerequisite, UserCurriculumProgress
 
 __all__ = [
     "Base",
@@ -30,5 +31,9 @@ __all__ = [
     "FriendRequest",
     "Friendship",
     "EmailVerification",
-    "AdminAuditLog"
+    "AdminAuditLog",
+    "Curriculum",
+    "CurriculumCourse",
+    "CurriculumPrerequisite",
+    "UserCurriculumProgress"
 ]

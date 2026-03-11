@@ -178,10 +178,7 @@ uploads/
 media/
 static/collected/
 
-# Excel and CSV files (unless specifically needed)
-*.xlsx
-*.xls
-*.csv
+
 
 # Backup files
 *.bak

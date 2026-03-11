@@ -18,9 +18,11 @@ class User(BaseModel):
     is_verified = Column(Boolean, default=False)
     preferences = Column(Text)
     last_login = Column(DateTime)
-    
+    curriculum_id = Column(Integer, ForeignKey("curricula.id"), nullable=True)
+
     # Relationships
     university = relationship("University", back_populates="users")
+    curriculum = relationship("Curriculum", backref="users")
     schedules = relationship("Schedule", back_populates="user", cascade="all, delete-orphan")
     
     # Friend system relationships

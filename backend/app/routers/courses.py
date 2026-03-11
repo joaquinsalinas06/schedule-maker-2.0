@@ -85,6 +85,8 @@ async def parse_carga_habil(
             "mandatory": verified_mandatory,
             "electives": verified_electives
         }
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         import traceback
         traceback.print_exc()

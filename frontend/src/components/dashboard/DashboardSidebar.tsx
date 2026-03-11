@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Calendar, LogOut, PanelLeftClose, PanelLeft, User, ChevronRight } from "lucide-react"
+import { Calendar, LogOut, PanelLeftClose, PanelLeft, User, ChevronRight, GitBranch } from "lucide-react"
 import { authService } from "@/services/auth"
 import { SidebarSection, User as UserType } from "@/types"
 
@@ -178,6 +178,30 @@ export function DashboardSidebar({
               </div>
             </div>
           )}
+
+          <button
+            onClick={() => handleNavClick("curriculum")}
+            className={`
+              w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer
+              ${
+                activeSection === "curriculum"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              }
+              ${sidebarCollapsed && !isMobile ? "justify-center px-0" : ""}
+            `}
+            title={sidebarCollapsed && !isMobile ? "Mi Malla" : undefined}
+          >
+            <GitBranch className="w-4 h-4" />
+            {(!sidebarCollapsed || isMobile) && (
+              <>
+                <span className="flex-1 text-left truncate">Mi Malla</span>
+                {activeSection === "curriculum" && (
+                  <ChevronRight className="w-3 h-3 opacity-50" />
+                )}
+              </>
+            )}
+          </button>
 
           <button
             onClick={() => handleNavClick("profile")}

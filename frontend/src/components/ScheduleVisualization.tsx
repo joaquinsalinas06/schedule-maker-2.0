@@ -141,7 +141,7 @@ const getResponsiveFontSizes = (containerWidth: number) => {
       infoFont: 14, // Credits and courses info - much smaller
       headerFont: 12,
       timeFont: 11,
-      courseFont: 10,
+      courseFont: 11,
       professorFont: 9,
       locationFont: 8,
       noScheduleTitle: 20,
@@ -149,13 +149,13 @@ const getResponsiveFontSizes = (containerWidth: number) => {
     };
   } else {
     return {
-      titleFont: 16,
-      infoFont: 11,
-      headerFont: 12,
+      titleFont: 20,
+      infoFont: 12,
+      headerFont: 13,
       timeFont: 11,
-      courseFont: 10,
-      professorFont: 9,
-      locationFont: 8,
+      courseFont: 12,
+      professorFont: 10,
+      locationFont: 9,
       noScheduleTitle: 22,
       noScheduleSubtitle: 14,
     };

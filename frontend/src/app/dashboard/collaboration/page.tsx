@@ -14,16 +14,22 @@ import { IntegratedScheduleComparison } from '@/components/collaboration/Integra
 const COLLAB_ROUTE_LOG_PREFIX = '[collab-route-debug]'
 
 export default function CollaborationPage() {
-  const { currentSession } = useCollaborationStore()
-  const [activeTab, setActiveTab] = useState('sessions')
-  const searchParams = useSearchParams()
-  const sharedCode = searchParams.get('code')?.toUpperCase() || ''
-  const comparisonCode = searchParams.get('compcode') || ''
-  const hasDirectNavigation = sharedCode.length === 8 || Boolean(comparisonCode)
+  const { currentSession } = useCollaborationStore();
+  const searchParams = useSearchParams();
+  const sharedCode = searchParams.get("code")?.toUpperCase() || "";
+  const comparisonCode = searchParams.get("compcode") || "";
+  const hasDirectNavigation =
+    sharedCode.length === 8 || Boolean(comparisonCode);
+
+  const [activeTab, setActiveTab] = useState(() => {
+    if (sharedCode.length === 8) return "shared";
+    if (comparisonCode) return "compare";
+    return "sessions";
+  });
 
   // LOG: raw URL params and computed values
   console.info(`${COLLAB_ROUTE_LOG_PREFIX} [CollaborationPage] rendered`, {
-    rawCodeParam: searchParams.get('code'),
+    rawCodeParam: searchParams.get("code"),
     sharedCode,
     sharedCodeLength: sharedCode.length,
     comparisonCode,
@@ -39,14 +45,14 @@ export default function CollaborationPage() {
       sharedCode,
       comparisonCode,
       hasDirectNavigation,
-    })
-
-    if (sharedCode.length === 8) {
-      setActiveTab((prev) => (prev === 'shared' ? prev : 'shared'))
-    } else if (comparisonCode) {
-      setActiveTab((prev) => (prev === 'compare' ? prev : 'compare'))
-    }
-  }, [activeTab, comparisonCode, currentSession, hasDirectNavigation, sharedCode])
+    });
+  }, [
+    activeTab,
+    comparisonCode,
+    currentSession,
+    hasDirectNavigation,
+    sharedCode,
+  ]);
 
   const tabs = [
     { id: 'sessions', label: 'Sesiones', icon: Users },

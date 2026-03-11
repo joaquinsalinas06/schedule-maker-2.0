@@ -16,14 +16,14 @@ import {
   MoreHorizontal,
 } from "lucide-react"
 import { FavoriteSchedule } from "@/types"
-import html2canvas from 'html2canvas'
+import { generateScheduleImage } from "@/utils/scheduleImageGenerator";
 
 interface FavoriteSchedulesProps {
-  favorites: FavoriteSchedule[]
-  onRemove: (id: string) => void
-  onView: (schedule: FavoriteSchedule) => void
-  onEdit: (id: string, name: string, notes?: string) => void
-  onShare?: (schedule: FavoriteSchedule) => void
+  favorites: FavoriteSchedule[];
+  onRemove: (id: string) => void;
+  onView: (schedule: FavoriteSchedule) => void;
+  onEdit: (id: string, name: string, notes?: string) => void;
+  onShare?: (schedule: FavoriteSchedule) => void;
 }
 
 export function FavoriteSchedules({
@@ -31,134 +31,112 @@ export function FavoriteSchedules({
   onRemove,
   onView,
   onEdit,
-  onShare
+  onShare,
 }: FavoriteSchedulesProps) {
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editName, setEditName] = useState('')
-  const [editNotes, setEditNotes] = useState('')
-  const [menuOpen, setMenuOpen] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
   const startEdit = (favorite: FavoriteSchedule) => {
-    setEditingId(favorite.id)
-    setEditName(favorite.name)
-    setEditNotes(favorite.notes || '')
-    setMenuOpen(null)
-  }
+    setEditingId(favorite.id);
+    setEditName(favorite.name);
+    setEditNotes(favorite.notes || "");
+    setMenuOpen(null);
+  };
 
   const saveEdit = () => {
     if (editingId) {
-      onEdit(editingId, editName, editNotes)
-      setEditingId(null)
-      setEditName('')
-      setEditNotes('')
+      onEdit(editingId, editName, editNotes);
+      setEditingId(null);
+      setEditName("");
+      setEditNotes("");
     }
-  }
+  };
 
   const cancelEdit = () => {
-    setEditingId(null)
-    setEditName('')
-    setEditNotes('')
-  }
+    setEditingId(null);
+    setEditName("");
+    setEditNotes("");
+  };
 
   const downloadSchedule = async (favorite: FavoriteSchedule) => {
-    setMenuOpen(null)
-    const scheduleData = createScheduleHTML(favorite)
-    const tempDiv = document.createElement('div')
-    tempDiv.innerHTML = scheduleData
-    tempDiv.style.position = 'absolute'
-    tempDiv.style.left = '-9999px'
-    tempDiv.style.top = '-9999px'
-    tempDiv.style.background = 'transparent'
-    tempDiv.style.padding = '0'
-    tempDiv.style.width = '900px'
-    document.body.appendChild(tempDiv)
-
+    setMenuOpen(null);
     try {
-      const canvas = await html2canvas(tempDiv)
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob)
-          const link = document.createElement('a')
-          link.href = url
-          link.download = `${favorite.name.replace(/\s+/g, '_')}.png`
-          link.click()
-          URL.revokeObjectURL(url)
-        }
-      }, 'image/png')
-    } catch {
-      createScheduleTextDownload(favorite)
-    } finally {
-      document.body.removeChild(tempDiv)
-    }
-  }
+      // Find limits
+      let minMinutes = 7 * 60;
+      let maxMinutes = 22 * 60;
 
-  const createScheduleHTML = (favorite: FavoriteSchedule) => {
-    return `
-      <div style="font-family: system-ui, -apple-system, sans-serif; background: #ffffff; padding: 24px; width: 900px;">
-        <div style="margin-bottom: 24px;">
-          <h1 style="color: #0a0a0a; margin: 0 0 8px 0; font-size: 24px; font-weight: 600;">${favorite.name}</h1>
-          <p style="color: #737373; font-size: 14px; margin: 0;">${favorite.combination.courses?.length || 0} cursos</p>
-        </div>
-        <table style="width: 100%; border-collapse: collapse; border: 1px solid #e5e5e5;">
-          <thead>
-            <tr style="background: #fafafa;">
-              <th style="padding: 12px; text-align: left; border-bottom: 1px solid #e5e5e5; font-weight: 500; font-size: 13px; color: #737373;">Curso</th>
-              <th style="padding: 12px; text-align: left; border-bottom: 1px solid #e5e5e5; font-weight: 500; font-size: 13px; color: #737373;">Seccion</th>
-              <th style="padding: 12px; text-align: left; border-bottom: 1px solid #e5e5e5; font-weight: 500; font-size: 13px; color: #737373;">Profesor</th>
-              <th style="padding: 12px; text-align: left; border-bottom: 1px solid #e5e5e5; font-weight: 500; font-size: 13px; color: #737373;">Horario</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${(favorite.combination.courses || []).map((course) => `
-              <tr style="border-bottom: 1px solid #e5e5e5;">
-                <td style="padding: 12px;">
-                  <div style="font-weight: 500; color: #0a0a0a; font-size: 14px;">${course.course_code}</div>
-                  <div style="color: #737373; font-size: 13px;">${course.course_name}</div>
-                </td>
-                <td style="padding: 12px; color: #0a0a0a; font-size: 14px;">${course.section_number}</td>
-                <td style="padding: 12px; color: #0a0a0a; font-size: 14px;">${course.professor}</td>
-                <td style="padding: 12px; font-size: 13px;">
-                  ${course.sessions?.map(session => {
-                    const dayNames = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab']
-                    const dayName = dayNames[session.day_of_week] || 'N/A'
-                    return `<div style="color: #0a0a0a;">${dayName} ${session.start_time}-${session.end_time}</div>`
-                  }).join('') || '<span style="color: #a3a3a3;">N/A</span>'}
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e5e5; color: #a3a3a3; font-size: 12px;">
-          Schedule Maker - ${new Date().toLocaleDateString('es-ES')}
-        </div>
-      </div>
-    `
-  }
+      if (favorite.combination?.courses?.length) {
+        let earliest = 24 * 60;
+        let latest = 0;
+        let hasTimes = false;
+        favorite.combination.courses.forEach((c) => {
+          c.sessions?.forEach((s) => {
+            if (!s.start_time || !s.end_time) return;
+            const startP = s.start_time.split(":").map(Number);
+            const endP = s.end_time.split(":").map(Number);
+            if (startP.length === 2 && endP.length === 2) {
+              const startM = startP[0] * 60 + startP[1];
+              const endM = endP[0] * 60 + endP[1];
+              if (startM < earliest) earliest = startM;
+              if (endM > latest) latest = endM;
+              hasTimes = true;
+            }
+          });
+        });
+        if (hasTimes) {
+          minMinutes = Math.max(0, earliest - 60);
+          maxMinutes = Math.min(24 * 60 - 1, latest + 60);
+        }
+      }
+
+      const result = await generateScheduleImage({
+        schedule: favorite.combination,
+        scheduleName: favorite.name,
+        startTime: minMinutes,
+        endTime: maxMinutes,
+        isFavorited: true,
+      });
+
+      const link = document.createElement("a");
+      link.href = result.dataUrl;
+      link.download = `${favorite.name.replace(/\s+/g, "_")}.png`;
+      link.click();
+    } catch (e) {
+      console.error("Error generating image", e);
+      createScheduleTextDownload(favorite);
+    }
+  };
 
   const createScheduleTextDownload = (favorite: FavoriteSchedule) => {
     const scheduleText = `
 ${favorite.name}
-${'='.repeat(favorite.name.length)}
+${"=".repeat(favorite.name.length)}
 
 Total Cursos: ${favorite.combination.courses?.length || 0}
 Creado: ${new Date(favorite.created_at).toLocaleDateString()}
 
 CURSOS:
-${(favorite.combination.courses || []).map((course, index) => `
+${(favorite.combination.courses || [])
+  .map(
+    (course, index) => `
 ${index + 1}. ${course.course_code}: ${course.course_name}
    Seccion: ${course.section_number}
    Profesor: ${course.professor}
-`).join('')}
-    `.trim()
+`,
+  )
+  .join("")}
+    `.trim();
 
-    const blob = new Blob([scheduleText], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${favorite.name.replace(/\s+/g, '_')}.txt`
-    link.click()
-    URL.revokeObjectURL(url)
-  }
+    const blob = new Blob([scheduleText], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${favorite.name.replace(/\s+/g, "_")}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (favorites.length === 0) {
     return (
@@ -166,19 +144,22 @@ ${index + 1}. ${course.course_code}: ${course.course_name}
         <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
           <Star className="w-5 h-5 text-muted-foreground" />
         </div>
-        <h3 className="font-semibold text-foreground mb-1">Sin horarios guardados</h3>
+        <h3 className="font-semibold text-foreground mb-1">
+          Sin horarios guardados
+        </h3>
         <p className="text-sm text-muted-foreground max-w-xs">
-          Genera horarios y guardalos como favoritos para acceder a ellos rapidamente.
+          Genera horarios y guardalos como favoritos para acceder a ellos
+          rapidamente.
         </p>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-3">
       {favorites.map((favorite) => (
-        <div 
-          key={favorite.id} 
+        <div
+          key={favorite.id}
           className="group rounded-lg border border-border bg-card p-4 hover:border-primary/30 transition-colors"
         >
           {editingId === favorite.id ? (
@@ -201,7 +182,12 @@ ${index + 1}. ${course.course_code}: ${course.course_name}
                   <Check className="w-3.5 h-3.5" />
                   Guardar
                 </Button>
-                <Button size="sm" variant="outline" onClick={cancelEdit} className="h-8 gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={cancelEdit}
+                  className="h-8 gap-1.5"
+                >
                   <X className="w-3.5 h-3.5" />
                   Cancelar
                 </Button>
@@ -211,74 +197,86 @@ ${index + 1}. ${course.course_code}: ${course.course_name}
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-medium text-foreground truncate">{favorite.name}</h3>
+                  <h3 className="font-medium text-foreground truncate">
+                    {favorite.name}
+                  </h3>
                   <span className="text-xs text-muted-foreground">
                     {favorite.combination.courses?.length || 0} cursos
                   </span>
                 </div>
-                
+
                 {favorite.notes && (
-                  <p className="text-sm text-muted-foreground mb-2 line-clamp-1">{favorite.notes}</p>
+                  <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
+                    {favorite.notes}
+                  </p>
                 )}
-                
+
                 <div className="flex flex-wrap gap-1.5 mb-3">
-                  {(favorite.combination.courses || []).slice(0, 4).map((course, index) => (
-                    <span 
-                      key={index} 
-                      className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-secondary text-secondary-foreground"
-                    >
-                      {course.course_code}
-                    </span>
-                  ))}
+                  {(favorite.combination.courses || [])
+                    .slice(0, 4)
+                    .map((course, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-secondary text-secondary-foreground"
+                      >
+                        {course.course_code}
+                      </span>
+                    ))}
                   {(favorite.combination.courses?.length || 0) > 4 && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-secondary text-muted-foreground">
                       +{(favorite.combination.courses?.length || 0) - 4}
                     </span>
                   )}
                 </div>
-                
-                <div className="flex items-center gap-2">
-                  <Button size="sm" onClick={() => onView(favorite)} className="h-8 gap-1.5">
-                    <Eye className="w-3.5 h-3.5" />
-                    Ver horario
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => downloadSchedule(favorite)}
-                    className="h-8 gap-1.5"
+
+                <div className="flex flex-wrap items-center gap-2 mt-3 sm:mt-0">
+                  <Button
+                    size="sm"
+                    onClick={() => onView(favorite)}
+                    className="h-8 gap-1.5 flex-1 sm:flex-none"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    Descargar
+                    <Eye className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">Ver horario</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => downloadSchedule(favorite)}
+                    className="h-8 gap-1.5 flex-1 sm:flex-none"
+                  >
+                    <Download className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">Descargar</span>
                   </Button>
                   {onShare && (
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="outline"
                       onClick={() => onShare(favorite)}
-                      className="h-8 gap-1.5"
+                      className="h-8 gap-1.5 flex-1 sm:flex-none"
                     >
-                      <Share2 className="w-3.5 h-3.5" />
-                      Compartir
+                      <Share2 className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Compartir</span>
                     </Button>
                   )}
                 </div>
               </div>
-              
+
               <div className="relative">
                 <Button
                   size="icon"
                   variant="ghost"
                   className="h-8 w-8"
-                  onClick={() => setMenuOpen(menuOpen === favorite.id ? null : favorite.id)}
+                  onClick={() =>
+                    setMenuOpen(menuOpen === favorite.id ? null : favorite.id)
+                  }
                 >
                   <MoreHorizontal className="w-4 h-4" />
                 </Button>
-                
+
                 {menuOpen === favorite.id && (
                   <>
-                    <div 
-                      className="fixed inset-0 z-40" 
+                    <div
+                      className="fixed inset-0 z-40"
                       onClick={() => setMenuOpen(null)}
                     />
                     <div className="absolute right-0 top-full mt-1 z-50 w-36 rounded-md border border-border bg-popover shadow-md py-1 animate-scale-in">
@@ -292,8 +290,8 @@ ${index + 1}. ${course.course_code}: ${course.course_name}
                       <button
                         className="w-full px-3 py-1.5 text-sm text-left hover:bg-destructive/10 text-destructive flex items-center gap-2"
                         onClick={() => {
-                          setMenuOpen(null)
-                          onRemove(favorite.id)
+                          setMenuOpen(null);
+                          onRemove(favorite.id);
                         }}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -308,5 +306,5 @@ ${index + 1}. ${course.course_code}: ${course.course_name}
         </div>
       ))}
     </div>
-  )
+  );
 }

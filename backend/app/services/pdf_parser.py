@@ -1,6 +1,5 @@
 import io
 import re
-import pdfplumber
 from typing import List, Dict
 
 class PDFParserService:
@@ -10,6 +9,13 @@ class PDFParserService:
         Parses a 'Carga Habil' PDF file using regex on raw text for massive speedups,
         and extracts mandatory and elective courses including their codes, names, and types.
         """
+        try:
+            import pdfplumber
+        except ModuleNotFoundError as exc:
+            raise RuntimeError(
+                "PDF parsing dependency missing: install 'pdfplumber' in the backend environment."
+            ) from exc
+
         mandatory_courses: Dict[str, Dict[str, str]] = {}
         elective_courses: Dict[str, Dict[str, str]] = {}
         

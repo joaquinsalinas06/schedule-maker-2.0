@@ -1,7 +1,7 @@
 "use client"
 
 import { Input } from "@/components/ui/input"
-import { Search, X, ChevronDown } from "lucide-react"
+import { Search, X, ChevronDown, Unlock } from "lucide-react"
 import { Filter } from "@/types"
 
 interface CourseSearchCardProps {
@@ -11,6 +11,9 @@ interface CourseSearchCardProps {
   setSearchQuery: (query: string) => void
   handleSearch?: () => void
   isLoading: boolean
+  curriculumFilterEnabled?: boolean
+  onCurriculumFilterToggle?: () => void
+  hasCurriculum?: boolean
 }
 
 export function CourseSearchCard({
@@ -19,6 +22,9 @@ export function CourseSearchCard({
   searchQuery,
   setSearchQuery,
   handleSearch,
+  curriculumFilterEnabled,
+  onCurriculumFilterToggle,
+  hasCurriculum,
 }: CourseSearchCardProps) {
 
   const clearSearch = () => {
@@ -76,6 +82,20 @@ export function CourseSearchCard({
         <span className="text-sm text-muted-foreground">
           {filters.university}
         </span>
+
+        {hasCurriculum && onCurriculumFilterToggle && (
+          <button
+            onClick={onCurriculumFilterToggle}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              curriculumFilterEnabled
+                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border"
+            }`}
+          >
+            <Unlock className="w-3.5 h-3.5" />
+            Solo desbloqueados
+          </button>
+        )}
       </div>
 
       {/* Active Filters */}

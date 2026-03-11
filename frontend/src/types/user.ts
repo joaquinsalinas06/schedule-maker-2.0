@@ -17,6 +17,7 @@ export interface User {
   last_login?: string;
   created_at: string;
   updated_at: string;
+  curriculum_id?: number | null;
   university: University;
   friendship_status?: string;
   stats?: {
@@ -32,6 +33,7 @@ export interface UserProfileUpdate {
   profile_photo?: string;
   description?: string;
   student_id?: string;
+  curriculum_id?: number | null;
 }
 
 // Authentication Types

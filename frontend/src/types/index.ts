@@ -6,6 +6,7 @@ export * from './comparison';
 export * from './collaboration';
 export * from './dashboard';
 export * from './components';
+export * from './curriculum';
 
 // Legacy exports for backward compatibility
 // These will be removed once all imports are updated

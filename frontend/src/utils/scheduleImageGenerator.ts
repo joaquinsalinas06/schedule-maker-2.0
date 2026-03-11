@@ -141,15 +141,15 @@ export const generateScheduleImage = ({
       const topMarginOffset = height * TOP_MARGIN
       const sideMarginOffset = width * SIDE_MARGIN
 
-      // Font sizes optimized for image generation (desktop sizes)
+      // Font sizes optimized for high-res image generation (1400x900)
       const fontSizes = {
-        titleFont: 16,
-        infoFont: 11,
-        headerFont: 12,
-        timeFont: 11,
-        courseFont: 10,
-        professorFont: 9,
-        locationFont: 8,
+        titleFont: 22,
+        infoFont: 13,
+        headerFont: 14,
+        timeFont: 12,
+        courseFont: 13,
+        professorFont: 10,
+        locationFont: 9,
       }
 
       // Clear canvas with dark theme background

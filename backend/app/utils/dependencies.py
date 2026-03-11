@@ -103,3 +103,7 @@ def get_current_admin_user(current_user: User = Depends(get_current_active_user)
 def get_import_service(db: Session = Depends(get_db)):
     from app.services.import_service import ImportService
     return ImportService(db)
+
+def get_curriculum_service(db: Session = Depends(get_db)):
+    from app.services.curriculum_service import CurriculumService
+    return CurriculumService(db)
