@@ -141,15 +141,15 @@ const getResponsiveFontSizes = (containerWidth: number) => {
     };
   } else {
     return {
-      titleFont: 16, // "Horario #" - much smaller (was 24)
-      infoFont: 11, // Credits and courses info - much smaller (was 14)
-      headerFont: 13,
-      timeFont: 12,
-      courseFont: 11,
-      professorFont: 10,
-      locationFont: 9,
-      noScheduleTitle: 24,
-      noScheduleSubtitle: 16,
+      titleFont: 16,
+      infoFont: 11,
+      headerFont: 12,
+      timeFont: 11,
+      courseFont: 10,
+      professorFont: 9,
+      locationFont: 8,
+      noScheduleTitle: 22,
+      noScheduleSubtitle: 14,
     };
   }
 };
@@ -229,7 +229,8 @@ export function ScheduleVisualization({
     firstCombinationId: combinations?.[0]?.combination_id ?? null,
     firstCombinationCoursesLength: combinations?.[0]?.courses?.length ?? null,
     firstCourse: combinations?.[0]?.courses?.[0] ?? null,
-    firstSessionOfFirstCourse: combinations?.[0]?.courses?.[0]?.sessions?.[0] ?? null,
+    firstSessionOfFirstCourse:
+      combinations?.[0]?.courses?.[0]?.sessions?.[0] ?? null,
     favoritedCombinationsSize: favoritedCombinations.size,
     currentScheduleIndex,
     isMobile,
@@ -244,7 +245,9 @@ export function ScheduleVisualization({
     });
 
     if (!combinations || combinations.length === 0) {
-      console.info(`${SCHEDULE_VIZ_LOG} [calculateTimeLimits] no combinations → using defaults`);
+      console.info(
+        `${SCHEDULE_VIZ_LOG} [calculateTimeLimits] no combinations → using defaults`,
+      );
       return { minTime: 7 * 60, maxTime: 22 * 60 }; // Default fallback
     }
 
@@ -274,7 +277,9 @@ export function ScheduleVisualization({
 
     // If no valid times found, use default
     if (!hasValidTimes) {
-      console.warn(`${SCHEDULE_VIZ_LOG} [calculateTimeLimits] no valid times found → using defaults`);
+      console.warn(
+        `${SCHEDULE_VIZ_LOG} [calculateTimeLimits] no valid times found → using defaults`,
+      );
       return { minTime: 7 * 60, maxTime: 22 * 60 };
     }
 
@@ -297,10 +302,13 @@ export function ScheduleVisualization({
   useEffect(() => {
     console.info(`${SCHEDULE_VIZ_LOG} [useEffect: calculateTimeLimits] fired`);
     const limits = calculateTimeLimits();
-    console.info(`${SCHEDULE_VIZ_LOG} [useEffect: calculateTimeLimits] setting times`, {
-      minTime: limits.minTime,
-      maxTime: limits.maxTime,
-    });
+    console.info(
+      `${SCHEDULE_VIZ_LOG} [useEffect: calculateTimeLimits] setting times`,
+      {
+        minTime: limits.minTime,
+        maxTime: limits.maxTime,
+      },
+    );
     setStartTime(limits.minTime);
     setEndTime(limits.maxTime);
   }, [calculateTimeLimits]);
@@ -332,16 +340,19 @@ export function ScheduleVisualization({
 
   // Generate images for mobile when schedule data changes
   useEffect(() => {
-    console.info(`${SCHEDULE_VIZ_LOG} [useEffect: generateImagesForMobile] fired`, {
-      isMobile,
-      combinationsLength: combinations.length,
-      currentScheduleIndex,
-      startTime,
-      endTime,
-      scheduleName,
-      favoritedCombinationsSize: favoritedCombinations.size,
-      willGenerate: isMobile && combinations.length > 0,
-    });
+    console.info(
+      `${SCHEDULE_VIZ_LOG} [useEffect: generateImagesForMobile] fired`,
+      {
+        isMobile,
+        combinationsLength: combinations.length,
+        currentScheduleIndex,
+        startTime,
+        endTime,
+        scheduleName,
+        favoritedCombinationsSize: favoritedCombinations.size,
+        willGenerate: isMobile && combinations.length > 0,
+      },
+    );
     if (isMobile && combinations.length > 0) {
       generateImagesForMobile();
     }
@@ -422,8 +433,10 @@ export function ScheduleVisualization({
         containerWidth,
         startTime,
         endTime,
-        targetCombinationId: combinations?.[scheduleIndex]?.combination_id ?? null,
-        targetCoursesLength: combinations?.[scheduleIndex]?.courses?.length ?? null,
+        targetCombinationId:
+          combinations?.[scheduleIndex]?.combination_id ?? null,
+        targetCoursesLength:
+          combinations?.[scheduleIndex]?.courses?.length ?? null,
       });
 
       const canvas = canvasRef.current;
@@ -1136,7 +1149,7 @@ export function ScheduleVisualization({
     <>
       <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg transition-all duration-300 hover:shadow-xl sm:hover:-translate-y-1">
         <CardHeader className="pb-4">
-          {combinations.length > 0 && (
+          {combinations.length > 1 && (
             <div className="mb-3 border border-border bg-muted/10 rounded-lg px-3 py-2 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Tooltip>
@@ -1152,7 +1165,15 @@ export function ScheduleVisualization({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Horario anterior ({combinations.length > 0 ? (currentScheduleIndex === 0 ? combinations.length : currentScheduleIndex) : 0})</p>
+                    <p>
+                      Horario anterior (
+                      {combinations.length > 0
+                        ? currentScheduleIndex === 0
+                          ? combinations.length
+                          : currentScheduleIndex
+                        : 0}
+                      )
+                    </p>
                   </TooltipContent>
                 </Tooltip>
                 <span className="px-3 py-1 text-xs font-medium bg-muted rounded-md text-foreground min-w-[3rem] text-center tabular-nums transition-colors hover:bg-muted/80">
@@ -1171,7 +1192,15 @@ export function ScheduleVisualization({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Siguiente horario ({combinations.length > 0 ? (currentScheduleIndex === combinations.length - 1 ? 1 : currentScheduleIndex + 2) : 0})</p>
+                    <p>
+                      Siguiente horario (
+                      {combinations.length > 0
+                        ? currentScheduleIndex === combinations.length - 1
+                          ? 1
+                          : currentScheduleIndex + 2
+                        : 0}
+                      )
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -1214,8 +1243,19 @@ export function ScheduleVisualization({
               </div>
             </div>
 
-            {/* Top Action Map (Just Favorite) */}
-            <div className="flex items-center gap-2 shrink-0">
+            {/* Top Action Map (Favorite + Optional Export) */}
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              {combinations.length === 1 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={downloadSchedule}
+                  className="border-border text-foreground hover:bg-muted transition-colors shadow-sm"
+                >
+                  <Download className="w-4 h-4 mr-1.5" />
+                  Exportar
+                </Button>
+              )}
               {(onAddToFavorites || onRemoveFromFavorites) && (
                 <Button
                   size="sm"

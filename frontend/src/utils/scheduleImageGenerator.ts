@@ -132,11 +132,11 @@ export const generateScheduleImage = ({
       const fontSizes = {
         titleFont: 16,
         infoFont: 11,
-        headerFont: 13,
-        timeFont: 12,
-        courseFont: 11,
-        professorFont: 10,
-        locationFont: 9,
+        headerFont: 12,
+        timeFont: 11,
+        courseFont: 10,
+        professorFont: 9,
+        locationFont: 8,
       }
 
       // Clear canvas with dark theme background

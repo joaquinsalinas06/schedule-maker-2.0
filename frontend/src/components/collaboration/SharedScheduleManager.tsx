@@ -227,7 +227,8 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
             Ver Horario Compartido
           </CardTitle>
           <CardDescription>
-            Ingresa un código de horario para ver el horario compartido de alguien más
+            Ingresa un código de horario para ver el horario compartido de
+            alguien más
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -235,13 +236,17 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
             <Input
               placeholder="Ingresa código de 8 caracteres (ej., A3B7K9M2)"
               value={viewScheduleToken}
-              onChange={(e) => setViewScheduleToken(e.target.value.toUpperCase())}
+              onChange={(e) =>
+                setViewScheduleToken(e.target.value.toUpperCase())
+              }
               className="flex-1"
               maxLength={8}
             />
             <Button
               onClick={() => viewSharedSchedule(viewScheduleToken)}
-              disabled={!viewScheduleToken.trim() || viewScheduleToken.length !== 8}
+              disabled={
+                !viewScheduleToken.trim() || viewScheduleToken.length !== 8
+              }
             >
               <Eye className="h-4 w-4 mr-2" />
               Ver Horario
@@ -249,71 +254,63 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
           </div>
 
           {viewingSchedule && (
-            <div className="mt-4">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-xl">{viewingSchedule?.schedule?.name || 'Horario compartido'}</CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Compartido por {viewingSchedule?.shared_by?.name || 'usuario desconocido'} • {viewingSchedule?.schedule?.combination?.courses?.length || 0} materias
-                      </p>
-                      <div className="flex gap-2 mt-2">
-                        <Badge variant="outline">Código: {viewScheduleToken}</Badge>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setViewingSchedule(null)}
-                    >
-                      Cerrar
-                    </Button>
+            <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight text-foreground">
+                    {viewingSchedule?.schedule?.name || "Horario compartido"}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1.5 text-sm text-muted-foreground">
+                    <span>
+                      Por{" "}
+                      <strong>
+                        {viewingSchedule?.shared_by?.name ||
+                          "usuario desconocido"}
+                      </strong>
+                    </span>
+                    <span>•</span>
+                    <span>
+                      {viewingSchedule?.schedule?.combination?.courses
+                        ?.length || 0}{" "}
+                      cursos
+                    </span>
+                    <span>•</span>
+                    <Badge variant="secondary" className="font-mono text-xs">
+                      {viewScheduleToken}
+                    </Badge>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  {(() => {
-                    const transformedData = transformSharedScheduleData(viewingSchedule);
-                    console.info(`${SHARED_SCHEDULE_LOG_PREFIX} [RENDER] ScheduleVisualization decision`, {
-                      transformedDataIsNull: transformedData === null,
-                      combinationsLength: transformedData?.combinations?.length ?? null,
-                      coursesInFirstCombination: transformedData?.combinations?.[0]?.courses?.length ?? null,
-                      scheduleNameProp: viewingSchedule?.schedule?.name || 'Horario compartido',
-                    });
-                    return transformedData ? (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <div className="text-center p-3 bg-primary/10 border border-primary/20 rounded-lg backdrop-blur-sm">
-                            <div className="text-2xl font-bold text-primary">
-                              {transformedData.selected_courses_count}
-                            </div>
-                            <div className="text-sm text-muted-foreground">Materias</div>
-                          </div>
-                          <div className="text-center p-3 bg-muted border border-border rounded-lg backdrop-blur-sm">
-                            <div className="text-2xl font-bold text-foreground">
-                              {viewScheduleToken}
-                            </div>
-                            <div className="text-sm text-muted-foreground">Código Compartir</div>
-                          </div>
-                        </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewingSchedule(null)}
+                  className="shrink-0"
+                >
+                  Cerrar
+                </Button>
+              </div>
 
-                        {/* Schedule Canvas Visualization */}
-                        <ScheduleVisualization
-                          scheduleName={viewingSchedule?.schedule?.name || 'Horario compartido'}
-                          scheduleData={transformedData}
-                          showBackButton={false}
-                        />
-
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No hay datos de horario disponibles</p>
-                      </div>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
+              {(() => {
+                const transformedData =
+                  transformSharedScheduleData(viewingSchedule);
+                return transformedData ? (
+                  <div className="w-full">
+                    {/* Schedule Canvas Visualization */}
+                    <ScheduleVisualization
+                      scheduleName={
+                        viewingSchedule?.schedule?.name || "Horario compartido"
+                      }
+                      scheduleData={transformedData}
+                      showBackButton={false}
+                    />
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-xl bg-muted/10">
+                    <Calendar className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    <p>No hay datos de horario disponibles</p>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </CardContent>
