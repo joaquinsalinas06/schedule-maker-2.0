@@ -281,58 +281,62 @@ class CollaborationService:
                 detail="Schedule not found"
             )
         
-        # Build the combination data structure expected by frontend
-        courses = []
-        sections_processed = set()
-        
-        if schedule.schedule_sessions:
-            for schedule_session in schedule.schedule_sessions:
-                if schedule_session.section_id in sections_processed:
-                    continue
+        # Prioritize exact JSON payload format if available
+        if schedule.combination_data:
+            combination_data = schedule.combination_data
+        else:
+            # Build the combination data structure expected by frontend (Fallback)
+            courses = []
+            sections_processed = set()
+            
+            if schedule.schedule_sessions:
+                for schedule_session in schedule.schedule_sessions:
+                    if schedule_session.section_id in sections_processed:
+                        continue
+                        
+                    sections_processed.add(schedule_session.section_id)
                     
-                sections_processed.add(schedule_session.section_id)
-                
-                section = schedule_session.section
-                if section and section.course:
-                    # Get all sessions for this section
-                    section_sessions = self.db.query(SessionModel).filter(SessionModel.section_id == section.id).all()
-                    session_data = []
-                    for sess in section_sessions:
-                        # Convert day name to numeric index for frontend
-                        # The CSV import stores days as English day names (Monday, Tuesday, etc.)
-                        day_mapping = {
-                            # English day names (what's actually stored in DB)
-                            'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6, 'Sunday': 0,
-                            # Spanish day names and abbreviations (backup)
-                            'Dom': 0, 'Dom.': 0, 'Domingo': 0,
-                            'Lun': 1, 'Lun.': 1, 'Lunes': 1,
-                            'Mar': 2, 'Mar.': 2, 'Martes': 2,
-                            'Mie': 3, 'Mie.': 3, 'Mié': 3, 'Mié.': 3, 'Miércoles': 3,
-                            'Jue': 4, 'Jue.': 4, 'Jueves': 4,
-                            'Vie': 5, 'Vie.': 5, 'Viernes': 5,
-                            'Sab': 6, 'Sab.': 6, 'Sábado': 6
-                        }
+                    section = schedule_session.section
+                    if section and section.course:
+                        # Get all sessions for this section
+                        section_sessions = self.db.query(SessionModel).filter(SessionModel.section_id == section.id).all()
+                        session_data = []
+                        for sess in section_sessions:
+                            # Convert day name to numeric index for frontend
+                            # The CSV import stores days as English day names (Monday, Tuesday, etc.)
+                            day_mapping = {
+                                # English day names (what's actually stored in DB)
+                                'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6, 'Sunday': 0,
+                                # Spanish day names and abbreviations (backup)
+                                'Dom': 0, 'Dom.': 0, 'Domingo': 0,
+                                'Lun': 1, 'Lun.': 1, 'Lunes': 1,
+                                'Mar': 2, 'Mar.': 2, 'Martes': 2,
+                                'Mie': 3, 'Mie.': 3, 'Mié': 3, 'Mié.': 3, 'Miércoles': 3,
+                                'Jue': 4, 'Jue.': 4, 'Jueves': 4,
+                                'Vie': 5, 'Vie.': 5, 'Viernes': 5,
+                                'Sab': 6, 'Sab.': 6, 'Sábado': 6
+                            }
+                            
+                            day_index = day_mapping.get(sess.day, 0)  # Default to Sunday if not found
+                            
+                            session_data.append({
+                                "day_of_week": day_index,
+                                "start_time": str(sess.start_time) if sess.start_time else None,
+                                "end_time": str(sess.end_time) if sess.end_time else None,
+                                "classroom": sess.location or sess.room or "TBA"  # Our model uses 'location' and 'room'
+                            })
                         
-                        day_index = day_mapping.get(sess.day, 0)  # Default to Sunday if not found
-                        
-                        session_data.append({
-                            "day_of_week": day_index,
-                            "start_time": str(sess.start_time) if sess.start_time else None,
-                            "end_time": str(sess.end_time) if sess.end_time else None,
-                            "classroom": sess.location or sess.room or "TBA"  # Our model uses 'location' and 'room'
+                        courses.append({
+                            "course_code": section.course.code,
+                            "course_name": section.course.name,
+                            "section_number": section.section_number,
+                            "professor": section.professor,
+                            "sessions": session_data
                         })
-                    
-                    courses.append({
-                        "course_code": section.course.code,
-                        "course_name": section.course.name,
-                        "section_number": section.section_number,
-                        "professor": section.professor,
-                        "sessions": session_data
-                    })
-        
-        combination_data = {
-            "courses": courses
-        }
+            
+            combination_data = {
+                "courses": courses
+            }
         
         return {
             "schedule": {
