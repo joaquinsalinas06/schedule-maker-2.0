@@ -1059,6 +1059,58 @@ export function ScheduleVisualization({
     <>
       <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg transition-all duration-300 hover:shadow-xl sm:hover:-translate-y-1">
         <CardHeader className="pb-4">
+          {combinations.length > 0 && (
+            <div className="mb-3 border border-border bg-muted/10 rounded-lg px-3 py-2 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={prevSchedule}
+                      disabled={combinations.length <= 1}
+                      className="border-border text-foreground hover:bg-muted h-8 w-8 p-0 transition-transform active:scale-95"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Horario anterior ({combinations.length > 0 ? (currentScheduleIndex === 0 ? combinations.length : currentScheduleIndex) : 0})</p>
+                  </TooltipContent>
+                </Tooltip>
+                <span className="px-3 py-1 text-xs font-medium bg-muted rounded-md text-foreground min-w-[3rem] text-center tabular-nums transition-colors hover:bg-muted/80">
+                  {currentScheduleIndex + 1} / {combinations.length}
+                </span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={nextSchedule}
+                      disabled={combinations.length <= 1}
+                      className="border-border text-foreground hover:bg-muted h-8 w-8 p-0 transition-transform active:scale-95"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Siguiente horario ({combinations.length > 0 ? (currentScheduleIndex === combinations.length - 1 ? 1 : currentScheduleIndex + 2) : 0})</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={downloadSchedule}
+                className="border-border hover:bg-muted h-8 text-xs"
+              >
+                <Download className="w-3.5 h-3.5 mr-1.5" />
+                Exportar
+              </Button>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div className="flex items-center gap-3">
               {showBackButton && (
@@ -1241,59 +1293,6 @@ export function ScheduleVisualization({
             </div>
           </div>
         </CardContent>
-
-        {/* Footer: Nav + Export */}
-        {combinations.length > 0 && (
-          <div className="border-t border-border bg-muted/10 px-6 py-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={prevSchedule}
-                    disabled={combinations.length <= 1}
-                    className="border-border text-foreground hover:bg-muted h-8 w-8 p-0 transition-transform active:scale-95"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Horario anterior ({combinations.length > 0 ? (currentScheduleIndex === 0 ? combinations.length : currentScheduleIndex) : 0})</p>
-                </TooltipContent>
-              </Tooltip>
-              <span className="px-3 py-1 text-xs font-medium bg-muted rounded-md text-foreground min-w-[3rem] text-center tabular-nums transition-colors hover:bg-muted/80">
-                {currentScheduleIndex + 1} / {combinations.length}
-              </span>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={nextSchedule}
-                    disabled={combinations.length <= 1}
-                    className="border-border text-foreground hover:bg-muted h-8 w-8 p-0 transition-transform active:scale-95"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Siguiente horario ({combinations.length > 0 ? (currentScheduleIndex === combinations.length - 1 ? 1 : currentScheduleIndex + 2) : 0})</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={downloadSchedule}
-              className="border-border hover:bg-muted h-8 text-xs"
-            >
-              <Download className="w-3.5 h-3.5 mr-1.5" />
-              Exportar
-            </Button>
-          </div>
-        )}
       </Card>
 
       {/* Full-Screen Image Modal for Mobile */}
