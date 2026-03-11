@@ -20,6 +20,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { generateScheduleImage } from "@/utils/scheduleImageGenerator";
 import { ScheduleCanvasSkeleton } from "@/components/ui/loading-skeletons";
 
@@ -64,7 +70,7 @@ interface ScheduleVisualizationProps {
 }
 
 const EMPTY_FAVORITES: ReadonlySet<string> = new Set();
-const SCHEDULE_VIZ_LOG = '[schedule-viz-debug]';
+const SCHEDULE_VIZ_LOG = "[schedule-viz-debug]";
 
 // Dynamic canvas dimensions that will be calculated based on container
 let CANVAS_WIDTH = 1400;
@@ -208,6 +214,9 @@ export function ScheduleVisualization({
       height: number;
     }[]
   >([]);
+  const [customColors, setCustomColors] = useState<
+    Record<string, { bg: string; border: string; text: string }>
+  >({});
   const [isMobile, setIsMobile] = useState(false);
   const [scheduleImages, setScheduleImages] = useState<{
     [key: number]: string;
@@ -406,6 +415,7 @@ export function ScheduleVisualization({
               combinations[index]?.combination_id,
             ),
             devicePixelRatio: 2,
+            customCourseColors: customColors,
           });
           newImages[index] = result.dataUrl;
         } catch (error) {
@@ -481,10 +491,10 @@ export function ScheduleVisualization({
 
       if (!schedule) {
         // Draw "No schedule" message with dark theme
-        ctx.fillStyle = "#0f172a";
+        ctx.fillStyle = "#09090b";
         ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-        ctx.fillStyle = "#f1f5f9";
+        ctx.fillStyle = "#fafafa";
         ctx.font = `bold ${fontSizes.noScheduleTitle}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
         ctx.textAlign = "center";
         ctx.fillText(
@@ -494,7 +504,7 @@ export function ScheduleVisualization({
         );
 
         ctx.font = `${fontSizes.noScheduleSubtitle}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
-        ctx.fillStyle = "#94a3b8";
+        ctx.fillStyle = "#a1a1aa";
         ctx.fillText(
           "Intenta seleccionar más secciones o cambiar los filtros",
           CANVAS_WIDTH / 2,
@@ -517,18 +527,18 @@ export function ScheduleVisualization({
       }
 
       // Clear canvas with dark theme background
-      ctx.fillStyle = "#0f172a"; // Dark slate background to match theme
+      ctx.fillStyle = "#09090b"; // Pure dark background
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      // Draw subtle outer border with dark theme colors
+      // Draw subtle outer border with neutral dark colors
       ctx.lineWidth = 1;
-      ctx.strokeStyle = "#475569";
+      ctx.strokeStyle = "#27272a";
       ctx.beginPath();
       ctx.rect(0.5, 0.5, CANVAS_WIDTH - 1, CANVAS_HEIGHT - 1);
       ctx.stroke();
 
       // Draw side margin line
-      ctx.strokeStyle = "#64748b";
+      ctx.strokeStyle = "#3f3f46";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(sideMarginOffset, 0);
@@ -546,14 +556,14 @@ export function ScheduleVisualization({
       const headerCenterY = headerAreaHeight / 2;
 
       // Create header background exactly like day headers
-      ctx.fillStyle = "#1e293b";
+      ctx.fillStyle = "#09090b";
       ctx.fillRect(1, 1, sideMarginOffset - 2, headerAreaHeight - 2);
 
       // Display schedule name (if provided) or default format
       const displayName = scheduleName || `Horario ${scheduleIndex + 1}`;
 
       // Header title
-      ctx.fillStyle = "#f1f5f9"; // Light text on dark background
+      ctx.fillStyle = "#fafafa"; // Light text on dark background
       ctx.font = `bold ${fontSizes.titleFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle"; // Center vertically in the header area
@@ -567,21 +577,21 @@ export function ScheduleVisualization({
       const courseCountText = `${schedule.course_count || schedule.courses?.length || 0} cursos${favoriteText}`;
 
       ctx.font = `${fontSizes.infoFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
-      ctx.fillStyle = "#94a3b8"; // Muted light text
+      ctx.fillStyle = "#a1a1aa"; // Neutral muted light text
       ctx.fillText(courseCountText, sideMarginOffset / 2, headerCenterY + 5);
 
       // Reset text baseline
       ctx.textBaseline = "top";
 
       // Draw day headers
-      ctx.fillStyle = "#f1f5f9";
+      ctx.fillStyle = "#fafafa";
       ctx.font = `bold ${fontSizes.headerFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
       ctx.textAlign = "center";
       for (let day = 0; day < DAY_COUNT; day++) {
         const xPos = sideMarginOffset + dayWidth * (day + 0.5);
 
         // Header background with same styling
-        ctx.fillStyle = "#1e293b";
+        ctx.fillStyle = "#09090b";
         ctx.fillRect(
           sideMarginOffset + dayWidth * day + 1,
           1,
@@ -590,14 +600,14 @@ export function ScheduleVisualization({
         );
 
         // Day name
-        ctx.fillStyle = "#f1f5f9";
+        ctx.fillStyle = "#fafafa";
         ctx.textBaseline = "middle";
         ctx.fillText(weekDayStrings[day], xPos, headerCenterY);
         ctx.textBaseline = "top";
       }
 
       // Draw grid lines
-      ctx.strokeStyle = "#334155"; // Darker grid lines for dark theme
+      ctx.strokeStyle = "#27272a"; // Neutral grid lines for dark theme
       ctx.lineWidth = 1;
 
       // Vertical day lines
@@ -721,11 +731,13 @@ export function ScheduleVisualization({
           )
             return;
 
-          // Get course color
+          // Get course color (override with user custom color if exists)
           const courseIndex = scheduleCourses.findIndex(
             (c) => c.course_code === course.course_code,
           );
-          const color = courseColors[courseIndex % courseColors.length];
+          const color =
+            customColors[course.course_code] ||
+            courseColors[courseIndex % courseColors.length];
 
           // Draw shadow
           ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
@@ -1035,6 +1047,7 @@ export function ScheduleVisualization({
           isFavorited: favoritedCombinations.has(
             currentSchedule.combination_id,
           ),
+          customCourseColors: customColors,
           devicePixelRatio: 2,
         });
 
@@ -1356,12 +1369,15 @@ export function ScheduleVisualization({
               )}
             </div>
 
-            {/* Course Legend - Only show interactive course details on desktop */}
+            {/* Course Legend - Interactive Color Picker on desktop */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {combinations[currentScheduleIndex]?.courses.map(
                 (courseSection, index) => {
-                  const color = courseColors[index % courseColors.length];
-                  return (
+                  const color =
+                    customColors[courseSection.course_code] ||
+                    courseColors[index % courseColors.length];
+
+                  const CourseChip = (
                     <div
                       key={`course-${courseSection.course_id}-${index}`}
                       className={`flex items-center gap-3 p-3 border border-border rounded-lg bg-muted/30 ${
@@ -1374,7 +1390,7 @@ export function ScheduleVisualization({
                       }
                     >
                       <div
-                        className="w-4 h-4 rounded"
+                        className="w-4 h-4 rounded shadow-sm ring-1 ring-inset ring-black/10"
                         style={{ backgroundColor: color.bg }}
                       />
                       <div className="flex-1 min-w-0">
@@ -1386,6 +1402,52 @@ export function ScheduleVisualization({
                         </div>
                       </div>
                     </div>
+                  );
+
+                  if (isMobile) return CourseChip;
+
+                  return (
+                    <Popover
+                      key={`course-popover-${courseSection.course_id}-${index}`}
+                    >
+                      <PopoverTrigger asChild>{CourseChip}</PopoverTrigger>
+                      <PopoverContent className="w-64 p-3" align="start">
+                        <div className="space-y-3">
+                          <h4 className="text-sm font-medium leading-none">
+                            Color del curso
+                          </h4>
+                          <p className="text-xs text-muted-foreground">
+                            Elige un color personalizado para este curso en tu
+                            horario.
+                          </p>
+                          <div className="grid grid-cols-6 gap-2 pt-2">
+                            {courseColors.map((presetColor, i) => (
+                              <button
+                                key={i}
+                                className={`w-6 h-6 rounded-full shadow-sm ring-1 ring-inset ring-black/10 transition-transform hover:scale-110 ${
+                                  color.bg === presetColor.bg
+                                    ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                                    : ""
+                                }`}
+                                style={{ backgroundColor: presetColor.bg }}
+                                onClick={() => {
+                                  setCustomColors((prev) => ({
+                                    ...prev,
+                                    [courseSection.course_code]: presetColor,
+                                  }));
+                                  // Force redraw immediately
+                                  setTimeout(
+                                    () => drawSchedule(currentScheduleIndex),
+                                    0,
+                                  );
+                                }}
+                                title="Seleccionar color"
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   );
                 },
               )}

@@ -255,36 +255,17 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
 
           {viewingSchedule && (
             <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                <div>
-                  <h3 className="text-xl font-bold tracking-tight text-foreground">
-                    {viewingSchedule?.schedule?.name || "Horario compartido"}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1.5 text-sm text-muted-foreground">
-                    <span>
-                      Por{" "}
-                      <strong>
-                        {viewingSchedule?.shared_by?.name ||
-                          "usuario desconocido"}
-                      </strong>
-                    </span>
-                    <span>•</span>
-                    <span>
-                      {viewingSchedule?.schedule?.combination?.courses
-                        ?.length || 0}{" "}
-                      cursos
-                    </span>
-                    <span>•</span>
-                    <Badge variant="secondary" className="font-mono text-xs">
-                      {viewScheduleToken}
-                    </Badge>
-                  </div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    Código: {viewScheduleToken}
+                  </Badge>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setViewingSchedule(null)}
-                  className="shrink-0"
+                  className="shrink-0 text-muted-foreground hover:text-foreground"
                 >
                   Cerrar
                 </Button>

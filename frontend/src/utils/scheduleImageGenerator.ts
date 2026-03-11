@@ -29,11 +29,12 @@ interface GenerateScheduleImageOptions {
   schedule: ScheduleCombination
   width?: number
   height?: number
-  startTime?: number
-  endTime?: number
+  startTime?: number // in minutes from midnight
+  endTime?: number // in minutes from midnight
   scheduleName?: string
   isFavorited?: boolean
   devicePixelRatio?: number
+  customCourseColors?: Record<string, { bg: string; border: string; text: string }>
 }
 
 interface ScheduleImageResult {
@@ -98,7 +99,8 @@ export const generateScheduleImage = ({
   endTime = 22 * 60,
   scheduleName,
   isFavorited = false,
-  devicePixelRatio = 2
+  devicePixelRatio = 2,
+  customCourseColors = {},
 }: GenerateScheduleImageOptions): Promise<ScheduleImageResult> => {
   return new Promise((resolve, reject) => {
     try {
@@ -140,18 +142,18 @@ export const generateScheduleImage = ({
       }
 
       // Clear canvas with dark theme background
-      ctx.fillStyle = '#0f172a'
+      ctx.fillStyle = '#09090b'
       ctx.fillRect(0, 0, width, height)
 
       // Draw outer border
       ctx.lineWidth = 1
-      ctx.strokeStyle = '#475569'
+      ctx.strokeStyle = '#27272a'
       ctx.beginPath()
       ctx.rect(0.5, 0.5, width - 1, height - 1)
       ctx.stroke()
 
       // Draw side and top margin lines
-      ctx.strokeStyle = '#64748b'
+      ctx.strokeStyle = '#3f3f46'
       ctx.lineWidth = 2
       ctx.beginPath()
       ctx.moveTo(sideMarginOffset, 0)
@@ -167,12 +169,12 @@ export const generateScheduleImage = ({
       const headerAreaHeight = topMarginOffset
       const headerCenterY = headerAreaHeight / 2
       
-      ctx.fillStyle = '#1e293b'
+      ctx.fillStyle = '#09090b'
       ctx.fillRect(1, 1, sideMarginOffset - 2, headerAreaHeight - 2)
       
       // Schedule title
       const displayName = scheduleName || `Horario Generado`
-      ctx.fillStyle = '#f1f5f9'
+      ctx.fillStyle = '#fafafa'
       ctx.font = `bold ${fontSizes.titleFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
@@ -183,30 +185,30 @@ export const generateScheduleImage = ({
       const courseCountText = `${schedule.courses?.length || 0} cursos${favoriteText}`
       
       ctx.font = `${fontSizes.infoFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
-      ctx.fillStyle = '#94a3b8'
+      ctx.fillStyle = '#a1a1aa'
       ctx.fillText(courseCountText, sideMarginOffset / 2, headerCenterY + 8)
       
       ctx.textBaseline = 'top'
 
       // Draw day headers
-      ctx.fillStyle = '#f1f5f9'
+      ctx.fillStyle = '#fafafa'
       ctx.font = `bold ${fontSizes.headerFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
       ctx.textAlign = 'center'
       
       for (let day = 0; day < DAY_COUNT; day++) {
         const xPos = sideMarginOffset + dayWidth * (day + 0.5)
         
-        ctx.fillStyle = '#1e293b'
+        ctx.fillStyle = '#09090b'
         ctx.fillRect(sideMarginOffset + dayWidth * day + 1, 1, dayWidth - 2, headerAreaHeight - 2)
         
-        ctx.fillStyle = '#f1f5f9'
+        ctx.fillStyle = '#fafafa'
         ctx.textBaseline = 'middle'
         ctx.fillText(weekDayStrings[day], xPos, headerCenterY)
         ctx.textBaseline = 'top'
       }
 
       // Draw grid lines
-      ctx.strokeStyle = '#334155'
+      ctx.strokeStyle = '#27272a'
       ctx.lineWidth = 1
       
       // Vertical lines
@@ -219,10 +221,10 @@ export const generateScheduleImage = ({
       }
 
       // Horizontal lines and time labels
-      ctx.strokeStyle = '#1e293b'
+      ctx.strokeStyle = '#18181b'
       ctx.font = `${fontSizes.timeFont}px "cascadia-code", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
       ctx.textAlign = 'right'
-      ctx.fillStyle = '#94a3b8'
+      ctx.fillStyle = '#a1a1aa'
       
       for (let hour = 0; hour <= hourCount; hour++) {
         const yPos = topMarginOffset + hourHeight * hour
@@ -299,8 +301,10 @@ export const generateScheduleImage = ({
           
           if (!isFinite(xPos) || !isFinite(yPos) || !isFinite(blockHeight) || blockHeight <= 0) return
 
+          // Get course color
           const courseIndex = scheduleCourses.findIndex(c => c.course_code === course.course_code)
-          const color = courseColors[courseIndex % courseColors.length]
+          const fallbackColor = courseColors[courseIndex % courseColors.length]
+          const color = customCourseColors[course.course_code] || fallbackColor
 
           // Draw shadow
           ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'

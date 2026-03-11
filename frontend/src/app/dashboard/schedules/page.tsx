@@ -297,7 +297,6 @@ export default function SchedulesPage() {
       }
     }
     setOptionalCourses(newOptional);
-    setImpossibleSections(new Set());
     // Don't auto-save to sessionStorage here since they usually click Generate right after
   };
 
@@ -346,18 +345,26 @@ export default function SchedulesPage() {
       sessionStorage.setItem("selectedSections", JSON.stringify(next));
       return next;
     });
-    setImpossibleSections(new Set());
   };
 
   const removeSection = (index: number) => {
     setSelectedSections((prev) => {
+      const sectionToRemove = prev[index];
       const next = prev.filter((_, i) => i !== index);
+
+      // Remove only this section from the impossible set
+      if (sectionToRemove) {
+        setImpossibleSections((prevImpossible) => {
+          const newImpossible = new Set(prevImpossible);
+          newImpossible.delete(sectionToRemove.sectionId);
+          return newImpossible;
+        });
+      }
 
       // Keep session storage in sync for refresh persistence.
       sessionStorage.setItem("selectedSections", JSON.stringify(next));
       return next;
     });
-    setImpossibleSections(new Set());
   };
 
   const handleGenerateSchedules = async () => {
