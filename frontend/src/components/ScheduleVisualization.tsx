@@ -1377,7 +1377,7 @@ export function ScheduleVisualization({
                     customColors[courseSection.course_code] ||
                     courseColors[index % courseColors.length];
 
-                  const CourseChip = (
+                  return (
                     <div
                       key={`course-${courseSection.course_id}-${index}`}
                       className={`flex items-center gap-3 p-3 border border-border rounded-lg bg-muted/30 ${
@@ -1388,11 +1388,78 @@ export function ScheduleVisualization({
                       onClick={() =>
                         !isMobile && setSelectedCourse(courseSection)
                       }
+                      title="Ver detalles del curso"
                     >
-                      <div
-                        className="w-4 h-4 rounded shadow-sm ring-1 ring-inset ring-black/10"
-                        style={{ backgroundColor: color.bg }}
-                      />
+                      {isMobile ? (
+                        <div
+                          className="w-4 h-4 rounded shadow-sm ring-1 ring-inset ring-black/10 shrink-0"
+                          style={{ backgroundColor: color.bg }}
+                        />
+                      ) : (
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                          className="shrink-0"
+                        >
+                          <Popover
+                            key={`course-popover-${courseSection.course_id}-${index}`}
+                          >
+                            <PopoverTrigger asChild>
+                              <button
+                                className="w-5 h-5 rounded hover:scale-110 transition-transform cursor-pointer shadow-sm ring-1 ring-inset ring-black/20 focus:outline-none focus:ring-2 focus:ring-primary"
+                                style={{ backgroundColor: color.bg }}
+                                title="Cambiar color del curso"
+                                aria-label={`Cambiar color de ${courseSection.course_name}`}
+                              />
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-64 p-3 z-[100]"
+                              align="start"
+                            >
+                              <div className="space-y-3">
+                                <h4 className="text-sm font-medium leading-none">
+                                  Color del curso
+                                </h4>
+                                <p className="text-xs text-muted-foreground">
+                                  Elige un color personalizado para este curso
+                                  en tu horario.
+                                </p>
+                                <div className="grid grid-cols-6 gap-2 pt-2">
+                                  {courseColors.map((presetColor, i) => (
+                                    <button
+                                      key={i}
+                                      className={`w-6 h-6 rounded-full shadow-sm ring-1 ring-inset ring-black/10 transition-transform hover:scale-110 ${
+                                        color.bg === presetColor.bg
+                                          ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                                          : ""
+                                      }`}
+                                      style={{
+                                        backgroundColor: presetColor.bg,
+                                      }}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        setCustomColors((prev) => ({
+                                          ...prev,
+                                          [courseSection.course_code]:
+                                            presetColor,
+                                        }));
+                                        // Force redraw immediately
+                                        setTimeout(
+                                          () =>
+                                            drawSchedule(currentScheduleIndex),
+                                          0,
+                                        );
+                                      }}
+                                      title="Seleccionar color"
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm text-foreground">
                           {courseSection.course_name}
@@ -1402,52 +1469,6 @@ export function ScheduleVisualization({
                         </div>
                       </div>
                     </div>
-                  );
-
-                  if (isMobile) return CourseChip;
-
-                  return (
-                    <Popover
-                      key={`course-popover-${courseSection.course_id}-${index}`}
-                    >
-                      <PopoverTrigger asChild>{CourseChip}</PopoverTrigger>
-                      <PopoverContent className="w-64 p-3" align="start">
-                        <div className="space-y-3">
-                          <h4 className="text-sm font-medium leading-none">
-                            Color del curso
-                          </h4>
-                          <p className="text-xs text-muted-foreground">
-                            Elige un color personalizado para este curso en tu
-                            horario.
-                          </p>
-                          <div className="grid grid-cols-6 gap-2 pt-2">
-                            {courseColors.map((presetColor, i) => (
-                              <button
-                                key={i}
-                                className={`w-6 h-6 rounded-full shadow-sm ring-1 ring-inset ring-black/10 transition-transform hover:scale-110 ${
-                                  color.bg === presetColor.bg
-                                    ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
-                                    : ""
-                                }`}
-                                style={{ backgroundColor: presetColor.bg }}
-                                onClick={() => {
-                                  setCustomColors((prev) => ({
-                                    ...prev,
-                                    [courseSection.course_code]: presetColor,
-                                  }));
-                                  // Force redraw immediately
-                                  setTimeout(
-                                    () => drawSchedule(currentScheduleIndex),
-                                    0,
-                                  );
-                                }}
-                                title="Seleccionar color"
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
                   );
                 },
               )}
