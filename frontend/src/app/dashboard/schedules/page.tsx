@@ -76,6 +76,8 @@ export default function SchedulesPage() {
   const [collapsedCourses, setCollapsedCourses] = useState<Set<string>>(
     new Set(),
   );
+  const [lastGeneratedSelectionSignature, setLastGeneratedSelectionSignature] =
+    useState<string | null>(null);
 
   // Track sections that are completely incompatible with the generated schedules
   const [impossibleSections, setImpossibleSections] = useState<Set<number>>(
@@ -99,6 +101,19 @@ export default function SchedulesPage() {
   const [favoritedCombinations, setFavoritedCombinations] = useState<
     Set<string>
   >(new Set());
+
+  const buildSelectionSignature = (
+    sections: SelectedSection[],
+    optional: Set<string>,
+    optionalLimit: number,
+  ) => {
+    const sectionIds = sections
+      .map((s) => s.sectionId)
+      .sort((a, b) => a - b)
+      .join(",");
+    const optionalCoursesKey = Array.from(optional).sort().join(",");
+    return `${sectionIds}|${optionalCoursesKey}|${optionalLimit}`;
+  };
 
   // Load data from sessionStorage on component mount
   useEffect(() => {
@@ -171,8 +186,19 @@ export default function SchedulesPage() {
     }
   }, []);
 
-  // Calculate impossible sections whenever generated schedules change
+  // Calculate impossible sections only for the exact selection that was generated.
   useEffect(() => {
+    const currentSignature = buildSelectionSignature(
+      selectedSections,
+      optionalCourses,
+      maxOptionalCourses,
+    );
+
+    if (!lastGeneratedSelectionSignature || currentSignature !== lastGeneratedSelectionSignature) {
+      setImpossibleSections(new Set());
+      return;
+    }
+
     if (
       !generatedSchedules?.combinations ||
       generatedSchedules.combinations.length === 0
@@ -198,7 +224,13 @@ export default function SchedulesPage() {
     }
 
     setImpossibleSections(impossible);
-  }, [generatedSchedules, selectedSections]);
+  }, [
+    generatedSchedules,
+    selectedSections,
+    optionalCourses,
+    maxOptionalCourses,
+    lastGeneratedSelectionSignature,
+  ]);
 
   // Helper function to group sections by course
   const groupSectionsByCourse = (): GroupedCourse[] => {
@@ -246,6 +278,7 @@ export default function SchedulesPage() {
       }
     }
     setOptionalCourses(newOptional);
+    setImpossibleSections(new Set());
     // Don't auto-save to sessionStorage here since they usually click Generate right after
   };
 
@@ -294,6 +327,7 @@ export default function SchedulesPage() {
       sessionStorage.setItem("selectedSections", JSON.stringify(next));
       return next;
     });
+    setImpossibleSections(new Set());
   };
 
   const removeSection = (index: number) => {
@@ -304,6 +338,7 @@ export default function SchedulesPage() {
       sessionStorage.setItem("selectedSections", JSON.stringify(next));
       return next;
     });
+    setImpossibleSections(new Set());
   };
 
   const handleGenerateSchedules = async () => {
@@ -332,6 +367,13 @@ export default function SchedulesPage() {
       const response = await apiService.generateSchedules(request);
       setGeneratedSchedules(response.data);
       setViewingFavoriteSchedule(null); // Clear any favorite being viewed
+      setLastGeneratedSelectionSignature(
+        buildSelectionSignature(
+          selectedSections,
+          optionalCourses,
+          maxOptionalCourses,
+        ),
+      );
 
       // Update sessionStorage
       sessionStorage.setItem(
