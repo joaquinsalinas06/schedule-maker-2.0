@@ -59,9 +59,12 @@ interface ScheduleVisualizationProps {
   onRemoveFromFavorites?: (combinationId: string) => void;
   onBackToSelection?: () => void;
   showBackButton?: boolean;
-  favoritedCombinations?: Set<string>;
+  favoritedCombinations?: ReadonlySet<string>;
   scheduleName?: string;
 }
+
+const EMPTY_FAVORITES: ReadonlySet<string> = new Set();
+const SCHEDULE_VIZ_LOG = '[schedule-viz-debug]';
 
 // Dynamic canvas dimensions that will be calculated based on container
 let CANVAS_WIDTH = 1400;
@@ -184,7 +187,7 @@ export function ScheduleVisualization({
   onRemoveFromFavorites,
   onBackToSelection,
   showBackButton = false,
-  favoritedCombinations = new Set(),
+  favoritedCombinations = EMPTY_FAVORITES,
   scheduleName,
 }: ScheduleVisualizationProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -215,9 +218,33 @@ export function ScheduleVisualization({
 
   const { combinations, total_combinations } = scheduleData;
 
+  // LOG: props on every render
+  console.info(`${SCHEDULE_VIZ_LOG} [RENDER] props snapshot`, {
+    scheduleName,
+    showBackButton,
+    hasCombinations: Array.isArray(combinations),
+    combinationsLength: combinations?.length ?? null,
+    totalCombinations: total_combinations,
+    selectedCoursesCount: scheduleData.selected_courses_count,
+    firstCombinationId: combinations?.[0]?.combination_id ?? null,
+    firstCombinationCoursesLength: combinations?.[0]?.courses?.length ?? null,
+    firstCourse: combinations?.[0]?.courses?.[0] ?? null,
+    firstSessionOfFirstCourse: combinations?.[0]?.courses?.[0]?.sessions?.[0] ?? null,
+    favoritedCombinationsSize: favoritedCombinations.size,
+    currentScheduleIndex,
+    isMobile,
+    startTime,
+    endTime,
+  });
+
   // Calculate dynamic time limits based on actual schedule data
   const calculateTimeLimits = useCallback(() => {
+    console.info(`${SCHEDULE_VIZ_LOG} [calculateTimeLimits] called`, {
+      combinationsLength: combinations?.length ?? null,
+    });
+
     if (!combinations || combinations.length === 0) {
+      console.info(`${SCHEDULE_VIZ_LOG} [calculateTimeLimits] no combinations → using defaults`);
       return { minTime: 7 * 60, maxTime: 22 * 60 }; // Default fallback
     }
 
@@ -247,6 +274,7 @@ export function ScheduleVisualization({
 
     // If no valid times found, use default
     if (!hasValidTimes) {
+      console.warn(`${SCHEDULE_VIZ_LOG} [calculateTimeLimits] no valid times found → using defaults`);
       return { minTime: 7 * 60, maxTime: 22 * 60 };
     }
 
@@ -255,12 +283,24 @@ export function ScheduleVisualization({
     const minTime = Math.max(0, earliestTime - bufferHour); // Don't go below 0:00
     const maxTime = Math.min(24 * 60 - 1, latestTime + bufferHour); // Don't go above 23:59
 
+    console.info(`${SCHEDULE_VIZ_LOG} [calculateTimeLimits] result`, {
+      earliestTime,
+      latestTime,
+      minTime,
+      maxTime,
+    });
+
     return { minTime, maxTime };
   }, [combinations]);
 
   // Update time limits when schedule data changes
   useEffect(() => {
+    console.info(`${SCHEDULE_VIZ_LOG} [useEffect: calculateTimeLimits] fired`);
     const limits = calculateTimeLimits();
+    console.info(`${SCHEDULE_VIZ_LOG} [useEffect: calculateTimeLimits] setting times`, {
+      minTime: limits.minTime,
+      maxTime: limits.maxTime,
+    });
     setStartTime(limits.minTime);
     setEndTime(limits.maxTime);
   }, [calculateTimeLimits]);
@@ -292,6 +332,16 @@ export function ScheduleVisualization({
 
   // Generate images for mobile when schedule data changes
   useEffect(() => {
+    console.info(`${SCHEDULE_VIZ_LOG} [useEffect: generateImagesForMobile] fired`, {
+      isMobile,
+      combinationsLength: combinations.length,
+      currentScheduleIndex,
+      startTime,
+      endTime,
+      scheduleName,
+      favoritedCombinationsSize: favoritedCombinations.size,
+      willGenerate: isMobile && combinations.length > 0,
+    });
     if (isMobile && combinations.length > 0) {
       generateImagesForMobile();
     }
@@ -316,6 +366,13 @@ export function ScheduleVisualization({
     ]
       .filter((index, pos, arr) => arr.indexOf(index) === pos)
       .filter((index) => !scheduleImages[index]);
+
+    console.info(`${SCHEDULE_VIZ_LOG} [generateImagesForMobile]`, {
+      currentScheduleIndex,
+      combinationsLength: combinations.length,
+      alreadyCachedIndexes: Object.keys(scheduleImages).map(Number),
+      indexesToGenerate: scheduleIndexesToGenerate,
+    });
 
     if (scheduleIndexesToGenerate.length === 0) {
       return;
@@ -358,6 +415,17 @@ export function ScheduleVisualization({
 
   const drawSchedule = useCallback(
     (scheduleIndex: number) => {
+      console.info(`${SCHEDULE_VIZ_LOG} [drawSchedule] called`, {
+        scheduleIndex,
+        combinationsLength: combinations?.length ?? null,
+        hasCanvas: Boolean(canvasRef.current),
+        containerWidth,
+        startTime,
+        endTime,
+        targetCombinationId: combinations?.[scheduleIndex]?.combination_id ?? null,
+        targetCoursesLength: combinations?.[scheduleIndex]?.courses?.length ?? null,
+      });
+
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -827,6 +895,10 @@ export function ScheduleVisualization({
   );
 
   useEffect(() => {
+    console.info(`${SCHEDULE_VIZ_LOG} [useEffect: drawSchedule] fired`, {
+      currentScheduleIndex,
+      containerWidth,
+    });
     const dimensions = getResponsiveDimensions(containerWidth);
     CANVAS_WIDTH = dimensions.width;
     CANVAS_HEIGHT = dimensions.height;

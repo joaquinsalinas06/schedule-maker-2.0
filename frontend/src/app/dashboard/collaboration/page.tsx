@@ -11,6 +11,8 @@ import { EnhancedCollaborativeBuilder } from '@/components/collaboration/Enhance
 import { SharedScheduleWrapper } from '@/components/collaboration/SharedScheduleWrapper'
 import { IntegratedScheduleComparison } from '@/components/collaboration/IntegratedScheduleComparison'
 
+const COLLAB_ROUTE_LOG_PREFIX = '[collab-route-debug]'
+
 export default function CollaborationPage() {
   const { currentSession } = useCollaborationStore()
   const [activeTab, setActiveTab] = useState('sessions')
@@ -19,13 +21,32 @@ export default function CollaborationPage() {
   const comparisonCode = searchParams.get('compcode') || ''
   const hasDirectNavigation = sharedCode.length === 8 || Boolean(comparisonCode)
 
+  // LOG: raw URL params and computed values
+  console.info(`${COLLAB_ROUTE_LOG_PREFIX} [CollaborationPage] rendered`, {
+    rawCodeParam: searchParams.get('code'),
+    sharedCode,
+    sharedCodeLength: sharedCode.length,
+    comparisonCode,
+    hasDirectNavigation,
+    hasCurrentSession: Boolean(currentSession),
+    activeTab,
+  });
+
   useEffect(() => {
+    console.info(`${COLLAB_ROUTE_LOG_PREFIX} navigation state`, {
+      activeTab,
+      hasCurrentSession: Boolean(currentSession),
+      sharedCode,
+      comparisonCode,
+      hasDirectNavigation,
+    })
+
     if (sharedCode.length === 8) {
       setActiveTab((prev) => (prev === 'shared' ? prev : 'shared'))
     } else if (comparisonCode) {
       setActiveTab((prev) => (prev === 'compare' ? prev : 'compare'))
     }
-  }, [sharedCode, comparisonCode])
+  }, [activeTab, comparisonCode, currentSession, hasDirectNavigation, sharedCode])
 
   const tabs = [
     { id: 'sessions', label: 'Sesiones', icon: Users },

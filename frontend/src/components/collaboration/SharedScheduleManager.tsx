@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { CollaborationAPI } from '@/services/collaborationAPI';
 import { ScheduleVisualization } from '@/components/ScheduleVisualization';
-import { 
+import {
   Eye,
   Calendar,
 } from 'lucide-react';
@@ -15,12 +15,37 @@ interface SharedScheduleManagerProps {
   autoLoadCode?: string | null;
 }
 
+type SharedSchedulePayload = {
+  share_token?: string;
+  schedule?: {
+    name?: string;
+    combination?: {
+      courses?: any[];
+    };
+  };
+  shared_by?: {
+    name?: string;
+  };
+};
+
+const SHARED_SCHEDULE_LOG_PREFIX = '[shared-schedule-debug]';
+
 const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [viewScheduleToken, setViewScheduleToken] = useState('');
-  const [viewingSchedule, setViewingSchedule] = useState<any>(null);
+  const [viewingSchedule, setViewingSchedule] = useState<SharedSchedulePayload | null>(null);
   const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
+
+  // LOG: component mounted
+  useEffect(() => {
+    console.info(`${SHARED_SCHEDULE_LOG_PREFIX} [MOUNT] component mounted`, {
+      autoLoadCode,
+      autoLoadCodeLength: autoLoadCode?.length ?? null,
+      autoLoadCodeType: typeof autoLoadCode,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     setLoading(false); // No need to load shared schedules list anymore
@@ -28,21 +53,45 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
 
   // Auto-load schedule if code is provided
   useEffect(() => {
+    console.info(`${SHARED_SCHEDULE_LOG_PREFIX} [AUTO-LOAD effect] fired`, {
+      autoLoadCode,
+      autoLoadCodeLength: autoLoadCode?.length ?? null,
+      hasAutoLoaded,
+      willTriggerLoad: Boolean(autoLoadCode && autoLoadCode.length === 8 && !hasAutoLoaded),
+    });
     if (autoLoadCode && autoLoadCode.length === 8 && !hasAutoLoaded) {
       setViewScheduleToken(autoLoadCode);
       setHasAutoLoaded(true);
       viewSharedSchedule(autoLoadCode);
     }
   }, [autoLoadCode, hasAutoLoaded]);
+
   // Transform shared schedule data to ScheduleVisualization format
-  const transformSharedScheduleData = (sharedSchedule: any) => {
-    
-    if (!sharedSchedule?.schedule?.combination?.courses) {
+  const transformSharedScheduleData = (sharedSchedule: SharedSchedulePayload | null) => {
+    console.info(`${SHARED_SCHEDULE_LOG_PREFIX} [TRANSFORM] called`, {
+      sharedScheduleIsNull: sharedSchedule === null,
+      hasSchedule: Boolean(sharedSchedule?.schedule),
+      scheduleKeys: sharedSchedule?.schedule ? Object.keys(sharedSchedule.schedule) : [],
+      hasCombination: Boolean(sharedSchedule?.schedule?.combination),
+      combinationKeys: sharedSchedule?.schedule?.combination ? Object.keys(sharedSchedule.schedule.combination) : [],
+      coursesIsArray: Array.isArray(sharedSchedule?.schedule?.combination?.courses),
+      coursesLength: Array.isArray(sharedSchedule?.schedule?.combination?.courses)
+        ? sharedSchedule!.schedule!.combination!.courses!.length
+        : null,
+      rawCoursesValue: sharedSchedule?.schedule?.combination?.courses,
+    });
+
+    if (!Array.isArray(sharedSchedule?.schedule?.combination?.courses)) {
+      console.error(`${SHARED_SCHEDULE_LOG_PREFIX} [TRANSFORM] FAILED - invalid courses payload`, {
+        hasSchedule: Boolean(sharedSchedule?.schedule),
+        hasCombination: Boolean(sharedSchedule?.schedule?.combination),
+        coursesType: typeof sharedSchedule?.schedule?.combination?.courses,
+        coursesValue: sharedSchedule?.schedule?.combination?.courses,
+      });
       return null;
     }
 
     const courses = sharedSchedule.schedule.combination.courses.map((course: any, index: number) => {
-      
       return {
         course_id: course.course_id || index + 1,
         course_code: course.course_code,
@@ -51,68 +100,122 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
         section_number: course.section_number,
         professor: course.professor,
         sessions: course.sessions?.map((session: any, sessionIndex: number) => {
-          
           return {
             session_id: session.session_id || sessionIndex + 1,
-            session_type: session.session_type || "TEORÍA",
+            session_type: session.session_type || 'TEORÍA',
             day: session.day_of_week || session.day, // Handle both formats
             start_time: session.start_time,
             end_time: session.end_time,
-            location: session.classroom || session.location || "TBA",
-            modality: session.modality || "Presencial"
+            location: session.classroom || session.location || 'TBA',
+            modality: session.modality || 'Presencial',
           };
-        }) || []
+        }) || [],
       };
     });
 
     const transformedData = {
       combinations: [{
-        combination_id: "shared",
+        combination_id: 'shared',
         course_count: courses.length,
-        courses: courses,
+        courses,
         sections: [], // Keep empty for compatibility
-        conflicts: [] // Keep empty for compatibility
+        conflicts: [], // Keep empty for compatibility
       }],
       total_combinations: 1,
-      selected_courses_count: courses.length
+      selected_courses_count: courses.length,
     };
-    
+
+    console.info(`${SHARED_SCHEDULE_LOG_PREFIX} [TRANSFORM] SUCCESS`, {
+      coursesCount: courses.length,
+      firstCourse: courses[0] ?? null,
+      firstCourseSessionsCount: courses[0]?.sessions?.length ?? null,
+      firstSession: courses[0]?.sessions?.[0] ?? null,
+      transformedCombinationId: transformedData.combinations[0].combination_id,
+    });
+
     return transformedData;
   };
 
   const viewSharedSchedule = async (token: string) => {
     if (!token.trim()) {
       toast({
-        title: "Error",
-        description: "Por favor ingresa un código válido de horario",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Por favor ingresa un código válido de horario',
+        variant: 'destructive',
       });
       return;
     }
 
+    const normalizedToken = token.trim().toUpperCase();
+
     // Don't load if already loading this token
-    if (viewingSchedule?.share_token === token) {
+    if (viewingSchedule?.share_token === normalizedToken) {
       return;
     }
 
     try {
-      const result = await CollaborationAPI.getSharedSchedule(token);
-      setViewingSchedule(result);
+      console.info(`${SHARED_SCHEDULE_LOG_PREFIX} fetching shared schedule`, {
+        token: normalizedToken,
+      });
+
+      const result = await CollaborationAPI.getSharedSchedule(normalizedToken);
+
+      console.info(`${SHARED_SCHEDULE_LOG_PREFIX} [API RESPONSE] full payload dump`, {
+        token: normalizedToken,
+        topLevelKeys: result && typeof result === 'object' ? Object.keys(result) : [],
+        hasSchedule: Boolean(result?.schedule),
+        scheduleKeys: result?.schedule ? Object.keys(result.schedule) : [],
+        scheduleName: result?.schedule?.name,
+        hasCombination: Boolean(result?.schedule?.combination),
+        combinationKeys: result?.schedule?.combination ? Object.keys(result.schedule.combination) : [],
+        hasSharedBy: Boolean(result?.shared_by),
+        sharedByKeys: result?.shared_by ? Object.keys(result.shared_by) : [],
+        hasCourses: Array.isArray(result?.schedule?.combination?.courses),
+        coursesLength: Array.isArray(result?.schedule?.combination?.courses)
+          ? result.schedule.combination.courses.length
+          : null,
+        firstCourseKeys: Array.isArray(result?.schedule?.combination?.courses) && result.schedule.combination.courses.length > 0
+          ? Object.keys(result.schedule.combination.courses[0])
+          : [],
+        firstCourseSessionsLength: Array.isArray(result?.schedule?.combination?.courses) && result.schedule.combination.courses.length > 0
+          ? result.schedule.combination.courses[0]?.sessions?.length ?? null
+          : null,
+        firstSession: Array.isArray(result?.schedule?.combination?.courses) && result.schedule.combination.courses.length > 0
+          ? result.schedule.combination.courses[0]?.sessions?.[0] ?? null
+          : null,
+      });
+
+      if (!result?.schedule) {
+        console.error(`${SHARED_SCHEDULE_LOG_PREFIX} missing schedule in payload`, {
+          token: normalizedToken,
+          payload: result,
+        });
+        throw new Error('Shared schedule payload is missing schedule');
+      }
+
+      setViewingSchedule(result as SharedSchedulePayload);
+
+      const scheduleName = result.schedule?.name || 'Horario sin nombre';
+      const sharedByName = result.shared_by?.name || 'usuario desconocido';
+
       toast({
-        title: "Horario Cargado",
-        description: `Viendo "${result.schedule.name}" compartido por ${result.shared_by.name}`,
+        title: 'Horario Cargado',
+        description: `Viendo "${scheduleName}" compartido por ${sharedByName}`,
       });
     } catch (error: any) {
-      // Failed to load shared schedule
+      console.error(`${SHARED_SCHEDULE_LOG_PREFIX} failed to load shared schedule`, {
+        token: normalizedToken,
+        errorMessage: error?.message,
+        status: error?.response?.status,
+        responseData: error?.response?.data,
+      });
       toast({
-        title: "Horario No Encontrado",
-        description: "Por favor verifica que el código sea correcto.",
-        variant: "destructive",
+        title: 'Horario No Encontrado',
+        description: 'Por favor verifica que el código sea correcto.',
+        variant: 'destructive',
       });
     }
   };
-
-
 
   return (
     <div className="space-y-6">
@@ -136,7 +239,7 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
               className="flex-1"
               maxLength={8}
             />
-            <Button 
+            <Button
               onClick={() => viewSharedSchedule(viewScheduleToken)}
               disabled={!viewScheduleToken.trim() || viewScheduleToken.length !== 8}
             >
@@ -151,9 +254,9 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle className="text-xl">{viewingSchedule.schedule.name}</CardTitle>
+                      <CardTitle className="text-xl">{viewingSchedule?.schedule?.name || 'Horario compartido'}</CardTitle>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Compartido por {viewingSchedule.shared_by.name} • {viewingSchedule.schedule.combination?.courses?.length || 0} materias
+                        Compartido por {viewingSchedule?.shared_by?.name || 'usuario desconocido'} • {viewingSchedule?.schedule?.combination?.courses?.length || 0} materias
                       </p>
                       <div className="flex gap-2 mt-2">
                         <Badge variant="outline">Código: {viewScheduleToken}</Badge>
@@ -171,6 +274,12 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
                 <CardContent>
                   {(() => {
                     const transformedData = transformSharedScheduleData(viewingSchedule);
+                    console.info(`${SHARED_SCHEDULE_LOG_PREFIX} [RENDER] ScheduleVisualization decision`, {
+                      transformedDataIsNull: transformedData === null,
+                      combinationsLength: transformedData?.combinations?.length ?? null,
+                      coursesInFirstCombination: transformedData?.combinations?.[0]?.courses?.length ?? null,
+                      scheduleNameProp: viewingSchedule?.schedule?.name || 'Horario compartido',
+                    });
                     return transformedData ? (
                       <div className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -187,13 +296,13 @@ const SharedScheduleManagerComponent = ({ autoLoadCode }: SharedScheduleManagerP
                             <div className="text-sm text-muted-foreground">Código Compartir</div>
                           </div>
                         </div>
-                        
+
                         {/* Schedule Canvas Visualization */}
-                          <ScheduleVisualization 
-                            scheduleName={viewingSchedule.schedule.name}
-                            scheduleData={transformedData}
-                            showBackButton={false}
-                          />
+                        <ScheduleVisualization
+                          scheduleName={viewingSchedule?.schedule?.name || 'Horario compartido'}
+                          scheduleData={transformedData}
+                          showBackButton={false}
+                        />
 
                       </div>
                     ) : (

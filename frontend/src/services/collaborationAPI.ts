@@ -13,6 +13,7 @@ import {
 } from '@/types/collaboration';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+const COLLAB_API_LOG_PREFIX = '[collab-api-debug]';
 
 // Create axios instance with auth
 const apiClient = axios.create({
@@ -61,7 +62,23 @@ export class CollaborationAPI {
     permissions: string;
     shared_by: any;
   }> {
-    const response = await apiClient.get(`/collaboration/shared/${shareToken}`);
+    const normalizedToken = shareToken.trim().toUpperCase();
+
+    console.info(`${COLLAB_API_LOG_PREFIX} getSharedSchedule request`, {
+      shareToken: normalizedToken,
+      baseUrl: API_BASE_URL,
+    });
+
+    const response = await apiClient.get(`/collaboration/shared/${normalizedToken}`);
+
+    console.info(`${COLLAB_API_LOG_PREFIX} getSharedSchedule response`, {
+      shareToken: normalizedToken,
+      status: response.status,
+      hasSchedule: Boolean(response.data?.schedule),
+      hasSharedBy: Boolean(response.data?.shared_by),
+      hasCourses: Array.isArray(response.data?.schedule?.combination?.courses),
+    });
+
     return response.data;
   }
 
