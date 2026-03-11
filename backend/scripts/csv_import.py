@@ -191,7 +191,7 @@ class CSVImporter:
             df.columns = df.iloc[header_idx]
             df = df.iloc[header_idx + 1:]
             
-        print(f"✅ Successfully loaded CSV with {len(df)} rows")
+        print(f"[+] Successfully loaded CSV with {len(df)} rows")
         
         # First pass: collect all sessions by course
         course_sessions = defaultdict(list)
@@ -673,7 +673,7 @@ class CSVImporter:
                         "is_active": True
                     }
                     course = self.course_repo.create(course_dict)
-                    print(f"✅ Created course: {course_data.code} - {course_data.name}")
+                    print(f"[+] Created course: {course_data.code} - {course_data.name}")
                 
                 # Import sections with hierarchical session support
                 for section_data in course_data.sections:
@@ -695,7 +695,7 @@ class CSVImporter:
                             "is_active": True
                         }
                         section = self.section_repo.create(section_dict)
-                        print(f"  ✅ Created section {section_data.section_number} ({len(section_data.sessions)} sessions)")
+                        print(f"  [+] Created section {section_data.section_number} ({len(section_data.sessions)} sessions)")
                     
                     # Import all sessions with duplicate prevention
                     for session_data in section_data.sessions:
@@ -735,7 +735,7 @@ class CSVImporter:
                 imported_count += 1
                 
             except Exception as e:
-                print(f"❌ Error importing course {course_data.code}: {str(e)}")
+                print(f"[-] Error importing course {course_data.code}: {str(e)}")
                 self.db.rollback()
                 continue
         
@@ -751,7 +751,7 @@ def main():
     university_id = int(sys.argv[2]) if len(sys.argv) > 2 else 1
     
     if not os.path.exists(csv_file_path):
-        print(f"❌ Error: CSV file '{csv_file_path}' not found")
+        print(f"[-] Error: CSV file '{csv_file_path}' not found")
         sys.exit(1)
     
     # Create database session
@@ -763,7 +763,7 @@ def main():
         university = university_repo.get_by_id(university_id)
         
         if not university:
-            print(f"❌ Error: University with ID {university_id} not found")
+            print(f"[-] Error: University with ID {university_id} not found")
             sys.exit(1)
         
         print(f"🏫 Importing courses for university: {university.name}")
@@ -772,25 +772,25 @@ def main():
         importer = CSVImporter(db_session)
         
         # Parse CSV file with hierarchical support
-        print(f"📋 Parsing CSV file: {csv_file_path}")
+        print(f"[=] Parsing CSV file: {csv_file_path}")
         courses_data = importer.parse_csv_file(csv_file_path)
         
         # Show summary
         total_sections = sum(len(course.sections) for course in courses_data)
         total_sessions = sum(len(section.sessions) for course in courses_data for section in course.sections)
         
-        print(f"📊 Parsing Summary:")
+        print(f"[=] Parsing Summary:")
         print(f"  📚 Total courses: {len(courses_data)}")
         print(f"  📝 Total sections: {total_sections}")
-        print(f"  📅 Total sessions: {total_sessions}")
+        print(f"  [=] Total sessions: {total_sessions}")
         
         # Import courses
-        print(f"🚀 Starting database import...")
+        print(f"[>] Starting database import...")
         imported_count = importer.import_courses(courses_data, university_id)
-        print(f"✅ Successfully imported {imported_count} courses with improved hierarchical structure!")
+        print(f"[+] Successfully imported {imported_count} courses with improved hierarchical structure!")
         
     except Exception as e:
-        print(f"❌ Import failed: {str(e)}")
+        print(f"[-] Import failed: {str(e)}")
         db_session.rollback()
         sys.exit(1)
     

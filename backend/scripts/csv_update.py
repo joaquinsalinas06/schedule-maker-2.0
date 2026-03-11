@@ -191,7 +191,7 @@ class CSVUpdater:
             df.columns = df.iloc[header_idx]
             df = df.iloc[header_idx + 1:]
             
-        print(f"✅ Successfully loaded CSV with {len(df)} rows")
+        print(f"[+] Successfully loaded CSV with {len(df)} rows")
         
         # First pass: collect all sessions by course
         course_sessions = defaultdict(list)
@@ -691,7 +691,7 @@ class CSVUpdater:
                     if course_updated:
                         self.course_repo.update(course, {"name": course_data.name, "department": course_data.department})
                         changes_detected['courses_updated'] += 1
-                        print(f"🔄 Updated course: {course_data.code}")
+                        print(f"[*] Updated course: {course_data.code}")
                     else:
                         print(f"📚 Course {course_data.code}: No changes detected")
                 else:
@@ -705,7 +705,7 @@ class CSVUpdater:
                     }
                     course = self.course_repo.create(course_dict)
                     changes_detected['courses_created'] += 1
-                    print(f"✅ Created course: {course_data.code} - {course_data.name}")
+                    print(f"[+] Created course: {course_data.code} - {course_data.name}")
                 
                 # Get all existing sections for this course to track which ones are removed
                 existing_sections = self.section_repo.get_by_course(course.id)
@@ -714,7 +714,7 @@ class CSVUpdater:
                 # Deactivate sections that are no longer in CSV
                 for section in existing_sections:
                     if str(section.section_number) not in csv_section_numbers and section.is_active:
-                        print(f"  ❌ Section {section.section_number} no longer in CSV, deactivating...")
+                        print(f"  [-] Section {section.section_number} no longer in CSV, deactivating...")
                         self.section_repo.update(section, {"is_active": False})
                         changes_detected['sections_deactivated'] += 1
                 
@@ -731,7 +731,7 @@ class CSVUpdater:
                         updates = {}
                         
                         if section.capacity != section_data.capacity:
-                            print(f"    📊 Section {section_data.section_number}: Capacity changed {section.capacity} → {section_data.capacity}")
+                            print(f"    [=] Section {section_data.section_number}: Capacity changed {section.capacity} → {section_data.capacity}")
                             updates["capacity"] = section_data.capacity
                             section_updated = True
                             
@@ -752,14 +752,14 @@ class CSVUpdater:
                         
                         # Reactivate section if it was inactive
                         if not section.is_active:
-                            print(f"    🔄 Section {section_data.section_number}: Reactivating section")
+                            print(f"    [*] Section {section_data.section_number}: Reactivating section")
                             updates["is_active"] = True
                             section_updated = True
                         
                         if section_updated:
                             self.section_repo.update(section, updates)
                             changes_detected['sections_updated'] += 1
-                            print(f"  🔄 Updated section {section_data.section_number}")
+                            print(f"  [*] Updated section {section_data.section_number}")
                         else:
                             print(f"  📝 Section {section_data.section_number}: No changes detected")
                     else:
@@ -774,7 +774,7 @@ class CSVUpdater:
                         }
                         section = self.section_repo.create(section_dict)
                         changes_detected['sections_created'] += 1
-                        print(f"  ✅ Created section {section_data.section_number} ({len(section_data.sessions)} sessions)")
+                        print(f"  [+] Created section {section_data.section_number} ({len(section_data.sessions)} sessions)")
                     
                     # Update sessions with change detection
                     existing_sessions = self.session_repo.get_by_section(section.id)
@@ -796,7 +796,7 @@ class CSVUpdater:
                         if existing_session.is_active:
                             existing_sig = get_sig(existing_session.session_type, existing_session.day, existing_session.start_time, existing_session.end_time)
                             if existing_sig not in csv_session_signatures:
-                                print(f"      ❌ Session {existing_session.day} {existing_session.start_time} (Type: {existing_session.session_type}) no longer in CSV, deactivating...")
+                                print(f"      [-] Session {existing_session.day} {existing_session.start_time} (Type: {existing_session.session_type}) no longer in CSV, deactivating...")
                                 self.session_repo.update(existing_session, {"is_active": False})
                                 changes_detected['sessions_deactivated'] += 1
                     
@@ -817,7 +817,7 @@ class CSVUpdater:
                             updates = {}
                             
                             if matching_session.location != session_data.location:
-                                print(f"      📍 Session {session_data.day} {session_data.start_time}: Location changed '{matching_session.location}' → '{session_data.location}'")
+                                print(f"      [*] Session {session_data.day} {session_data.start_time}: Location changed '{matching_session.location}' → '{session_data.location}'")
                                 updates["location"] = session_data.location
                                 session_updated = True
                                 
@@ -830,7 +830,7 @@ class CSVUpdater:
                                 session_updated = True
                                 
                             if matching_session.modality != session_data.modality:
-                                print(f"      🏢 Session {session_data.day} {session_data.start_time}: Modality changed '{matching_session.modality}' → '{session_data.modality}'")
+                                print(f"      [*] Session {session_data.day} {session_data.start_time}: Modality changed '{matching_session.modality}' → '{session_data.modality}'")
                                 updates["modality"] = session_data.modality
                                 session_updated = True
                                 
@@ -840,16 +840,16 @@ class CSVUpdater:
                             
                             # Reactivate session if it was inactive
                             if not matching_session.is_active:
-                                print(f"      🔄 Session {session_data.day} {session_data.start_time}: Reactivating session")
+                                print(f"      [*] Session {session_data.day} {session_data.start_time}: Reactivating session")
                                 updates["is_active"] = True
                                 session_updated = True
                             
                             if session_updated:
                                 self.session_repo.update(matching_session, updates)
                                 changes_detected['sessions_updated'] += 1
-                                print(f"      🔄 Updated session {session_data.day} {session_data.start_time}-{session_data.end_time}")
+                                print(f"      [*] Updated session {session_data.day} {session_data.start_time}-{session_data.end_time}")
                             else:
-                                print(f"      📅 Session {session_data.day} {session_data.start_time}-{session_data.end_time}: No changes detected")
+                                print(f"      [=] Session {session_data.day} {session_data.start_time}-{session_data.end_time}: No changes detected")
                         else:
                             # Create new session
                             session_dict = {
@@ -867,27 +867,27 @@ class CSVUpdater:
                             }
                             self.session_repo.create(session_dict)
                             changes_detected['sessions_created'] += 1
-                            print(f"      ✅ Created session {session_data.day} {session_data.start_time}-{session_data.end_time}")
+                            print(f"      [+] Created session {session_data.day} {session_data.start_time}-{session_data.end_time}")
                 
                 updated_count += 1
                 
             except Exception as e:
                 err_msg = f"Error updating course {course_data.code}: {str(e)}"
-                print(f"❌ {err_msg}")
+                print(f"[-] {err_msg}")
                 errors.append(err_msg)
                 continue
         
         # Print summary of all changes
-        print(f"\n📊 Update Summary:")
-        print(f"  🔄 Courses updated: {changes_detected['courses_updated']}")
+        print(f"\n[=] Update Summary:")
+        print(f"  [*] Courses updated: {changes_detected['courses_updated']}")
         print(f"  📝 Sections updated: {changes_detected['sections_updated']}")
         print(f"  ➕ Sections added: {changes_detected['sections_created']}")
-        print(f"  ❌ Sections deactivated: {changes_detected['sections_deactivated']}")
-        print(f"  📅 Sessions updated: {changes_detected['sessions_updated']}")
+        print(f"  [-] Sections deactivated: {changes_detected['sections_deactivated']}")
+        print(f"  [=] Sessions updated: {changes_detected['sessions_updated']}")
         print(f"  ➕ Sessions added: {changes_detected['sessions_created']}")
-        print(f"  ❌ Sessions deactivated: {changes_detected['sessions_deactivated']}")
+        print(f"  [-] Sessions deactivated: {changes_detected['sessions_deactivated']}")
         if errors:
-            print(f"  ⚠️ Errors: {len(errors)}")
+            print(f"  [!] Errors: {len(errors)}")
         
         return updated_count, changes_detected, errors
 
@@ -901,7 +901,7 @@ def main():
     university_id = int(sys.argv[2]) if len(sys.argv) > 2 else 1
     
     if not os.path.exists(csv_file_path):
-        print(f"❌ Error: CSV file '{csv_file_path}' not found")
+        print(f"[-] Error: CSV file '{csv_file_path}' not found")
         sys.exit(1)
     
     # Create database session
@@ -913,7 +913,7 @@ def main():
         university = university_repo.get_by_id(university_id)
         
         if not university:
-            print(f"❌ Error: University with ID {university_id} not found")
+            print(f"[-] Error: University with ID {university_id} not found")
             sys.exit(1)
         
         print(f"🏫 Updating courses for university: {university.name}")
@@ -922,30 +922,30 @@ def main():
         updater = CSVUpdater(db_session)
         
         # Parse CSV file with hierarchical support
-        print(f"📋 Parsing CSV file: {csv_file_path}")
+        print(f"[=] Parsing CSV file: {csv_file_path}")
         courses_data = updater.parse_csv_file(csv_file_path)
         
         # Show summary
         total_sections = sum(len(course.sections) for course in courses_data)
         total_sessions = sum(len(section.sessions) for course in courses_data for section in course.sections)
         
-        print(f"📊 Parsing Summary:")
+        print(f"[=] Parsing Summary:")
         print(f"  📚 Total courses: {len(courses_data)}")
         print(f"  📝 Total sections: {total_sections}")
-        print(f"  📅 Total sessions: {total_sessions}")
+        print(f"  [=] Total sessions: {total_sessions}")
         
         # Update courses
-        print(f"🚀 Starting database update...")
+        print(f"[>] Starting database update...")
         updated_count, changes = updater.update_courses(courses_data, university_id)
         
         total_changes = sum(changes.values())
         if total_changes > 0:
-            print(f"✅ Successfully processed {updated_count} courses with {total_changes} total changes detected!")
+            print(f"[+] Successfully processed {updated_count} courses with {total_changes} total changes detected!")
         else:
-            print(f"✅ Successfully processed {updated_count} courses - no changes detected, database is up to date!")
+            print(f"[+] Successfully processed {updated_count} courses - no changes detected, database is up to date!")
         
     except Exception as e:
-        print(f"❌ Update failed: {str(e)}")
+        print(f"[-] Update failed: {str(e)}")
         db_session.rollback()
         sys.exit(1)
     
