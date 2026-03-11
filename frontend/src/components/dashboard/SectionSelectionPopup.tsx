@@ -21,7 +21,51 @@ export function SectionSelectionPopup({
 }: SectionSelectionPopupProps) {
   if (!sectionPopup) return null
 
-  const selectedCount = selectedSections.filter(s => s.courseCode === sectionPopup.course.code).length
+  const selectedCount = selectedSections.filter(
+    (s) => s.courseCode === sectionPopup.course.code,
+  ).length
+
+  const sortedSections = [...(sectionPopup.course.sections || [])].sort(
+    (a: Section, b: Section) => {
+      const aNumber = Number(a.section_number)
+      const bNumber = Number(b.section_number)
+
+      if (!Number.isNaN(aNumber) && !Number.isNaN(bNumber)) {
+        return aNumber - bNumber
+      }
+
+      return String(a.section_number).localeCompare(String(b.section_number))
+    },
+  )
+
+  const selectedIndexesForCourse = selectedSections
+    .map((section, index) => ({ section, index }))
+    .filter(({ section }) => section.courseCode === sectionPopup.course.code)
+    .map(({ index }) => index)
+
+  const allSectionsSelected =
+    sortedSections.length > 0 && selectedIndexesForCourse.length === sortedSections.length
+
+  const handleToggleAll = () => {
+    if (allSectionsSelected) {
+      // Remove from end to start to keep indexes stable while deleting.
+      const indexesDescending = [...selectedIndexesForCourse].sort((a, b) => b - a)
+      indexesDescending.forEach((index) => removeSection(index))
+      return
+    }
+
+    const selectedIds = new Set(
+      selectedSections
+        .filter((s) => s.courseCode === sectionPopup.course.code)
+        .map((s) => s.sectionId),
+    )
+
+    sortedSections.forEach((section) => {
+      if (!selectedIds.has(section.id)) {
+        addSection(sectionPopup.course, section.id)
+      }
+    })
+  }
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -32,16 +76,24 @@ export function SectionSelectionPopup({
             <h2 className="font-semibold text-foreground truncate">
               {sectionPopup.course.name}
             </h2>
-            <p className="text-sm text-muted-foreground">
-              {sectionPopup.course.code}
-            </p>
+            <p className="text-sm text-muted-foreground">{sectionPopup.course.code}</p>
           </div>
-          <button
-            onClick={() => setSectionPopup(null)}
-            className="p-1.5 -mr-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleToggleAll}
+              className="h-8 px-3 text-xs"
+            >
+              {allSectionsSelected ? "Quitar todas" : "Seleccionar todas"}
+            </Button>
+            <button
+              onClick={() => setSectionPopup(null)}
+              className="p-1.5 -mr-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -56,7 +108,7 @@ export function SectionSelectionPopup({
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {sectionPopup.course.sections?.map((section: Section) => {
+              {sortedSections.map((section: Section) => {
                 const isSelected = selectedSections.some(
                   (s) => s.sectionId === section.id,
                 );

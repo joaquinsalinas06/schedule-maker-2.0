@@ -140,11 +140,15 @@ export default function GeneratePage() {
       sessions: section.sessions,
     };
 
-    setSelectedSections([...selectedSections, newSelection]);
+    setSelectedSections((prev) => {
+      const alreadySelected = prev.some((s) => s.sectionId === section.id);
+      if (alreadySelected) return prev;
+      return [...prev, newSelection];
+    });
   };
 
   const removeSection = (index: number) => {
-    setSelectedSections(selectedSections.filter((_, i) => i !== index));
+    setSelectedSections((prev) => prev.filter((_, i) => i !== index));
   };
 
   const uniqueCourses = [

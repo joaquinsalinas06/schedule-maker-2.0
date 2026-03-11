@@ -286,19 +286,24 @@ export default function SchedulesPage() {
       sessions: section.sessions,
     };
 
-    const newSections = [...selectedSections, newSelection];
-    setSelectedSections(newSections);
+    setSelectedSections((prev) => {
+      const alreadySelected = prev.some((s) => s.sectionId === section.id);
+      const next = alreadySelected ? prev : [...prev, newSelection];
 
-    // Update sessionStorage
-    sessionStorage.setItem("selectedSections", JSON.stringify(newSections));
+      // Keep session storage in sync for refresh persistence.
+      sessionStorage.setItem("selectedSections", JSON.stringify(next));
+      return next;
+    });
   };
 
   const removeSection = (index: number) => {
-    const newSections = selectedSections.filter((_, i) => i !== index);
-    setSelectedSections(newSections);
+    setSelectedSections((prev) => {
+      const next = prev.filter((_, i) => i !== index);
 
-    // Update sessionStorage
-    sessionStorage.setItem("selectedSections", JSON.stringify(newSections));
+      // Keep session storage in sync for refresh persistence.
+      sessionStorage.setItem("selectedSections", JSON.stringify(next));
+      return next;
+    });
   };
 
   const handleGenerateSchedules = async () => {
