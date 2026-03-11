@@ -114,7 +114,21 @@ export default function MySchedulesPage() {
     );
   };
 
-  const removeFavorite = (scheduleId: string) => {
+  const removeFavorite = async (scheduleId: string) => {
+    // 1. If it's saved in the database, delete it there
+    if (scheduleId.startsWith("db_")) {
+      try {
+        const { CollaborationAPI } =
+          await import("@/services/collaborationAPI");
+        const realId = scheduleId.replace("db_", "");
+        await CollaborationAPI.deleteSavedSchedule(realId);
+      } catch (error) {
+        console.error("Failed to delete schedule from database:", error);
+        // Continue to delete from local state anyway
+      }
+    }
+
+    // 2. Remove from local state and storage
     setFavoriteSchedules((prev) => {
       const schedule = prev.find((s) => s.id === scheduleId);
       if (schedule) {

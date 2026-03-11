@@ -193,7 +193,8 @@ export default function HowItWorksPage() {
               Como funciona
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Guia completa para aprovechar todas las funcionalidades de Schedule Maker.
+              Guia completa para aprovechar todas las funcionalidades de
+              Schedule Maker.
             </p>
           </div>
 
@@ -202,8 +203,8 @@ export default function HowItWorksPage() {
             <aside className="lg:w-64 flex-shrink-0">
               <nav className="lg:sticky lg:top-20 space-y-1">
                 {sections.map((section) => {
-                  const Icon = section.icon
-                  const isActive = activeSection === section.id
+                  const Icon = section.icon;
+                  const isActive = activeSection === section.id;
                   return (
                     <button
                       key={section.id}
@@ -217,7 +218,7 @@ export default function HowItWorksPage() {
                       <Icon className="w-4 h-4 flex-shrink-0" />
                       <span>{section.title}</span>
                     </button>
-                  )
+                  );
                 })}
               </nav>
 
@@ -248,14 +249,16 @@ export default function HowItWorksPage() {
                 </header>
 
                 {/* Steps */}
-                <div className="space-y-6 mb-8">
+                <div className="space-y-6 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-both">
                   {currentContent.steps.map((step, index) => (
                     <div
                       key={index}
-                      className="flex gap-4 p-4 rounded-xl border border-border bg-card"
+                      className="flex gap-4 p-4 rounded-xl border border-border bg-card hover:border-primary/30 hover:shadow-md transition-all duration-300 hover:-translate-y-1"
                     >
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-semibold text-primary">{index + 1}</span>
+                        <span className="text-sm font-semibold text-primary">
+                          {index + 1}
+                        </span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-foreground mb-1">
@@ -271,7 +274,7 @@ export default function HowItWorksPage() {
 
                 {/* Tip */}
                 {currentContent.tip && (
-                  <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+                  <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 fill-mode-both">
                     <div className="flex items-start gap-3">
                       <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
@@ -293,5 +296,5 @@ export default function HowItWorksPage() {
 
       <Footer />
     </div>
-  )
+  );
 }

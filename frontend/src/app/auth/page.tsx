@@ -222,7 +222,7 @@ export default function AuthPage() {
       </div>
 
       {/* Right Side - Auth Form */}
-      <div className="flex-1 flex items-center justify-center p-6">
+      <div className="flex-1 flex items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-500">
         <div className="w-full max-w-sm">
           {/* Mobile back link */}
           <Link

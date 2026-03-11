@@ -174,30 +174,37 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 animate-fade-in transition-transform hover:scale-105 duration-300">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Optimiza tu tiempo académico</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-5 tracking-tight text-balance leading-[1.15]">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-5 tracking-tight text-balance leading-[1.15] animate-in fade-in slide-in-from-bottom-4 duration-700">
             Crea tu horario perfecto{" "}
             <span className="text-primary">en minutos</span>
           </h1>
 
-          <p className="text-base sm:text-lg text-muted-foreground mb-8 max-w-xl mx-auto leading-relaxed text-pretty">
+          <p className="text-base sm:text-lg text-muted-foreground mb-8 max-w-xl mx-auto leading-relaxed text-pretty animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-both">
             Genera horarios universitarios optimizados automáticamente.
             Selecciona tus cursos, evita conflictos y colabora con compañeros.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 fill-mode-both">
             <Link href="/auth">
-              <Button size="lg" className="h-11 px-8 text-sm font-medium gap-2 rounded-lg">
+              <Button
+                size="lg"
+                className="h-11 px-8 text-sm font-medium gap-2 rounded-lg"
+              >
                 Comenzar gratis
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
             <Link href="#como-funciona">
-              <Button variant="ghost" size="lg" className="h-11 px-6 text-sm font-medium text-muted-foreground hover:text-foreground">
+              <Button
+                variant="ghost"
+                size="lg"
+                className="h-11 px-6 text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
                 Cómo funciona
               </Button>
             </Link>
@@ -209,10 +216,15 @@ export default function LandingPage() {
       </section>
 
       {/* How it works Section */}
-      <section id="como-funciona" className="py-20 px-4 sm:px-6 border-t border-border">
+      <section
+        id="como-funciona"
+        className="py-20 px-4 sm:px-6 border-t border-border"
+      >
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-sm font-medium text-primary mb-3">Cómo funciona</p>
+            <p className="text-sm font-medium text-primary mb-3">
+              Cómo funciona
+            </p>
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
               Tres pasos simples
             </h2>
@@ -220,10 +232,20 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
             {steps.map((step, i) => (
-              <div key={step.num} className="relative text-center md:text-left">
-                <div className="text-4xl font-bold text-primary/15 mb-3 tabular-nums">{step.num}</div>
-                <h3 className="text-base font-semibold text-foreground mb-2">{step.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
+              <div
+                key={step.num}
+                className="relative text-center md:text-left animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both group"
+                style={{ animationDelay: `${150 * (i + 1)}ms` }}
+              >
+                <div className="text-4xl font-bold text-primary/15 mb-3 tabular-nums group-hover:text-primary/30 transition-colors duration-300">
+                  {step.num}
+                </div>
+                <h3 className="text-base font-semibold text-foreground mb-2">
+                  {step.title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {step.description}
+                </p>
                 {i < steps.length - 1 && (
                   <ArrowRight className="hidden md:block absolute top-6 -right-3 w-4 h-4 text-border" />
                 )}
@@ -237,20 +259,24 @@ export default function LandingPage() {
       <section className="py-20 px-4 sm:px-6 bg-muted/30 border-t border-border">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-sm font-medium text-primary mb-3">Características</p>
+            <p className="text-sm font-medium text-primary mb-3">
+              Características
+            </p>
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
               Todo lo que necesitas para planificar
             </h2>
             <p className="text-muted-foreground max-w-lg mx-auto text-sm">
-              Herramientas inteligentes que simplifican la creación de horarios académicos.
+              Herramientas inteligentes que simplifican la creación de horarios
+              académicos.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {features.map((feature) => (
+            {features.map((feature, i) => (
               <div
                 key={feature.title}
-                className="group flex gap-4 p-5 rounded-xl border border-border bg-card hover:border-primary/20 transition-colors duration-200"
+                className="group flex gap-4 p-5 rounded-xl border border-border bg-card hover:border-primary/30 hover:shadow-md transition-all duration-300 hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both"
+                style={{ animationDelay: `${100 * (i + 1)}ms` }}
               >
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/15 transition-colors">
                   <feature.icon className="w-5 h-5 text-primary" />
@@ -278,7 +304,9 @@ export default function LandingPage() {
       <section className="py-20 px-4 sm:px-6 border-t border-border">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-sm font-medium text-primary mb-3">Universidades</p>
+            <p className="text-sm font-medium text-primary mb-3">
+              Universidades
+            </p>
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
               Soporte para tu universidad
             </h2>
@@ -287,7 +315,11 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <Tabs value={activeUniversity} onValueChange={setActiveUniversity} className="w-full">
+          <Tabs
+            value={activeUniversity}
+            onValueChange={setActiveUniversity}
+            className="w-full"
+          >
             <TabsList className="w-full grid grid-cols-4 h-auto p-1 bg-muted rounded-lg mb-6">
               {universities.map((uni) => (
                 <TabsTrigger
@@ -310,8 +342,12 @@ export default function LandingPage() {
                           <CheckCircle2 className="w-5 h-5 text-success" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold text-foreground mb-0.5">{uni.fullName}</h3>
-                          <p className="text-sm text-muted-foreground">Disponible ahora con todas las funcionalidades.</p>
+                          <h3 className="text-lg font-semibold text-foreground mb-0.5">
+                            {uni.fullName}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Disponible ahora con todas las funcionalidades.
+                          </p>
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-3">
@@ -320,9 +356,16 @@ export default function LandingPage() {
                           { value: "2025-1", label: "Ciclo actual" },
                           { value: "Completo", label: "Info de profesores" },
                         ].map((stat) => (
-                          <div key={stat.label} className="p-3 rounded-lg bg-muted/50 text-center sm:text-left">
-                            <div className="text-lg sm:text-xl font-bold text-foreground tabular-nums">{stat.value}</div>
-                            <div className="text-xs text-muted-foreground mt-0.5">{stat.label}</div>
+                          <div
+                            key={stat.label}
+                            className="p-3 rounded-lg bg-muted/50 text-center sm:text-left"
+                          >
+                            <div className="text-lg sm:text-xl font-bold text-foreground tabular-nums">
+                              {stat.value}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {stat.label}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -332,16 +375,19 @@ export default function LandingPage() {
                       <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mx-auto mb-3">
                         <Clock className="w-5 h-5 text-muted-foreground" />
                       </div>
-                      <h3 className="text-lg font-semibold text-foreground mb-1.5">Próximamente en {uni.name}</h3>
+                      <h3 className="text-lg font-semibold text-foreground mb-1.5">
+                        Próximamente en {uni.name}
+                      </h3>
                       <p className="text-sm text-muted-foreground mb-5">
-                        Estamos trabajando para agregar soporte para {uni.fullName}.
+                        Estamos trabajando para agregar soporte para{" "}
+                        {uni.fullName}.
                       </p>
                       <Button
                         variant="outline"
                         size="sm"
                         className="cursor-pointer"
                         onClick={() => {
-                          window.location.href = `mailto:joaquin.salinas@utec.edu.pe?subject=Solicitud%20de%20universidad%20-%20${uni.name}`
+                          window.location.href = `mailto:joaquin.salinas@utec.edu.pe?subject=Solicitud%20de%20universidad%20-%20${uni.name}`;
                         }}
                       >
                         Solicitar acceso
@@ -362,11 +408,15 @@ export default function LandingPage() {
             Listo para optimizar tu horario?
           </h2>
           <p className="text-sm text-muted-foreground mb-8 max-w-md mx-auto">
-            Únete a estudiantes que ya están ahorrando tiempo en la planificación de sus cursos.
+            Únete a estudiantes que ya están ahorrando tiempo en la
+            planificación de sus cursos.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/auth">
-              <Button size="lg" className="h-11 px-8 text-sm font-medium gap-2 rounded-lg">
+              <Button
+                size="lg"
+                className="h-11 px-8 text-sm font-medium gap-2 rounded-lg"
+              >
                 <Calendar className="w-4 h-4" />
                 Comenzar gratis
               </Button>
@@ -388,5 +438,5 @@ export default function LandingPage() {
 
       <Footer />
     </div>
-  )
+  );
 }

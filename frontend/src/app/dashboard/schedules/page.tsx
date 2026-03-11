@@ -478,7 +478,25 @@ export default function SchedulesPage() {
     }
   };
 
-  const removeFromFavoritesByCombinationId = (combinationId: string) => {
+  const removeFromFavoritesByCombinationId = async (combinationId: string) => {
+    // 1. Try to find the favorite in our current state to get its actual ID
+    const favorite = favoriteSchedules.find(
+      (fav) => fav.combination.combination_id?.toString() === combinationId,
+    );
+
+    // 2. If we found an ID and it starts with db_, delete from backend
+    if (favorite && favorite.id.startsWith("db_")) {
+      try {
+        const { CollaborationAPI } =
+          await import("@/services/collaborationAPI");
+        const realId = favorite.id.replace("db_", "");
+        await CollaborationAPI.deleteSavedSchedule(realId);
+        console.log("Favorite successfully deleted from database");
+      } catch (error) {
+        console.error("Failed to delete schedule from database:", error);
+      }
+    }
+
     setFavoritedCombinations((prev) => {
       const newSet = new Set(prev);
       newSet.delete(combinationId);

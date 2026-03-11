@@ -111,6 +111,10 @@ export class CollaborationAPI {
     return response.data;
   }
 
+  static async deleteSavedSchedule(scheduleId: number | string): Promise<void> {
+    await apiClient.delete(`/api/schedules/saved/${scheduleId}`);
+  }
+
   // Schedule Comparison
   static async addScheduleToComparison(
     sessionId: number, 
