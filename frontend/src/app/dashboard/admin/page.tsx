@@ -2,13 +2,14 @@
 
 import { useState, useCallback, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, Loader2, RefreshCw, Database, X, Clock, ArrowLeft, ChevronDown, ChevronRight, MapPin, User, Users } from "lucide-react"
+import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, RefreshCw, Database, X, Clock, ArrowLeft, ChevronDown, ChevronRight, MapPin, User, Users } from "lucide-react"
 import { authService } from "@/services/auth"
 import { adminAPI, ImportAnalysis, ImportStats, AuditLogEntry, CoursePreview } from "@/services/adminAPI"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { ImportCardSkeleton } from "@/components/ui/loading-skeletons"
 
 type ImportMode = 'reset' | 'update'
 type PageState = 'upload' | 'analyzing' | 'preview' | 'confirming' | 'importing' | 'results' | 'error'
@@ -164,8 +165,8 @@ export default function AdminImportPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
+      <div className="flex-1 flex items-center justify-center p-8">
+        <ImportCardSkeleton />
       </div>
     )
   }
@@ -194,39 +195,77 @@ export default function AdminImportPage() {
 
         {/* History Modal */}
         {showHistory && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm" onClick={() => setShowHistory(false)}>
-            <Card className="max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            onClick={() => setShowHistory(false)}
+          >
+            <Card
+              className="max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
               <CardHeader className="flex flex-row items-center justify-between border-b">
-                <CardTitle className="text-lg">Historial de Importaciones</CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => setShowHistory(false)}>
+                <CardTitle className="text-lg">
+                  Historial de Importaciones
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowHistory(false)}
+                >
                   <X className="w-4 h-4" />
                 </Button>
               </CardHeader>
               <CardContent className="p-0 max-h-[60vh] overflow-y-auto">
                 {history.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-12">No hay importaciones registradas</p>
+                  <p className="text-muted-foreground text-center py-12">
+                    No hay importaciones registradas
+                  </p>
                 ) : (
                   <div className="divide-y divide-border">
-                    {history.map(log => (
+                    {history.map((log) => (
                       <div key={log.id} className="p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <Badge variant={log.status === 'success' ? 'default' : 'destructive'} className="text-xs">
-                            {log.status === 'success' ? 'Exitoso' : 'Fallido'}
+                          <Badge
+                            variant={
+                              log.status === "success"
+                                ? "default"
+                                : "destructive"
+                            }
+                            className="text-xs"
+                          >
+                            {log.status === "success" ? "Exitoso" : "Fallido"}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
-                            {log.executed_at ? new Date(log.executed_at).toLocaleString('es-PE') : '-'}
+                            {log.executed_at
+                              ? new Date(log.executed_at).toLocaleString(
+                                  "es-PE",
+                                )
+                              : "-"}
                           </span>
                         </div>
                         <p className="text-sm">
-                          {log.action === 'csv_import_reset' ? 'Reset (Nuevo Ciclo)' : 'Update (Actualizacion)'}
-                          {log.file_name && <span className="text-muted-foreground ml-2">- {log.file_name}</span>}
+                          {log.action === "csv_import_reset"
+                            ? "Reset (Nuevo Ciclo)"
+                            : "Update (Actualizacion)"}
+                          {log.file_name && (
+                            <span className="text-muted-foreground ml-2">
+                              - {log.file_name}
+                            </span>
+                          )}
                         </p>
-                        {log.details && log.status === 'success' && (
+                        {log.details && log.status === "success" && (
                           <div className="mt-2 text-xs text-muted-foreground grid grid-cols-2 gap-1">
                             {Object.entries(log.details)
-                              .filter(([key]) => key !== 'mode' && key !== 'errors')
+                              .filter(
+                                ([key]) => key !== "mode" && key !== "errors",
+                              )
                               .map(([key, value]) => (
-                                <span key={key}>{key.replace(/_/g, ' ')}: <span className="text-foreground">{String(value)}</span></span>
+                                <span key={key}>
+                                  {key.replace(/_/g, " ")}:{" "}
+                                  <span className="text-foreground">
+                                    {String(value)}
+                                  </span>
+                                </span>
                               ))}
                           </div>
                         )}
@@ -240,45 +279,55 @@ export default function AdminImportPage() {
         )}
 
         {/* Upload State */}
-        {pageState === 'upload' && (
+        {pageState === "upload" && (
           <div className="space-y-6">
             {/* Mode Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
-                onClick={() => setImportMode('update')}
+                onClick={() => setImportMode("update")}
                 className={`p-5 rounded-lg border-2 text-left transition-all ${
-                  importMode === 'update'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-muted-foreground/30'
+                  importMode === "update"
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-muted-foreground/30"
                 }`}
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <RefreshCw className={`w-5 h-5 ${importMode === 'update' ? 'text-primary' : 'text-muted-foreground'}`} />
-                  <h3 className={`font-medium ${importMode === 'update' ? 'text-primary' : 'text-foreground'}`}>
+                  <RefreshCw
+                    className={`w-5 h-5 ${importMode === "update" ? "text-primary" : "text-muted-foreground"}`}
+                  />
+                  <h3
+                    className={`font-medium ${importMode === "update" ? "text-primary" : "text-foreground"}`}
+                  >
                     Actualizar Datos
                   </h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Actualiza horarios, vacantes, profesores y agrega nuevos cursos sin borrar los existentes.
+                  Actualiza horarios, vacantes, profesores y agrega nuevos
+                  cursos sin borrar los existentes.
                 </p>
               </button>
 
               <button
-                onClick={() => setImportMode('reset')}
+                onClick={() => setImportMode("reset")}
                 className={`p-5 rounded-lg border-2 text-left transition-all ${
-                  importMode === 'reset'
-                    ? 'border-destructive bg-destructive/5'
-                    : 'border-border hover:border-muted-foreground/30'
+                  importMode === "reset"
+                    ? "border-destructive bg-destructive/5"
+                    : "border-border hover:border-muted-foreground/30"
                 }`}
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <AlertTriangle className={`w-5 h-5 ${importMode === 'reset' ? 'text-destructive' : 'text-muted-foreground'}`} />
-                  <h3 className={`font-medium ${importMode === 'reset' ? 'text-destructive' : 'text-foreground'}`}>
+                  <AlertTriangle
+                    className={`w-5 h-5 ${importMode === "reset" ? "text-destructive" : "text-muted-foreground"}`}
+                  />
+                  <h3
+                    className={`font-medium ${importMode === "reset" ? "text-destructive" : "text-foreground"}`}
+                  >
                     Nuevo Ciclo
                   </h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Desactiva todos los cursos anteriores e importa datos frescos. Usar al iniciar un nuevo ciclo.
+                  Desactiva todos los cursos anteriores e importa datos frescos.
+                  Usar al iniciar un nuevo ciclo.
                 </p>
               </button>
             </div>
@@ -291,10 +340,10 @@ export default function AdminImportPage() {
               onClick={() => fileInputRef.current?.click()}
               className={`relative border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-all ${
                 dragOver
-                  ? 'border-primary bg-primary/5'
+                  ? "border-primary bg-primary/5"
                   : selectedFile
-                    ? 'border-primary/50 bg-primary/5'
-                    : 'border-border hover:border-muted-foreground/50 hover:bg-muted/30'
+                    ? "border-primary/50 bg-primary/5"
+                    : "border-border hover:border-muted-foreground/50 hover:bg-muted/30"
               }`}
             >
               <input
@@ -309,14 +358,19 @@ export default function AdminImportPage() {
                   <FileSpreadsheet className="w-12 h-12 text-primary mx-auto" />
                   <p className="font-medium">{selectedFile.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {(selectedFile.size / 1024).toFixed(1)} KB - Click para cambiar
+                    {(selectedFile.size / 1024).toFixed(1)} KB - Click para
+                    cambiar
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <Upload className="w-12 h-12 text-muted-foreground/50 mx-auto" />
-                  <p className="text-muted-foreground">Arrastra un archivo aqui o haz click para seleccionar</p>
-                  <p className="text-sm text-muted-foreground/60">CSV, XLSX o XLS (max 10MB)</p>
+                  <p className="text-muted-foreground">
+                    Arrastra un archivo aqui o haz click para seleccionar
+                  </p>
+                  <p className="text-sm text-muted-foreground/60">
+                    CSV, XLSX o XLS (max 10MB)
+                  </p>
                 </div>
               )}
             </div>
@@ -342,18 +396,27 @@ export default function AdminImportPage() {
         )}
 
         {/* Analyzing State */}
-        {pageState === 'analyzing' && (
-          <div className="flex flex-col items-center justify-center py-16 space-y-4">
-            <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            <p className="font-medium">Analizando archivo...</p>
-            <p className="text-sm text-muted-foreground">Esto puede tomar unos segundos</p>
+        {pageState === "analyzing" && (
+          <div className="space-y-6">
+            <ImportCardSkeleton />
+            <div className="text-center">
+              <p className="font-medium">Analizando archivo...</p>
+              <p className="text-sm text-muted-foreground">
+                Esto puede tomar unos segundos
+              </p>
+            </div>
           </div>
         )}
 
         {/* Preview State */}
-        {pageState === 'preview' && analysis && (
+        {pageState === "preview" && analysis && (
           <div className="space-y-6">
-            <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReset}
+              className="text-muted-foreground"
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver
             </Button>
@@ -362,54 +425,76 @@ export default function AdminImportPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="border-border/50">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-2xl font-bold">{analysis.unique_courses}</p>
+                  <p className="text-2xl font-bold">
+                    {analysis.unique_courses}
+                  </p>
                   <p className="text-xs text-muted-foreground mt-1">Cursos</p>
                 </CardContent>
               </Card>
               <Card className="border-border/50">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-2xl font-bold">{analysis.total_sections}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Secciones</p>
+                  <p className="text-2xl font-bold">
+                    {analysis.total_sections}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Secciones
+                  </p>
                 </CardContent>
               </Card>
               <Card className="border-border/50">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-2xl font-bold">{analysis.total_sessions}</p>
+                  <p className="text-2xl font-bold">
+                    {analysis.total_sessions}
+                  </p>
                   <p className="text-xs text-muted-foreground mt-1">Sesiones</p>
                 </CardContent>
               </Card>
               <Card className="border-border/50">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-2xl font-bold">{Object.keys(analysis.departments).length}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Departamentos</p>
+                  <p className="text-2xl font-bold">
+                    {Object.keys(analysis.departments).length}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Departamentos
+                  </p>
                 </CardContent>
               </Card>
             </div>
 
             {/* Mode info */}
-            {analysis.mode === 'update' && (
+            {analysis.mode === "update" && (
               <Card className="border-primary/30 bg-primary/5">
                 <CardContent className="pt-4 space-y-2">
                   <h3 className="font-medium text-primary">Modo Actualizar</h3>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
-                      <span className="text-muted-foreground">Existentes: </span>
-                      <span className="font-medium">{analysis.existing_courses_count}</span>
+                      <span className="text-muted-foreground">
+                        Existentes:{" "}
+                      </span>
+                      <span className="font-medium">
+                        {analysis.existing_courses_count}
+                      </span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Nuevos: </span>
-                      <span className="font-medium text-primary">{analysis.courses_to_add}</span>
+                      <span className="font-medium text-primary">
+                        {analysis.courses_to_add}
+                      </span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">A actualizar: </span>
-                      <span className="font-medium">{analysis.courses_to_update}</span>
+                      <span className="text-muted-foreground">
+                        A actualizar:{" "}
+                      </span>
+                      <span className="font-medium">
+                        {analysis.courses_to_update}
+                      </span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {analysis.mode === 'reset' && (
+            {analysis.mode === "reset" && (
               <Card className="border-destructive/30 bg-destructive/5">
                 <CardContent className="pt-4 space-y-2">
                   <h3 className="font-medium text-destructive flex items-center gap-2">
@@ -417,7 +502,11 @@ export default function AdminImportPage() {
                     Modo Nuevo Ciclo (Reset)
                   </h3>
                   <p className="text-sm">
-                    Se desactivaran <span className="font-bold text-destructive">{analysis.existing_courses_to_deactivate}</span> curso(s) existente(s).
+                    Se desactivaran{" "}
+                    <span className="font-bold text-destructive">
+                      {analysis.existing_courses_to_deactivate}
+                    </span>{" "}
+                    curso(s) existente(s).
                   </p>
                 </CardContent>
               </Card>
@@ -426,15 +515,24 @@ export default function AdminImportPage() {
             {/* Departments */}
             <Card className="border-border/50">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base font-medium">Departamentos</CardTitle>
+                <CardTitle className="text-base font-medium">
+                  Departamentos
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(analysis.departments)
                     .sort(([, a], [, b]) => b - a)
                     .map(([dept, count]) => (
-                      <Badge key={dept} variant="secondary" className="font-normal">
-                        {dept} <span className="text-muted-foreground ml-1">({count})</span>
+                      <Badge
+                        key={dept}
+                        variant="secondary"
+                        className="font-normal"
+                      >
+                        {dept}{" "}
+                        <span className="text-muted-foreground ml-1">
+                          ({count})
+                        </span>
                       </Badge>
                     ))}
                 </div>
@@ -445,13 +543,20 @@ export default function AdminImportPage() {
             <Card className="border-border/50">
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
                 <CardTitle className="text-base font-medium">
-                  Vista previa ({analysis.courses_preview.length}{analysis.courses_preview.length === 50 ? '+' : ''})
+                  Vista previa ({analysis.courses_preview.length}
+                  {analysis.courses_preview.length === 50 ? "+" : ""})
                 </CardTitle>
                 <div className="flex gap-3 text-xs">
-                  <button onClick={expandAll} className="text-primary hover:underline">
+                  <button
+                    onClick={expandAll}
+                    className="text-primary hover:underline"
+                  >
                     Expandir
                   </button>
-                  <button onClick={collapseAll} className="text-muted-foreground hover:underline">
+                  <button
+                    onClick={collapseAll}
+                    className="text-muted-foreground hover:underline"
+                  >
                     Colapsar
                   </button>
                 </div>
@@ -465,28 +570,41 @@ export default function AdminImportPage() {
                         className="w-full flex items-center justify-between py-3 px-4 hover:bg-muted/30 transition-colors text-sm text-left"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          {expandedCourses.has(course.code)
-                            ? <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                            : <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                          }
-                          <span className="font-mono text-xs text-muted-foreground">{course.code}</span>
-                          <span className="font-medium truncate">{course.name}</span>
+                          {expandedCourses.has(course.code) ? (
+                            <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          )}
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {course.code}
+                          </span>
+                          <span className="font-medium truncate">
+                            {course.name}
+                          </span>
                         </div>
-                        <Badge variant="outline" className="text-xs font-normal ml-2 flex-shrink-0">
+                        <Badge
+                          variant="outline"
+                          className="text-xs font-normal ml-2 flex-shrink-0"
+                        >
                           {course.sections_count} sec
                         </Badge>
                       </button>
-                      
+
                       {expandedCourses.has(course.code) && course.sections && (
                         <div className="bg-muted/20 px-4 pb-4 pt-2">
                           <div className="space-y-2">
                             {course.sections.map((section, idx) => (
-                              <div key={idx} className="bg-background rounded-lg p-3 border border-border/50 text-sm">
+                              <div
+                                key={idx}
+                                className="bg-background rounded-lg p-3 border border-border/50 text-sm"
+                              >
                                 <div className="flex items-center justify-between mb-2">
-                                  <span className="font-medium">Seccion {section.section_number}</span>
+                                  <span className="font-medium">
+                                    Seccion {section.number}
+                                  </span>
                                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     <Users className="w-3 h-3" />
-                                    {section.vacancies}
+                                    {section.capacity}
                                   </div>
                                 </div>
                                 {section.professor && (
@@ -495,21 +613,30 @@ export default function AdminImportPage() {
                                     {section.professor}
                                   </div>
                                 )}
-                                {section.sessions && section.sessions.length > 0 && (
-                                  <div className="space-y-1">
-                                    {section.sessions.map((s, i) => (
-                                      <div key={i} className="flex items-center gap-2 text-xs">
-                                        <span className="font-medium w-8">{dayTranslations[s.day] || s.day}</span>
-                                        <span className="text-muted-foreground">{s.start_time}-{s.end_time}</span>
-                                        {s.classroom && (
-                                          <span className="text-muted-foreground flex items-center gap-1">
-                                            <MapPin className="w-3 h-3" />{s.classroom}
+                                {section.sessions &&
+                                  section.sessions.length > 0 && (
+                                    <div className="space-y-1">
+                                      {section.sessions.map((s, i) => (
+                                        <div
+                                          key={i}
+                                          className="flex items-center gap-2 text-xs"
+                                        >
+                                          <span className="font-medium w-8">
+                                            {dayTranslations[s.day] || s.day}
                                           </span>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
+                                          <span className="text-muted-foreground">
+                                            {s.start_time}-{s.end_time}
+                                          </span>
+                                          {s.location && (
+                                            <span className="text-muted-foreground flex items-center gap-1">
+                                              <MapPin className="w-3 h-3" />
+                                              {s.location}
+                                            </span>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                               </div>
                             ))}
                           </div>
@@ -522,11 +649,12 @@ export default function AdminImportPage() {
             </Card>
 
             {/* Confirmation for Reset */}
-            {importMode === 'reset' && (
+            {importMode === "reset" && (
               <Card className="border-destructive/30">
                 <CardContent className="pt-4 space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    Para confirmar la operacion de reset, escribe <span className="font-mono font-bold">CONFIRMAR</span>
+                    Para confirmar la operacion de reset, escribe{" "}
+                    <span className="font-mono font-bold">CONFIRMAR</span>
                   </p>
                   <Input
                     value={confirmText}
@@ -541,57 +669,81 @@ export default function AdminImportPage() {
             {/* Execute Button */}
             <Button
               onClick={handleExecute}
-              disabled={importMode === 'reset' && confirmText !== 'CONFIRMAR'}
+              disabled={importMode === "reset" && confirmText !== "CONFIRMAR"}
               className="w-full"
               size="lg"
-              variant={importMode === 'reset' ? 'destructive' : 'default'}
+              variant={importMode === "reset" ? "destructive" : "default"}
             >
-              {importMode === 'reset' ? 'Ejecutar Reset' : 'Ejecutar Importacion'}
+              {importMode === "reset"
+                ? "Ejecutar Reset"
+                : "Ejecutar Importacion"}
             </Button>
           </div>
         )}
 
         {/* Importing State */}
-        {pageState === 'importing' && (
-          <div className="flex flex-col items-center justify-center py-16 space-y-4">
-            <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            <p className="font-medium">Importando datos...</p>
-            <p className="text-sm text-muted-foreground">No cierres esta ventana</p>
+        {pageState === "importing" && (
+          <div className="space-y-6">
+            <ImportCardSkeleton />
+            <div className="text-center">
+              <p className="font-medium">Importando datos...</p>
+              <p className="text-sm text-muted-foreground">
+                No cierres esta ventana
+              </p>
+            </div>
           </div>
         )}
 
         {/* Results State */}
-        {pageState === 'results' && importResult && (
+        {pageState === "results" && importResult && (
           <div className="space-y-6">
             <div className="text-center py-8">
               <CheckCircle2 className="w-16 h-16 text-primary mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Importacion Exitosa</h2>
+              <h2 className="text-xl font-semibold mb-2">
+                Importacion Exitosa
+              </h2>
               <p className="text-muted-foreground">{importResult.message}</p>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="border-border/50">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-2xl font-bold">{importResult.stats.courses_created}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Cursos creados</p>
+                  <p className="text-2xl font-bold">
+                    {String(importResult.stats.courses_created)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Cursos creados
+                  </p>
                 </CardContent>
               </Card>
               <Card className="border-border/50">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-2xl font-bold">{importResult.stats.courses_updated}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Cursos actualizados</p>
+                  <p className="text-2xl font-bold">
+                    {String(importResult.stats.courses_updated)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Cursos actualizados
+                  </p>
                 </CardContent>
               </Card>
               <Card className="border-border/50">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-2xl font-bold">{importResult.stats.sections_created}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Secciones creadas</p>
+                  <p className="text-2xl font-bold">
+                    {String(importResult.stats.sections_created)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Secciones creadas
+                  </p>
                 </CardContent>
               </Card>
               <Card className="border-border/50">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-2xl font-bold">{importResult.stats.sessions_created}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Sesiones creadas</p>
+                  <p className="text-2xl font-bold">
+                    {String(importResult.stats.sessions_created)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sesiones creadas
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -603,19 +755,26 @@ export default function AdminImportPage() {
         )}
 
         {/* Error State */}
-        {pageState === 'error' && (
+        {pageState === "error" && (
           <div className="space-y-6">
             <div className="text-center py-8">
               <AlertTriangle className="w-16 h-16 text-destructive mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Error en la Importacion</h2>
+              <h2 className="text-xl font-semibold mb-2">
+                Error en la Importacion
+              </h2>
               <p className="text-muted-foreground">{error}</p>
             </div>
-            <Button onClick={handleReset} variant="outline" className="w-full" size="lg">
+            <Button
+              onClick={handleReset}
+              variant="outline"
+              className="w-full"
+              size="lg"
+            >
               Intentar de Nuevo
             </Button>
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }

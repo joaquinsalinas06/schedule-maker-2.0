@@ -5,16 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { 
-  User as UserIcon, 
-  Mail, 
-  Building2, 
-  IdCard, 
+import {
+  User as UserIcon,
+  Mail,
+  Building2,
+  IdCard,
   Calendar,
   Edit,
   Camera,
   FileText,
 } from "lucide-react"
+import { ProfileSkeleton } from "@/components/ui/loading-skeletons"
 import { User as UserType } from "@/types"
 import { ProfileAPI } from "@/services/profileAPI"
 import { ProfileEditModal } from "@/components/ProfileEditModal"
@@ -60,14 +61,7 @@ export default function ProfilePage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <div className="w-8 h-8 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground text-sm">Cargando perfil...</p>
-        </div>
-      </div>
-    )
+    return <ProfileSkeleton />
   }
 
   if (!user) {

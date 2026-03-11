@@ -17,19 +17,21 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  Loader2,
   CheckCircle2,
-} from "lucide-react"
-import Link from "next/link"
-import { authService } from "@/services/auth"
+} from "lucide-react";
+import Link from "next/link";
+import { authService } from "@/services/auth";
+import { ButtonLoader } from "@/components/ui/loading-skeletons";
 
 export default function AuthPage() {
-  const [activeTab, setActiveTab] = useState("login")
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [registrationStep, setRegistrationStep] = useState<'form' | 'verify' | 'complete'>('form')
-  const { checkStatus } = useEmailVerification()
+  const [activeTab, setActiveTab] = useState("login");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [registrationStep, setRegistrationStep] = useState<
+    "form" | "verify" | "complete"
+  >("form");
+  const { checkStatus } = useEmailVerification();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -38,119 +40,119 @@ export default function AuthPage() {
     lastName: "",
     studentId: "",
     rememberMe: false,
-  })
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }))
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
-  }
+  };
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {}
+    const newErrors: Record<string, string> = {};
 
     if (!formData.email) {
-      newErrors.email = "El correo electronico es requerido"
+      newErrors.email = "El correo electronico es requerido";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Ingresa un correo electronico valido"
+      newErrors.email = "Ingresa un correo electronico valido";
     }
 
     if (!formData.password) {
-      newErrors.password = "La contrasena es requerida"
+      newErrors.password = "La contrasena es requerida";
     } else if (formData.password.length < 6) {
-      newErrors.password = "La contrasena debe tener al menos 6 caracteres"
+      newErrors.password = "La contrasena debe tener al menos 6 caracteres";
     }
 
     if (activeTab === "register") {
       if (!formData.firstName) {
-        newErrors.firstName = "El nombre es requerido"
+        newErrors.firstName = "El nombre es requerido";
       } else if (formData.firstName.trim().length < 2) {
-        newErrors.firstName = "El nombre debe tener al menos 2 caracteres"
+        newErrors.firstName = "El nombre debe tener al menos 2 caracteres";
       }
 
       if (!formData.lastName) {
-        newErrors.lastName = "El apellido es requerido"
+        newErrors.lastName = "El apellido es requerido";
       } else if (formData.lastName.trim().length < 2) {
-        newErrors.lastName = "El apellido debe tener al menos 2 caracteres"
+        newErrors.lastName = "El apellido debe tener al menos 2 caracteres";
       }
 
       if (!formData.studentId) {
-        newErrors.studentId = "El codigo de estudiante es requerido"
+        newErrors.studentId = "El codigo de estudiante es requerido";
       } else if (!/^\d{9}$/.test(formData.studentId)) {
-        newErrors.studentId = "El codigo debe tener exactamente 9 digitos"
+        newErrors.studentId = "El codigo debe tener exactamente 9 digitos";
       } else {
-        const year = parseInt(formData.studentId.substring(0, 4))
-        const cycle = parseInt(formData.studentId.substring(4, 5))
-        const currentYear = new Date().getFullYear()
-        
+        const year = parseInt(formData.studentId.substring(0, 4));
+        const cycle = parseInt(formData.studentId.substring(4, 5));
+        const currentYear = new Date().getFullYear();
+
         if (year < 2016 || year > currentYear + 1) {
-          newErrors.studentId = `El ano debe estar entre 2016 y ${currentYear + 1}`
+          newErrors.studentId = `El ano debe estar entre 2016 y ${currentYear + 1}`;
         } else if (cycle !== 1 && cycle !== 2) {
-          newErrors.studentId = "El ciclo debe ser 1 o 2"
+          newErrors.studentId = "El ciclo debe ser 1 o 2";
         }
       }
 
       if (!formData.confirmPassword) {
-        newErrors.confirmPassword = "Confirma tu contrasena"
+        newErrors.confirmPassword = "Confirma tu contrasena";
       } else if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = "Las contrasenas no coinciden"
+        newErrors.confirmPassword = "Las contrasenas no coinciden";
       }
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validateForm()) return
+    e.preventDefault();
+    if (!validateForm()) return;
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       if (activeTab === "login") {
         await authService.login({
           email: formData.email,
           password: formData.password,
-          rememberMe: formData.rememberMe
-        })
-        window.location.href = "/dashboard"
+          rememberMe: formData.rememberMe,
+        });
+        window.location.href = "/dashboard";
       } else {
-        if (registrationStep === 'form') {
-          const status = await checkStatus(formData.email)
+        if (registrationStep === "form") {
+          const status = await checkStatus(formData.email);
           if (status?.is_verified) {
-            setRegistrationStep('complete')
+            setRegistrationStep("complete");
             await authService.register({
               first_name: formData.firstName,
               last_name: formData.lastName,
               email: formData.email,
               password: formData.password,
               student_id: formData.studentId,
-              university_id: 1
-            })
-            localStorage.removeItem('schedule-maker-first-time-user')
-            window.location.href = "/dashboard"
+              university_id: 1,
+            });
+            localStorage.removeItem("schedule-maker-first-time-user");
+            window.location.href = "/dashboard";
           } else {
-            setRegistrationStep('verify')
+            setRegistrationStep("verify");
           }
         }
       }
     } catch (error) {
-      console.error('Authentication error:', error)
-      setErrors({ general: "Error en la autenticacion. Intenta nuevamente." })
+      console.error("Authentication error:", error);
+      setErrors({ general: "Error en la autenticacion. Intenta nuevamente." });
       if (activeTab === "register") {
-        setRegistrationStep('form')
+        setRegistrationStep("form");
       }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleEmailVerificationComplete = async () => {
-    setRegistrationStep('complete')
-    setIsLoading(true)
-    
+    setRegistrationStep("complete");
+    setIsLoading(true);
+
     try {
       await authService.register({
         first_name: formData.firstName,
@@ -158,18 +160,18 @@ export default function AuthPage() {
         email: formData.email,
         password: formData.password,
         student_id: formData.studentId,
-        university_id: 1
-      })
-      localStorage.removeItem('schedule-maker-first-time-user')
-      window.location.href = "/dashboard"
+        university_id: 1,
+      });
+      localStorage.removeItem("schedule-maker-first-time-user");
+      window.location.href = "/dashboard";
     } catch (error) {
-      console.error('Registration error:', error)
-      setErrors({ general: "Error al crear la cuenta. Intenta nuevamente." })
-      setRegistrationStep('form')
+      console.error("Registration error:", error);
+      setErrors({ general: "Error al crear la cuenta. Intenta nuevamente." });
+      setRegistrationStep("form");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -188,14 +190,17 @@ export default function AuthPage() {
             <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
               <Calendar className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-semibold text-foreground">Schedule Maker</span>
+            <span className="text-xl font-semibold text-foreground">
+              Schedule Maker
+            </span>
           </div>
 
           <h1 className="text-3xl font-bold text-foreground mb-4 text-balance">
             Crea tu horario universitario perfecto
           </h1>
           <p className="text-muted-foreground leading-relaxed max-w-md">
-            Unete a miles de estudiantes que ya optimizan su tiempo con nuestra plataforma inteligente.
+            Unete a miles de estudiantes que ya optimizan su tiempo con nuestra
+            plataforma inteligente.
           </p>
         </div>
 
@@ -205,7 +210,10 @@ export default function AuthPage() {
             { icon: CheckCircle2, text: "Cero conflictos garantizados" },
             { icon: CheckCircle2, text: "Colaboracion en tiempo real" },
           ].map((item, index) => (
-            <div key={index} className="flex items-center gap-3 text-sm text-muted-foreground">
+            <div
+              key={index}
+              className="flex items-center gap-3 text-sm text-muted-foreground"
+            >
               <item.icon className="w-4 h-4 text-success" />
               <span>{item.text}</span>
             </div>
@@ -230,7 +238,9 @@ export default function AuthPage() {
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Calendar className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="font-semibold text-foreground">Schedule Maker</span>
+            <span className="font-semibold text-foreground">
+              Schedule Maker
+            </span>
           </div>
 
           <div className="mb-8">
@@ -238,13 +248,17 @@ export default function AuthPage() {
               {activeTab === "login" ? "Bienvenido de nuevo" : "Crear cuenta"}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {activeTab === "login" 
-                ? "Ingresa tus credenciales para continuar" 
+              {activeTab === "login"
+                ? "Ingresa tus credenciales para continuar"
                 : "Completa el formulario para crear tu cuenta"}
             </p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
             <TabsList className="w-full grid grid-cols-2 mb-6">
               <TabsTrigger value="login">Ingresar</TabsTrigger>
               <TabsTrigger value="register">Registrarse</TabsTrigger>
@@ -261,7 +275,7 @@ export default function AuthPage() {
             )}
 
             {/* Email Verification Step */}
-            {activeTab === "register" && registrationStep === 'verify' && (
+            {activeTab === "register" && registrationStep === "verify" && (
               <div className="space-y-4">
                 <div className="text-center mb-4">
                   <h3 className="text-lg font-semibold text-foreground mb-2">
@@ -271,17 +285,17 @@ export default function AuthPage() {
                     Necesitamos verificar tu email antes de crear tu cuenta
                   </p>
                 </div>
-                
+
                 <EmailVerification
                   email={formData.email}
                   onVerificationComplete={handleEmailVerificationComplete}
                   isEmbedded={true}
                 />
-                
+
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setRegistrationStep('form')}
+                  onClick={() => setRegistrationStep("form")}
                   className="w-full"
                   disabled={isLoading}
                 >
@@ -292,11 +306,13 @@ export default function AuthPage() {
             )}
 
             {/* Registration Complete Step */}
-            {activeTab === "register" && registrationStep === 'complete' && (
+            {activeTab === "register" && registrationStep === "complete" && (
               <div className="text-center py-8">
                 <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
                   {isLoading ? (
-                    <Loader2 className="w-6 h-6 text-success animate-spin" />
+                    <div className="text-success">
+                      <ButtonLoader />
+                    </div>
                   ) : (
                     <CheckCircle2 className="w-6 h-6 text-success" />
                   )}
@@ -305,15 +321,16 @@ export default function AuthPage() {
                   {isLoading ? "Creando tu cuenta..." : "Cuenta creada!"}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {isLoading 
-                    ? "Configurando tu perfil..." 
+                  {isLoading
+                    ? "Configurando tu perfil..."
                     : "Redirigiendo al dashboard..."}
                 </p>
               </div>
             )}
 
             {/* Login and Registration Forms */}
-            {(activeTab === "login" || (activeTab === "register" && registrationStep === 'form')) && (
+            {(activeTab === "login" ||
+              (activeTab === "register" && registrationStep === "form")) && (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <TabsContent value="login" className="space-y-4 mt-0">
                   <div className="space-y-2">
@@ -327,7 +344,9 @@ export default function AuthPage() {
                         type="email"
                         placeholder="tu.correo@utec.edu.pe"
                         value={formData.email}
-                        onChange={(e) => handleInputChange("email", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("email", e.target.value)
+                        }
                         className={`pl-10 h-10 ${errors.email ? "border-destructive" : ""}`}
                       />
                     </div>
@@ -350,7 +369,9 @@ export default function AuthPage() {
                         type={showPassword ? "text" : "password"}
                         placeholder="Tu contrasena"
                         value={formData.password}
-                        onChange={(e) => handleInputChange("password", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("password", e.target.value)
+                        }
                         className={`pl-10 pr-10 h-10 ${errors.password ? "border-destructive" : ""}`}
                       />
                       <button
@@ -358,7 +379,11 @@ export default function AuthPage() {
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         onClick={() => setShowPassword(!showPassword)}
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                     {errors.password && (
@@ -371,32 +396,34 @@ export default function AuthPage() {
 
                   <div className="flex items-center justify-between text-sm">
                     <label className="flex items-center gap-2 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="rounded border-border" 
+                      <input
+                        type="checkbox"
+                        className="rounded border-border"
                         checked={formData.rememberMe}
-                        onChange={(e) => handleInputChange("rememberMe", e.target.checked)}
+                        onChange={(e) =>
+                          handleInputChange("rememberMe", e.target.checked)
+                        }
                       />
                       <span className="text-muted-foreground">Recordarme</span>
                     </label>
                   </div>
 
-                  <Button type="submit" className="w-full h-10" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Ingresando...
-                      </>
-                    ) : (
-                      "Ingresar"
-                    )}
+                  <Button
+                    type="submit"
+                    className="w-full h-10"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <ButtonLoader /> : "Ingresar"}
                   </Button>
                 </TabsContent>
 
                 <TabsContent value="register" className="space-y-4 mt-0">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName" className="text-sm font-medium">
+                      <Label
+                        htmlFor="firstName"
+                        className="text-sm font-medium"
+                      >
                         Nombre
                       </Label>
                       <div className="relative">
@@ -408,16 +435,18 @@ export default function AuthPage() {
                           value={formData.firstName}
                           onChange={(e) => {
                             const value = e.target.value
-                              .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')
-                              .replace(/\s+/g, ' ')
-                              .substring(0, 50)
-                            handleInputChange("firstName", value)
+                              .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "")
+                              .replace(/\s+/g, " ")
+                              .substring(0, 50);
+                            handleInputChange("firstName", value);
                           }}
                           className={`pl-10 h-10 ${errors.firstName ? "border-destructive" : ""}`}
                         />
                       </div>
                       {errors.firstName && (
-                        <p className="text-xs text-destructive">{errors.firstName}</p>
+                        <p className="text-xs text-destructive">
+                          {errors.firstName}
+                        </p>
                       )}
                     </div>
 
@@ -432,15 +461,17 @@ export default function AuthPage() {
                         value={formData.lastName}
                         onChange={(e) => {
                           const value = e.target.value
-                            .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')
-                            .replace(/\s+/g, ' ')
-                            .substring(0, 50)
-                          handleInputChange("lastName", value)
+                            .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "")
+                            .replace(/\s+/g, " ")
+                            .substring(0, 50);
+                          handleInputChange("lastName", value);
                         }}
                         className={`h-10 ${errors.lastName ? "border-destructive" : ""}`}
                       />
                       {errors.lastName && (
-                        <p className="text-xs text-destructive">{errors.lastName}</p>
+                        <p className="text-xs text-destructive">
+                          {errors.lastName}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -456,18 +487,25 @@ export default function AuthPage() {
                       maxLength={9}
                       value={formData.studentId}
                       onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').substring(0, 9)
-                        handleInputChange("studentId", value)
+                        const value = e.target.value
+                          .replace(/\D/g, "")
+                          .substring(0, 9);
+                        handleInputChange("studentId", value);
                       }}
                       className={`h-10 ${errors.studentId ? "border-destructive" : ""}`}
                     />
                     {errors.studentId && (
-                      <p className="text-xs text-destructive">{errors.studentId}</p>
+                      <p className="text-xs text-destructive">
+                        {errors.studentId}
+                      </p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="registerEmail" className="text-sm font-medium">
+                    <Label
+                      htmlFor="registerEmail"
+                      className="text-sm font-medium"
+                    >
                       Correo Electronico
                     </Label>
                     <div className="relative">
@@ -477,7 +515,9 @@ export default function AuthPage() {
                         type="email"
                         placeholder="tu.correo@utec.edu.pe"
                         value={formData.email}
-                        onChange={(e) => handleInputChange("email", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("email", e.target.value)
+                        }
                         className={`pl-10 h-10 ${errors.email ? "border-destructive" : ""}`}
                       />
                     </div>
@@ -487,7 +527,10 @@ export default function AuthPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="registerPassword" className="text-sm font-medium">
+                    <Label
+                      htmlFor="registerPassword"
+                      className="text-sm font-medium"
+                    >
                       Contrasena
                     </Label>
                     <div className="relative">
@@ -497,7 +540,9 @@ export default function AuthPage() {
                         type={showPassword ? "text" : "password"}
                         placeholder="Minimo 6 caracteres"
                         value={formData.password}
-                        onChange={(e) => handleInputChange("password", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("password", e.target.value)
+                        }
                         className={`pl-10 pr-10 h-10 ${errors.password ? "border-destructive" : ""}`}
                       />
                       <button
@@ -505,16 +550,25 @@ export default function AuthPage() {
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         onClick={() => setShowPassword(!showPassword)}
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                     {errors.password && (
-                      <p className="text-xs text-destructive">{errors.password}</p>
+                      <p className="text-xs text-destructive">
+                        {errors.password}
+                      </p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword" className="text-sm font-medium">
+                    <Label
+                      htmlFor="confirmPassword"
+                      className="text-sm font-medium"
+                    >
                       Confirmar Contrasena
                     </Label>
                     <div className="relative">
@@ -524,31 +578,38 @@ export default function AuthPage() {
                         type={showConfirmPassword ? "text" : "password"}
                         placeholder="Repite tu contrasena"
                         value={formData.confirmPassword}
-                        onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("confirmPassword", e.target.value)
+                        }
                         className={`pl-10 pr-10 h-10 ${errors.confirmPassword ? "border-destructive" : ""}`}
                       />
                       <button
                         type="button"
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
                       >
-                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showConfirmPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                     {errors.confirmPassword && (
-                      <p className="text-xs text-destructive">{errors.confirmPassword}</p>
+                      <p className="text-xs text-destructive">
+                        {errors.confirmPassword}
+                      </p>
                     )}
                   </div>
 
-                  <Button type="submit" className="w-full h-10" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Procesando...
-                      </>
-                    ) : (
-                      "Crear cuenta"
-                    )}
+                  <Button
+                    type="submit"
+                    className="w-full h-10"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <ButtonLoader /> : "Crear cuenta"}
                   </Button>
                 </TabsContent>
               </form>
@@ -557,5 +618,5 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

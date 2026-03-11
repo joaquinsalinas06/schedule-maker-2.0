@@ -4,10 +4,11 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { UserPlus, Search, Users, Bell, User as UserIcon, Check, X, Trash2, Loader2 } from "lucide-react"
+import { UserPlus, Search, Users, Bell, User as UserIcon, Check, X, Trash2 } from "lucide-react"
 import { friendsAPI } from "@/services/friendsAPI"
 import { toast } from "@/hooks/use-toast"
 import { FriendProfileModal } from "@/components/FriendProfileModal"
+import { FriendListSkeleton } from "@/components/ui/loading-skeletons"
 import { comparisonService } from "@/services/comparisonService"
 import { useRouter } from "next/navigation"
 import { User, FriendRequest } from "@/types/user"
@@ -231,9 +232,7 @@ export default function FriendsPage() {
           {activeTab === 'friends' && (
             <div className="space-y-3">
               {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                </div>
+                <FriendListSkeleton />
               ) : friends.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -285,9 +284,7 @@ export default function FriendsPage() {
               </div>
 
               {searchLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                </div>
+                <FriendListSkeleton count={3} />
               ) : searchQuery.length < 2 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
