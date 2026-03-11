@@ -72,6 +72,7 @@ interface ScheduleVisualizationProps {
 
 const EMPTY_FAVORITES: ReadonlySet<string> = new Set();
 const SCHEDULE_VIZ_LOG = "[schedule-viz-debug]";
+const CUSTOM_COLORS_STORAGE_KEY = "scheduleCustomColors";
 
 // Dynamic canvas dimensions that will be calculated based on container
 let CANVAS_WIDTH = 1400;
@@ -218,6 +219,9 @@ export function ScheduleVisualization({
   const [customColors, setCustomColors] = useState<
     Record<string, { bg: string; border: string; text: string }>
   >({});
+  const [customPickerCourseCode, setCustomPickerCourseCode] = useState<
+    string | null
+  >(null);
   const [isMobile, setIsMobile] = useState(false);
   const [scheduleImages, setScheduleImages] = useState<{
     [key: number]: string;
@@ -227,6 +231,28 @@ export function ScheduleVisualization({
   const [modalImageUrl, setModalImageUrl] = useState<string | null>(null);
 
   const { combinations, total_combinations } = scheduleData;
+  const presetPickerColors = courseColors.filter(
+    (color) => color.name !== "teal",
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = sessionStorage.getItem(CUSTOM_COLORS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        setCustomColors(parsed);
+      }
+    } catch {
+      // Ignore invalid persisted custom colors.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    sessionStorage.setItem(CUSTOM_COLORS_STORAGE_KEY, JSON.stringify(customColors));
+  }, [customColors]);
 
   // LOG: props on every render
   console.info(`${SCHEDULE_VIZ_LOG} [RENDER] props snapshot`, {
@@ -360,6 +386,7 @@ export function ScheduleVisualization({
         endTime,
         scheduleName,
         favoritedCombinationsSize: favoritedCombinations.size,
+        customColorsCount: Object.keys(customColors).length,
         willGenerate: isMobile && combinations.length > 0,
       },
     );
@@ -373,8 +400,14 @@ export function ScheduleVisualization({
     endTime,
     scheduleName,
     favoritedCombinations,
+    customColors,
     currentScheduleIndex,
   ]);
+
+  useEffect(() => {
+    // Invalidate mobile image cache when course colors change so previews refresh.
+    setScheduleImages({});
+  }, [customColors]);
 
   const generateImagesForMobile = async () => {
     if (!isMobile || combinations.length === 0) return;
@@ -917,6 +950,7 @@ export function ScheduleVisualization({
       containerWidth,
       favoritedCombinations,
       scheduleName,
+      customColors,
     ],
   );
 
@@ -1123,6 +1157,7 @@ export function ScheduleVisualization({
         isFavorited: favoritedCombinations.has(
           combinations[index]?.combination_id,
         ),
+        customCourseColors: customColors,
         devicePixelRatio: 2,
       });
       setScheduleImages((prev) => ({ ...prev, [index]: result.dataUrl }));
@@ -1423,11 +1458,11 @@ export function ScheduleVisualization({
                                   Color del curso
                                 </h4>
                                 <p className="text-xs text-muted-foreground">
-                                  Elige un color personalizado para este curso
-                                  en tu horario.
+                                  Elige un color para este curso. Usa la bola
+                                  multicolor para activar el picker HEX.
                                 </p>
                                 <div className="grid grid-cols-6 gap-2 pt-2">
-                                  {courseColors.map((presetColor, i) => (
+                                  {presetPickerColors.map((presetColor, i) => (
                                     <button
                                       key={i}
                                       className={`w-6 h-6 rounded-full shadow-sm ring-1 ring-inset ring-black/10 transition-transform hover:scale-110 ${
@@ -1440,30 +1475,45 @@ export function ScheduleVisualization({
                                       }}
                                       onClick={(e) => {
                                         e.preventDefault();
+                                        setCustomPickerCourseCode(null);
                                         setCustomColors((prev) => ({
                                           ...prev,
                                           [courseSection.course_code]:
                                             presetColor,
                                         }));
-                                        // Force redraw immediately
-                                        requestAnimationFrame(() => {
-                                          if (isMobile) {
-                                            generateImageForIndex(
-                                              currentScheduleIndex,
-                                            );
-                                          } else {
-                                            drawSchedule(currentScheduleIndex);
-                                          }
-                                        });
                                       }}
                                       title="Seleccionar color"
                                     />
                                   ))}
+                                  <button
+                                    className={`w-6 h-6 rounded-full shadow-sm ring-1 ring-inset ring-black/10 transition-transform hover:scale-110 ${
+                                      customPickerCourseCode ===
+                                      courseSection.course_code
+                                        ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                                        : ""
+                                    }`}
+                                    style={{
+                                      background:
+                                        "conic-gradient(from 0deg, #ef4444, #f59e0b, #84cc16, #22d3ee, #3b82f6, #a855f7, #ec4899, #ef4444)",
+                                    }}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      setCustomPickerCourseCode((prev) =>
+                                        prev === courseSection.course_code
+                                          ? null
+                                          : courseSection.course_code,
+                                      );
+                                    }}
+                                    title="Activar color personalizado"
+                                    aria-label="Activar color personalizado"
+                                  />
                                 </div>
 
-                                <div className="pt-3 border-t border-border mt-3">
+                                {customPickerCourseCode ===
+                                  courseSection.course_code && (
+                                  <div className="pt-3 border-t border-border mt-3">
                                   <label className="text-xs text-muted-foreground mb-3 block">
-                                    O usa un color personalizado:
+                                    Color personalizado (HEX):
                                   </label>
                                   <div className="flex flex-col items-center gap-3">
                                     <HexColorPicker
@@ -1475,16 +1525,8 @@ export function ScheduleVisualization({
                                             bg: hex,
                                             border: hex,
                                             text: '#ffffff',
-                                            name: 'custom'
                                           },
                                         }));
-                                        requestAnimationFrame(() => {
-                                          if (isMobile) {
-                                            generateImageForIndex(currentScheduleIndex);
-                                          } else {
-                                            drawSchedule(currentScheduleIndex);
-                                          }
-                                        });
                                       }}
                                       style={{ width: "100%", height: "120px" }}
                                     />
@@ -1494,6 +1536,7 @@ export function ScheduleVisualization({
                                     </div>
                                   </div>
                                 </div>
+                                )}
                               </div>
                             </PopoverContent>
                           </Popover>
