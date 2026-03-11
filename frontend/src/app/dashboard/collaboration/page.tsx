@@ -15,17 +15,17 @@ export default function CollaborationPage() {
   const { currentSession } = useCollaborationStore()
   const [activeTab, setActiveTab] = useState('sessions')
   const searchParams = useSearchParams()
+  const sharedCode = searchParams.get('code')?.toUpperCase() || ''
+  const comparisonCode = searchParams.get('compcode') || ''
+  const hasDirectNavigation = sharedCode.length === 8 || Boolean(comparisonCode)
 
   useEffect(() => {
-    const code = searchParams.get('code')
-    const compCode = searchParams.get('compcode')
-    
-    if (code && code.length === 8) {
-      setActiveTab('shared')
-    } else if (compCode) {
-      setActiveTab('compare')
+    if (sharedCode.length === 8) {
+      setActiveTab((prev) => (prev === 'shared' ? prev : 'shared'))
+    } else if (comparisonCode) {
+      setActiveTab((prev) => (prev === 'compare' ? prev : 'compare'))
     }
-  }, [searchParams])
+  }, [sharedCode, comparisonCode])
 
   const tabs = [
     { id: 'sessions', label: 'Sesiones', icon: Users },
@@ -33,7 +33,7 @@ export default function CollaborationPage() {
     { id: 'compare', label: 'Comparar', icon: BarChart3 },
   ]
 
-  if (currentSession) {
+  if (currentSession && !hasDirectNavigation) {
     return (
       <div className="h-full flex flex-col">
         <header className="px-6 py-4 border-b border-border bg-background/50 backdrop-blur-sm sticky top-0 z-10">
@@ -96,7 +96,7 @@ export default function CollaborationPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         {activeTab === 'sessions' && <SessionManager />}
-        {activeTab === 'shared' && <SharedScheduleWrapper />}
+        {activeTab === 'shared' && <SharedScheduleWrapper autoLoadCode={sharedCode || null} />}
         {activeTab === 'compare' && <IntegratedScheduleComparison />}
       </div>
     </div>
