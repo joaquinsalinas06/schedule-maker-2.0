@@ -157,6 +157,19 @@ class ImportService:
         try:
             if ext in ('.xlsx', '.xls'):
                 df = pd.read_excel(tmp_path)
+                
+                # Find dynamic header row since some files start with empty/name rows
+                header_idx = None
+                for idx, row in df.iterrows():
+                    row_strs = [str(x).strip() for x in row.values]
+                    if "Código Curso" in row_strs or "Curso" in row_strs:
+                        header_idx = idx
+                        break
+                
+                if header_idx is not None:
+                    df.columns = df.iloc[header_idx]
+                    df = df.iloc[header_idx + 1:]
+                
                 csv_tmp = tempfile.NamedTemporaryFile(suffix='.csv', delete=False, mode='w', newline='', encoding='utf-8')
                 df.to_csv(csv_tmp.name, index=False, encoding='utf-8')
                 csv_tmp.close()

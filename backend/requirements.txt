@@ -23,7 +23,6 @@ python-dotenv
 pydantic-settings
 
 # Cache & Session
-redis
 python-multipart
 
 # Utilities

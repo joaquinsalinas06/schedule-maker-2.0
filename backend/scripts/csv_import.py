@@ -179,6 +179,18 @@ class CSVImporter:
         # Skip empty rows at the beginning
         df = df.dropna(how='all')
         
+        # Find dynamic header row since some files start with empty/name rows
+        header_idx = None
+        for idx, row in df.iterrows():
+            row_strs = [str(x).strip() for x in row.values]
+            if "Código Curso" in row_strs or "Curso" in row_strs:
+                header_idx = idx
+                break
+        
+        if header_idx is not None:
+            df.columns = df.iloc[header_idx]
+            df = df.iloc[header_idx + 1:]
+            
         print(f"✅ Successfully loaded CSV with {len(df)} rows")
         
         # First pass: collect all sessions by course
@@ -251,7 +263,8 @@ class CSVImporter:
                     'capacity': capacity,
                     'enrolled': enrolled,
                     'session_group': session_group,
-                    'section_num': section_num
+                    'section_num': section_num,
+                    'course_name': course_name
                 }
                 
                 # Store all sessions by course for hierarchical processing
@@ -287,10 +300,136 @@ class CSVImporter:
             for session_meta in all_sessions
         )
         
-        if has_decimal_pattern:
+        is_finanzas = any(
+            "Finanzas" in session_meta.get('course_name', '')
+            for session_meta in all_sessions
+        )
+        
+        if is_finanzas:
+            return self._create_finanzas_sections(all_sessions)
+        elif has_decimal_pattern:
             return self._create_decimal_pattern_sections(all_sessions)
         else:
             return self._create_standard_sections(all_sessions)
+            
+    def _create_finanzas_sections(self, all_sessions: List[dict]) -> List[SectionImportData]:
+        """Handle Finanzas Empresariales and Finanzas Corporativas pattern where TEORÍA 1 is shared among TEORÍA 11, TEORÍA 12, etc."""
+        # Group sessions by session type
+        sessions_by_type = defaultdict(list)
+        for session_meta in all_sessions:
+            session_group = session_meta['session_group']
+            sessions_by_type[session_group].append(session_meta)
+            
+        main_theory_sessions = {}
+        sub_theory_sessions = {}
+        
+        for session_group, sessions in sessions_by_type.items():
+            match = re.match(r'^TEORÍA\s+(\d+)$', session_group)
+            if match:
+                num = int(match.group(1))
+                if num < 10:
+                    main_theory_sessions[num] = sessions
+                else:
+                    sub_theory_sessions[num] = sessions
+            else:
+                # E.g. LABORATORIO
+                sub_theory_sessions[session_group] = sessions
+                
+        sections = []
+        section_counter = 1
+        
+        # If no sub_theory_sessions, fallback to grouping by main theory
+        if not sub_theory_sessions:
+            for main_num, main_session_list in main_theory_sessions.items():
+                combined_sessions = []
+                all_professors = set()
+                all_emails = set()
+                all_capacities = set()
+                all_enrolled = set()
+                
+                for session_meta in main_session_list:
+                    combined_sessions.append(session_meta['session'])
+                    if session_meta['professor'] and session_meta['professor'] != "TBD":
+                        all_professors.add(session_meta['professor'])
+                    if session_meta['professor_email']:
+                        all_emails.add(session_meta['professor_email'])
+                    if session_meta['capacity']:
+                        all_capacities.add(session_meta['capacity'])
+                    if session_meta['enrolled']:
+                        all_enrolled.add(session_meta['enrolled'])
+                
+                professor_list = ", ".join(sorted(all_professors)) if all_professors else "TBD"
+                if len(professor_list) > 250:
+                    professor_list = professor_list[:247] + "..."
+                email_list = ", ".join(sorted(all_emails)) if all_emails else ""
+                if len(email_list) > 250:
+                    email_list = email_list[:247] + "..."
+                    
+                section = SectionImportData(
+                    section_number=str(section_counter),
+                    capacity=max(all_capacities) if all_capacities else 30,
+                    enrolled=max(all_enrolled) if all_enrolled else 0,
+                    professor=professor_list,
+                    professor_email=email_list,
+                    sessions=combined_sessions
+                )
+                sections.append(section)
+                section_counter += 1
+            return sections
+        
+        for sub_theory_group, sub_session_list in sub_theory_sessions.items():
+            # If string like 'LABORATORIO 11', match end digits
+            main_number = None
+            if isinstance(sub_theory_group, int):
+                main_number = sub_theory_group // 10
+            else:
+                match = re.search(r'(\d+)$', str(sub_theory_group))
+                if match:
+                    main_number = int(match.group(1)) // 10
+                    
+            main_session_list = []
+            if main_number and main_number in main_theory_sessions:
+                main_session_list = main_theory_sessions[main_number]
+            elif 1 in main_theory_sessions:
+                main_session_list = main_theory_sessions[1]
+                
+            combined_sessions = []
+            all_professors = set()
+            all_emails = set()
+            all_capacities = set()
+            all_enrolled = set()
+            
+            for session_meta in main_session_list + sub_session_list:
+                combined_sessions.append(session_meta['session'])
+                if session_meta['professor'] and session_meta['professor'] != "TBD":
+                    all_professors.add(session_meta['professor'])
+                if session_meta['professor_email']:
+                    all_emails.add(session_meta['professor_email'])
+                if session_meta['capacity']:
+                    all_capacities.add(session_meta['capacity'])
+                if session_meta['enrolled']:
+                    all_enrolled.add(session_meta['enrolled'])
+                    
+            professor_list = ", ".join(sorted(all_professors)) if all_professors else "TBD"
+            if len(professor_list) > 250:
+                professor_list = professor_list[:247] + "..."
+            
+            email_list = ", ".join(sorted(all_emails)) if all_emails else ""
+            if len(email_list) > 250:
+                email_list = email_list[:247] + "..."
+                
+            section = SectionImportData(
+                section_number=str(section_counter),
+                capacity=max(all_capacities) if all_capacities else 30,
+                enrolled=max(all_enrolled) if all_enrolled else 0,
+                professor=professor_list,
+                professor_email=email_list,
+                sessions=combined_sessions
+            )
+            sections.append(section)
+            section_counter += 1
+            
+        return sections
     
     def _create_decimal_pattern_sections(self, all_sessions: List[dict]) -> List[SectionImportData]:
         """Handle courses with TEORÍA X.XX pattern (like Cálculo de una variable)"""
