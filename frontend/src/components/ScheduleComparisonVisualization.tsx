@@ -393,14 +393,15 @@ export function ScheduleComparisonVisualization({
               {comparison.name}
             </CardTitle>
             <CardDescription>
-              {comparison.participants.length} participantes • {comparison.conflicts.length} conflictos detectados
+              {comparison.participants.length} participantes •{" "}
+              {comparison.conflicts.length} conflictos detectados
             </CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               onClick={downloadComparison}
-              className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground border-0"
             >
               <Download className="w-4 h-4 mr-1" />
               Descargar
@@ -420,14 +421,19 @@ export function ScheduleComparisonVisualization({
                 </h3>
                 <div className="space-y-2">
                   {comparison.participants.map((participant) => (
-                    <div key={participant.id} className="flex items-center justify-between p-3 border border-border rounded-lg bg-muted/30">
+                    <div
+                      key={participant.id}
+                      className="flex items-center justify-between p-3 border border-border rounded-lg bg-muted/30"
+                    >
                       <div className="flex items-center gap-3">
-                        <div 
+                        <div
                           className="w-4 h-4 rounded"
                           style={{ backgroundColor: participant.color }}
                         />
                         <div>
-                          <div className="font-medium text-sm text-foreground">{participant.name}</div>
+                          <div className="font-medium text-sm text-foreground">
+                            {participant.name}
+                          </div>
                           <div className="text-xs text-muted-foreground">
                             {participant.schedules.length} horarios
                           </div>
@@ -458,15 +464,24 @@ export function ScheduleComparisonVisualization({
                     </h4>
                     <div className="space-y-2">
                       {comparison.conflicts.map((conflict, index) => (
-                        <div key={index} className="p-2 border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800 rounded-md">
+                        <div
+                          key={index}
+                          className="p-2 border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800 rounded-md"
+                        >
                           <div className="text-xs font-medium text-red-800 dark:text-red-200">
-                            {weekDayStrings[typeof conflict.timeSlot.day === 'string' ? 
-                              dayNameToIndex[conflict.timeSlot.day] || 0 : 
-                              conflict.timeSlot.day - 1
-                            ]} {conflict.timeSlot.startTime} - {conflict.timeSlot.endTime}
+                            {
+                              weekDayStrings[
+                                typeof conflict.timeSlot.day === "string"
+                                  ? dayNameToIndex[conflict.timeSlot.day] || 0
+                                  : conflict.timeSlot.day - 1
+                              ]
+                            }{" "}
+                            {conflict.timeSlot.startTime} -{" "}
+                            {conflict.timeSlot.endTime}
                           </div>
                           <div className="text-xs text-red-600 dark:text-red-300">
-                            {conflict.participants.length} participantes afectados
+                            {conflict.participants.length} participantes
+                            afectados
                           </div>
                         </div>
                       ))}
@@ -478,11 +493,14 @@ export function ScheduleComparisonVisualization({
 
             {/* Schedule Canvas */}
             <div className="lg:col-span-3">
-              <div ref={containerRef} className="border border-border rounded-lg bg-slate-900 p-6 shadow-inner">
+              <div
+                ref={containerRef}
+                className="border border-border rounded-lg bg-card p-6 shadow-inner"
+              >
                 <canvas
                   ref={canvasRef}
                   className="w-full h-auto max-w-full rounded-md shadow-sm"
-                  style={{ backgroundColor: '#0f172a' }}
+                  style={{ backgroundColor: "#0f172a" }}
                 />
               </div>
             </div>
@@ -492,7 +510,9 @@ export function ScheduleComparisonVisualization({
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-3 border border-border rounded-lg bg-muted/30">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm text-foreground font-medium">Horario:</span>
+              <span className="text-sm text-foreground font-medium">
+                Horario:
+              </span>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
@@ -518,5 +538,5 @@ export function ScheduleComparisonVisualization({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
