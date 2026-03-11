@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, ForeignKey, Text, Boolean
+from sqlalchemy import Column, String, Integer, ForeignKey, Text, Boolean, JSON
 from sqlalchemy.orm import relationship
 from .base import BaseModel
 
@@ -11,6 +11,7 @@ class Schedule(BaseModel):
     is_favorite = Column(Boolean, default=False)
     is_public = Column(Boolean, default=False)
     share_token = Column(String(100), unique=True)
+    combination_data = Column(JSON, nullable=True) # Stores the raw exact JSON payload from generator
     
     # Relationships
     user = relationship("User", back_populates="schedules")

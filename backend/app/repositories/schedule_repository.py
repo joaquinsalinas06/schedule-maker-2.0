@@ -35,12 +35,13 @@ class ScheduleRepository(BaseRepository[Schedule]):
         ).first()
 
     def create_schedule(self, user_id: int, name: str, description: Optional[str], 
-                       share_token: str) -> Schedule:
+                       share_token: str, combination_data: Optional[dict] = None) -> Schedule:
         schedule_data = {
             "user_id": user_id,
             "name": name,
             "description": description,
-            "share_token": share_token
+            "share_token": share_token,
+            "combination_data": combination_data
         }
         return self.create(schedule_data)
 

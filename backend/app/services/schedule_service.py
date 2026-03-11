@@ -125,7 +125,8 @@ class ScheduleService:
                 user_id=user.id,
                 name=request.name.strip(),
                 description=request.description.strip() if request.description else None,
-                share_token=schedule_uuid
+                share_token=schedule_uuid,
+                combination_data=request.combination # We store the exact JSON format here
             )
             
             # If combination data is provided, save the course/section relationships
@@ -186,7 +187,8 @@ class ScheduleService:
             user_id=user.id,
             name=schedule_data.name,
             description=schedule_data.description,
-            share_token=schedule_uuid
+            share_token=schedule_uuid,
+            combination_data=getattr(schedule_data, 'combination', None)
         )
         
         return {
@@ -203,8 +205,12 @@ class ScheduleService:
             # Build response with combination data
             result = []
             for schedule in schedules:
-                # Get the sessions and build combination data
-                combination_data = self._build_combination_data_from_schedule(schedule)
+                if schedule.combination_data:
+                    # Serve exact structure if available
+                    combination_data = schedule.combination_data
+                else:
+                    # Fallback for old relationships
+                    combination_data = self._build_combination_data_from_schedule(schedule)
                 
                 schedule_dict = {
                     'id': schedule.id,
