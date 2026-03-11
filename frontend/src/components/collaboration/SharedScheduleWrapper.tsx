@@ -1,20 +1,15 @@
 'use client';
 
 import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { SharedScheduleManager } from './SharedScheduleManager';
 
-function SharedScheduleContent() {
-  const searchParams = useSearchParams();
-  const code = searchParams.get('code');
-  
-  
+function SharedScheduleContent({ autoLoadCode }: { autoLoadCode?: string | null }) {
   return (
-    <SharedScheduleManager autoLoadCode={code} />
+    <SharedScheduleManager autoLoadCode={autoLoadCode} />
   );
 }
 
-export function SharedScheduleWrapper() {
+export function SharedScheduleWrapper({ autoLoadCode }: { autoLoadCode?: string | null }) {
   return (
     <Suspense
       fallback={
@@ -24,7 +19,7 @@ export function SharedScheduleWrapper() {
         </div>
       }
     >
-      <SharedScheduleContent />
+      <SharedScheduleContent autoLoadCode={autoLoadCode} />
     </Suspense>
   );
 }

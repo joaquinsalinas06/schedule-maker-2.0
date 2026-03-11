@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Plus, X, Check } from "lucide-react"
+import { Plus, X, Check, Minus } from "lucide-react"
 import { SectionPopupState, SelectedSection, Section, Session } from "@/types"
 
 interface SectionSelectionPopupProps {
@@ -198,7 +198,8 @@ export function SectionSelectionPopup({
                       <Button
                         size="sm"
                         variant={isSelected ? "destructive" : "outline"}
-                        className={`h-8 px-3 text-xs ${!isSelected && "hover:border-primary hover:text-primary"}`}
+                        className={`h-8 w-8 p-0 ${!isSelected && "hover:border-primary hover:text-primary"}`}
+                        aria-label={isSelected ? "Quitar sección" : "Agregar sección"}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (isSelected) {
@@ -208,7 +209,7 @@ export function SectionSelectionPopup({
                           }
                         }}
                       >
-                        {isSelected ? "Quitar" : "Agregar"}
+                        {isSelected ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                       </Button>
                     </td>
                   </tr>
