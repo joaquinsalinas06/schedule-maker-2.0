@@ -303,49 +303,54 @@ export function ScheduleVisualization({
     scheduleName,
     favoritedCombinations,
     currentScheduleIndex,
-    scheduleImages,
   ]);
 
   const generateImagesForMobile = async () => {
     if (!isMobile || combinations.length === 0) return;
 
+    // Generate images only for schedules that are still missing.
+    const scheduleIndexesToGenerate = [
+      currentScheduleIndex,
+      Math.max(0, currentScheduleIndex - 1),
+      Math.min(combinations.length - 1, currentScheduleIndex + 1),
+    ]
+      .filter((index, pos, arr) => arr.indexOf(index) === pos)
+      .filter((index) => !scheduleImages[index]);
+
+    if (scheduleIndexesToGenerate.length === 0) {
+      return;
+    }
+
     setImageLoading(true);
     const newImages: { [key: number]: string } = {};
 
     try {
-      // Generate images for current schedule and a few nearby ones for better UX
-      const scheduleIndexesToGenerate = [
-        currentScheduleIndex,
-        Math.max(0, currentScheduleIndex - 1),
-        Math.min(combinations.length - 1, currentScheduleIndex + 1),
-      ].filter((index, pos, arr) => arr.indexOf(index) === pos); // Remove duplicates
-
       for (const index of scheduleIndexesToGenerate) {
-        if (!scheduleImages[index]) {
-          try {
-            const result = await generateScheduleImage({
-              schedule: combinations[index],
-              width: 1400, // Fixed high-quality dimensions
-              height: 900,
-              startTime,
-              endTime,
-              scheduleName: scheduleName || `Horario ${index + 1}`,
-              isFavorited: favoritedCombinations.has(
-                combinations[index]?.combination_id,
-              ),
-              devicePixelRatio: 2,
-            });
-            newImages[index] = result.dataUrl;
-          } catch (error) {
-            console.error(
-              `Failed to generate image for schedule ${index}:`,
-              error,
-            );
-          }
+        try {
+          const result = await generateScheduleImage({
+            schedule: combinations[index],
+            width: 1400, // Fixed high-quality dimensions
+            height: 900,
+            startTime,
+            endTime,
+            scheduleName: scheduleName || `Horario ${index + 1}`,
+            isFavorited: favoritedCombinations.has(
+              combinations[index]?.combination_id,
+            ),
+            devicePixelRatio: 2,
+          });
+          newImages[index] = result.dataUrl;
+        } catch (error) {
+          console.error(
+            `Failed to generate image for schedule ${index}:`,
+            error,
+          );
         }
       }
 
-      setScheduleImages((prev) => ({ ...prev, ...newImages }));
+      if (Object.keys(newImages).length > 0) {
+        setScheduleImages((prev) => ({ ...prev, ...newImages }));
+      }
     } finally {
       setImageLoading(false);
     }
