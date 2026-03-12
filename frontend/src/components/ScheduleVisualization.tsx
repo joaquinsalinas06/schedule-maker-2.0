@@ -892,8 +892,9 @@ export function ScheduleVisualization({
           // Professor - show if we have space
           if (currentY + fontSizes.professorFont + 2 < yPos + maxTextHeight) {
             ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+            const displayProfessor = !course.professor || course.professor.toLowerCase() === 'nan' ? 'No asignado' : course.professor;
             const professorHeight = drawFittingText(
-              course.professor,
+              displayProfessor,
               textX,
               currentY,
               maxWidth,
@@ -1701,7 +1702,7 @@ export function ScheduleVisualization({
                     Profesor
                   </div>
                   <div className="text-foreground font-medium">
-                    {selectedCourse.professor}
+                    {!selectedCourse.professor || selectedCourse.professor.toLowerCase() === 'nan' ? 'No asignado' : selectedCourse.professor}
                   </div>
                 </div>
               </div>

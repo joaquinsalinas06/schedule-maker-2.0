@@ -49,6 +49,14 @@ export const apiService = {
     });
     return response.data;
   },
+
+  getBulkCoursesByIds: async (courseIds: number[], courseNames?: string[]): Promise<Course[]> => {
+    const response = await api.post('/api/courses/bulk-by-ids', {
+      course_ids: courseIds,
+      course_names: courseNames
+    });
+    return response.data;
+  },
   // Schedule Generation
   generateSchedules: async (request: ScheduleRequest): Promise<any> => {
     const response = await api.post('/api/schedules/generate', request);

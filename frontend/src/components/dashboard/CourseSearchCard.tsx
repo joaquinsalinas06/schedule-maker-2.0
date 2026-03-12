@@ -40,7 +40,6 @@ export function CourseSearchCard({
           placeholder="Buscar cursos, codigos, o profesores..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSearch?.()}
           className="pl-10 pr-10 h-10 bg-card border-border"
         />
         {searchQuery && (

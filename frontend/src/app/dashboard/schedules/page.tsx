@@ -669,22 +669,28 @@ export default function SchedulesPage() {
                             const transformedData = {
                               ...generatedSchedules,
                               combinations: generatedSchedules.combinations.map(
-                                (combination) => ({
-                                  ...combination,
-                                  combination_id:
-                                    combination.combination_id.toString(),
-                                  course_count:
-                                    combination.course_count ||
-                                    combination.courses?.length ||
-                                    0,
-                                  courses: (combination.courses || []).map(
-                                    (course) => ({
-                                      course_id: course.course_id,
-                                      course_code: course.course_code,
-                                      course_name: course.course_name,
-                                      section_id: course.section_id,
-                                      section_number: course.section_number,
-                                      professor: course.professor,
+                                (combination) => {
+                                  // Order courses: required first, optional second
+                                  const sortedCourses = [...(combination.courses || [])].sort((a, b) => {
+                                    const aIsOptional = optionalCourses.has(a.course_code);
+                                    const bIsOptional = optionalCourses.has(b.course_code);
+                                    if (aIsOptional && !bIsOptional) return 1;
+                                    if (!aIsOptional && bIsOptional) return -1;
+                                    return 0;
+                                  });
+
+                                  return {
+                                    ...combination,
+                                    combination_id: combination.combination_id.toString(),
+                                    course_count: combination.course_count || combination.courses?.length || 0,
+                                    courses: sortedCourses.map(
+                                      (course) => ({
+                                        course_id: course.course_id,
+                                        course_code: course.course_code,
+                                        course_name: course.course_name,
+                                        section_id: course.section_id,
+                                        section_number: course.section_number,
+                                        professor: course.professor,
                                       sessions: course.sessions.map(
                                         (session: any) => ({
                                           session_id:
@@ -703,7 +709,8 @@ export default function SchedulesPage() {
                                       ),
                                     }),
                                   ),
-                                }),
+                                  };
+                                },
                               ),
                               selected_courses_count:
                                 generatedSchedules.combinations?.[0]?.courses

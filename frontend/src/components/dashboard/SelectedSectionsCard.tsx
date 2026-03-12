@@ -219,7 +219,7 @@ export function SelectedSectionsCard({
                                 <p
                                   className={`text-xs truncate ${isImpossible ? "text-destructive/70" : "text-muted-foreground"}`}
                                 >
-                                  {section.professor}
+                                  {!section.professor || section.professor.toLowerCase() === 'nan' ? 'No asignado' : section.professor}
                                 </p>
                               </div>
                               <Tooltip>

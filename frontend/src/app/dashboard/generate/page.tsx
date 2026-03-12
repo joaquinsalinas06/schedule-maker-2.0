@@ -18,6 +18,7 @@ import { CourseResultsGrid } from "@/components/dashboard/CourseResultsGrid";
 import { SelectedSectionsCard } from "@/components/dashboard/SelectedSectionsCard";
 import { SectionSelectionPopup } from "@/components/dashboard/SectionSelectionPopup";
 import { CargaHabilModal } from "@/components/dashboard/CargaHabilModal";
+import PlannedCoursesBanner from "@/components/dashboard/PlannedCoursesBanner";
 import { Upload } from "lucide-react";
 
 export default function GeneratePage() {
@@ -51,15 +52,26 @@ export default function GeneratePage() {
   const [isCargaHabilModalOpen, setIsCargaHabilModalOpen] = useState(false);
 
   // Curriculum integration
-  const { unlockedCourseDbIds, fetchProgress } = useCurriculumStore();
+  const { curriculum, unlockedCourseDbIds, fetchProgress, fetchCurriculum, getPlannedCoursesForPeriod, getCurrentPeriod } = useCurriculumStore();
   const currentUser = authService.getCurrentUser();
   const hasCurriculum = !!currentUser?.curriculum_id;
 
+  // Planned courses for current period
+  const currentPeriod = getCurrentPeriod();
+  const plannedForCurrentPeriod = useMemo(
+    () => getPlannedCoursesForPeriod(currentPeriod),
+    [currentPeriod, getPlannedCoursesForPeriod, curriculum]
+  );
+
   useEffect(() => {
     if (hasCurriculum && currentUser?.curriculum_id) {
-      fetchProgress(currentUser.curriculum_id);
+      if (!curriculum) {
+        fetchCurriculum(currentUser.curriculum_id);
+      } else {
+        fetchProgress(currentUser.curriculum_id);
+      }
     }
-  }, [hasCurriculum, currentUser?.curriculum_id, fetchProgress]);
+  }, [hasCurriculum, currentUser?.curriculum_id, curriculum, fetchCurriculum, fetchProgress]);
 
   // Filter search results by unlocked courses when curriculum filter is enabled
   const filteredSearchResults = useMemo(() => {
@@ -204,6 +216,62 @@ export default function GeneratePage() {
     });
   };
 
+  const handlePlannedCoursesImport = async (plannedCourses: any[]) => {
+    console.log("[handlePlannedCoursesImport] Starting with planned courses:", plannedCourses);
+    setIsLoading(true);
+    try {
+      // Separate IDs and Names for bulk fetch
+      const idsToFetch: number[] = [];
+      const namesToFetch: string[] = [];
+      
+      plannedCourses.forEach(c => {
+         console.log("[handlePlannedCoursesImport] Processing course:", c);
+         if (c.linked_course_id) idsToFetch.push(c.linked_course_id);
+         
+         // Always pass the name as a safe fallback in case the ID is broken or inactive
+         if (c.course_name) namesToFetch.push(c.course_name);
+      });
+      
+      console.log("[handlePlannedCoursesImport] IDs to fetch:", idsToFetch);
+      console.log("[handlePlannedCoursesImport] Names to fetch:", namesToFetch);
+      
+      // Fetch bulk course details
+      const courses = await apiService.getBulkCoursesByIds(idsToFetch, namesToFetch);
+      console.log("[handlePlannedCoursesImport] Received courses from API:", courses);
+      
+      // Select all available sections of each course
+      setSelectedSections((prev) => {
+        let newSelected = [...prev];
+        courses.forEach((course) => {
+          if (course.sections && course.sections.length > 0) {
+            course.sections.forEach((section) => {
+              const alreadySelected = newSelected.some(
+                (s) => s.sectionId === section.id
+              );
+              if (!alreadySelected) {
+                newSelected.push({
+                  sectionId: section.id,
+                  courseCode: course.code,
+                  courseName: course.name,
+                  sectionCode: section.section_number,
+                  professor: section.professor,
+                  sessions: section.sessions,
+                });
+              }
+            });
+          }
+        });
+        console.log("[handlePlannedCoursesImport] Final selected sections state will be:", newSelected);
+        return newSelected;
+      });
+      
+    } catch (error) {
+      console.error("[handlePlannedCoursesImport] Error importing planned courses:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const uniqueCourses = [
     ...new Set(selectedSections.map((section) => section.courseCode)),
   ];
@@ -337,21 +405,32 @@ export default function GeneratePage() {
           </div>
         </div>
 
-        {/* Right Panel - Selected Sections */}
+        {/* Right Panel - Selected Sections & Planned Courses */}
         <div className="w-80 flex-shrink-0 overflow-y-auto p-6 hidden lg:block">
-          <SelectedSectionsCard
-            selectedSections={selectedSections}
-            groupSectionsByCourse={groupSectionsByCourse}
-            collapsedCourses={collapsedCourses}
-            toggleCourseCollapse={toggleCourseCollapse}
-            removeSection={removeSection}
-            handleGenerateSchedules={handleGenerateSchedules}
-            isLoading={isLoading}
-            optionalCourses={optionalCourses}
-            toggleCourseOptional={toggleCourseOptional}
-            maxOptionalCourses={maxOptionalCourses}
-            setMaxOptionalCourses={setMaxOptionalCourses}
-          />
+          <div className="space-y-6">
+            {plannedForCurrentPeriod.length > 0 && (
+              <PlannedCoursesBanner
+                period={currentPeriod}
+                courses={plannedForCurrentPeriod}
+                onImportAll={handlePlannedCoursesImport}
+                isLoading={isLoading}
+              />
+            )}
+            
+            <SelectedSectionsCard
+              selectedSections={selectedSections}
+              groupSectionsByCourse={groupSectionsByCourse}
+              collapsedCourses={collapsedCourses}
+              toggleCourseCollapse={toggleCourseCollapse}
+              removeSection={removeSection}
+              handleGenerateSchedules={handleGenerateSchedules}
+              isLoading={isLoading}
+              optionalCourses={optionalCourses}
+              toggleCourseOptional={toggleCourseOptional}
+              maxOptionalCourses={maxOptionalCourses}
+              setMaxOptionalCourses={setMaxOptionalCourses}
+            />
+          </div>
         </div>
       </div>
 
