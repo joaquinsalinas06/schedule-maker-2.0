@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { Calendar, Grid3X3, Users, Star, UserPlus, Database } from "lucide-react"
 import { authService } from "@/services/auth"
+import { authSessionManager } from "@/lib/authSessionManager"
 import { SidebarSection } from "@/types"
 import { useFirstTimeUser } from "@/hooks/useFirstTimeUser"
 import { useUserSessionSecurity } from "@/hooks/useUserSessionSecurity"
@@ -34,6 +35,40 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   useEffect(() => {
     const user = authService.getCurrentUser()
     setCurrentUser(user)
+  }, [])
+
+  // Auth check + auto-refresh using the session manager
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    // Validate session properly (JWT expiry check)
+    if (!authSessionManager.isAuthenticated()) {
+      // Try to get a valid token (may trigger refresh)
+      authSessionManager.getValidToken().then((token) => {
+        if (!token) {
+          window.location.href = '/auth'
+          return
+        }
+        setAuthLoading(false)
+      })
+    } else {
+      setAuthLoading(false)
+    }
+
+    // Start proactive auto-refresh
+    authSessionManager.startAutoRefresh()
+
+    // Listen for auth state changes (e.g., logout from another tab)
+    const { unsubscribe } = authSessionManager.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        window.location.href = '/auth'
+      }
+    })
+
+    return () => {
+      authSessionManager.stopAutoRefresh()
+      unsubscribe()
+    }
   }, [])
 
   const sidebarSections: SidebarSection[] = [

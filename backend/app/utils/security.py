@@ -8,7 +8,8 @@ from passlib.context import CryptContext
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
-REFRESH_TOKEN_EXPIRE_DAYS = 30  # Refresh tokens last longer
+REFRESH_TOKEN_EXPIRE_DAYS = 30  # Long-lived refresh tokens (remember me)
+REFRESH_TOKEN_EXPIRE_HOURS = 24  # Short-lived refresh tokens (session)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -22,11 +23,13 @@ def create_access_token(subject: Union[str, Any], expires_delta: timedelta = Non
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def create_refresh_token(subject: Union[str, Any], expires_delta: timedelta = None) -> str:
+def create_refresh_token(subject: Union[str, Any], expires_delta: timedelta = None, long_lived: bool = True) -> str:
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
-    else:
+    elif long_lived:
         expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    else:
+        expire = datetime.utcnow() + timedelta(hours=REFRESH_TOKEN_EXPIRE_HOURS)
     
     to_encode = {"exp": expire, "sub": str(subject), "type": "refresh"}
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)

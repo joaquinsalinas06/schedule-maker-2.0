@@ -105,13 +105,17 @@ export default function AuthPage() {
 
     setIsLoading(true);
     try {
+      // Check for redirect parameter from middleware
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get("redirect") || "/dashboard";
+
       if (activeTab === "login") {
         await authService.login({
           email: formData.email,
           password: formData.password,
           rememberMe: formData.rememberMe,
         });
-        window.location.href = "/dashboard";
+        window.location.href = redirectTo;
       } else {
         await authService.register({
           first_name: formData.firstName,
@@ -122,7 +126,7 @@ export default function AuthPage() {
           university_id: 1,
         });
         localStorage.removeItem("schedule-maker-first-time-user");
-        window.location.href = "/dashboard";
+        window.location.href = redirectTo;
       }
     } catch (error) {
       console.error("Authentication error:", error);

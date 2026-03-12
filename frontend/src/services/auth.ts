@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { AuthResponse, LoginRequest, RegisterRequest, User } from '@/types';
+import { authSessionManager } from '@/lib/authSessionManager';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
 
@@ -10,133 +11,32 @@ const api = axios.create({
   },
 });
 
-// Add token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+// Add valid token to every request using the session manager
+api.interceptors.request.use(async (config) => {
+  // For refresh requests, don't try to get a valid token (avoid infinite loop)
+  if (config.url?.includes('/auth/refresh')) {
+    return config;
+  }
+
+  const token = await authSessionManager.getValidToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Handle token expiration with automatic refresh
-let isRefreshing = false;
-let failedQueue: any[] = [];
-
-const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  
-  failedQueue = [];
-};
-
+// Handle 401 errors — session manager already tried to refresh in the request interceptor,
+// so if we still get 401, the session is truly dead
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const original = error.config;
-
-    if (error.response?.status === 401 && !original._retry) {
-      if (isRefreshing) {
-        // If we're already refreshing, queue this request
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then(token => {
-          original.headers.Authorization = `Bearer ${token}`;
-          return api(original);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
+    if (error.response?.status === 401) {
+      // Prevent redirect loops
+      if (typeof window !== 'undefined' &&
+          window.location.pathname !== '/auth' &&
+          window.location.pathname !== '/login') {
+        authService.logout();
       }
-
-      original._retry = true;
-      isRefreshing = true;
-
-      // Try to refresh the token
-      const refreshToken = localStorage.getItem('refresh_token');
-      const rememberMe = localStorage.getItem('remember_me') === 'true';
-
-      if (refreshToken && rememberMe) {
-        try {
-          const newToken = await authService.refreshToken();
-          if (newToken) {
-            processQueue(null, newToken);
-            original.headers.Authorization = `Bearer ${newToken}`;
-            return api(original);
-          }
-        } catch (refreshError) {
-          processQueue(refreshError, null);
-        } finally {
-          isRefreshing = false;
-        }
-      }
-
-      // If refresh failed or no refresh token, show expiry message and redirect
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('remember_me');
-      
-      // Clear all user-specific data for security
-      try {
-        // Use secure storage cleanup
-        import('@/utils/secureStorage').then(({ SecureStorage }) => {
-          SecureStorage.clearAllUserData();
-        });
-      } catch (error) {
-        // Fallback - remove known global keys
-        localStorage.removeItem('favoriteSchedules');
-        localStorage.removeItem('favoritedCombinations');
-      }
-      
-      // Prevent redirect loops by checking current location
-      if (window.location.pathname === '/auth' || window.location.pathname === '/login') {
-        // If already on auth pages, just clear tokens without redirect
-        processQueue(error, null);
-        isRefreshing = false;
-        return Promise.reject(error);
-      }
-      
-      // Show temporary message before redirect
-      const body = document.body;
-      const overlay = document.createElement('div');
-      overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        color: white;
-        font-family: system-ui, -apple-system, sans-serif;
-      `;
-      overlay.innerHTML = `
-        <div style="text-align: center; padding: 2rem; background: #1f2937; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
-          <div style="width: 48px; height: 48px; border: 4px solid #06b6d4; border-top: 4px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
-          <h2 style="margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 600;">Sesión Expirada</h2>
-          <p style="margin: 0; color: #9ca3af;">Redirigiendo al login...</p>
-        </div>
-        <style>
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        </style>
-      `;
-      body.appendChild(overlay);
-      
-      setTimeout(() => {
-        window.location.href = '/auth';
-      }, 1500);
-      
-      isRefreshing = false;
     }
     return Promise.reject(error);
   }
@@ -150,14 +50,15 @@ export const authService = {
       remember_me: credentials.rememberMe || false
     });
     
-    // Store tokens and user data
-    localStorage.setItem('token', response.data.access_token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-    
-    // Store refresh token if provided and remember me is enabled
-    if (response.data.refresh_token && credentials.rememberMe) {
-      // Use secure storage for refresh token
-      localStorage.setItem('refresh_token', response.data.refresh_token);
+    // Save session via the manager (handles localStorage + cookie + auto-refresh)
+    authSessionManager.setSession(
+      response.data.access_token,
+      response.data.refresh_token,
+      response.data.user
+    );
+
+    // Keep remember_me preference for reference
+    if (credentials.rememberMe) {
       localStorage.setItem('remember_me', 'true');
     }
     
@@ -167,90 +68,79 @@ export const authService = {
   register: async (userData: RegisterRequest): Promise<AuthResponse> => {
     const response = await api.post('/api/auth/register', userData);
     
-    // Store token and user data
-    localStorage.setItem('token', response.data.access_token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
+    // Save session via the manager
+    authSessionManager.setSession(
+      response.data.access_token,
+      response.data.refresh_token,
+      response.data.user
+    );
     
     return response.data;
   },
 
   refreshToken: async (): Promise<string | null> => {
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (!refreshToken) return null;
-
-    try {
-      const response = await api.post('/api/auth/refresh', {
-        refresh_token: refreshToken
-      });
-      
-      // Update stored token and user
-      localStorage.setItem('token', response.data.access_token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      
-      return response.data.access_token;
-    } catch (error) {
-      // If refresh fails, clear all tokens and redirect to login
-      authService.logout();
-      return null;
-    }
+    return authSessionManager.getValidToken();
   },
 
   logout: () => {
-    // Clear authentication tokens and user data
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('remember_me');
-    localStorage.removeItem('selectedUniversity');
-    
     // Clear all user-specific data for security
     try {
-      // Use secure storage cleanup instead of individual items
       import('@/utils/secureStorage').then(({ SecureStorage }) => {
         SecureStorage.clearAllUserData();
       });
       
-      // Also clear collaboration data
       import('@/stores/collaborationStore').then(({ useCollaborationStore }) => {
         const store = useCollaborationStore.getState();
         store.clearUserData();
       });
     } catch (error) {
       console.warn('Failed to clear user data on logout:', error);
-      // Fallback - remove known global keys
       localStorage.removeItem('favoriteSchedules');
       localStorage.removeItem('favoritedCombinations');
     }
+
+    // Clear selected university
+    localStorage.removeItem('selectedUniversity');
+
+    // Clear session via manager (handles localStorage + cookie + stops auto-refresh)
+    authSessionManager.clearSession();
     
     window.location.href = '/auth';
   },
 
   getCurrentUser: (): User | null => {
-    const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
+    const session = authSessionManager.getSession();
+    return session ? session.user as unknown as User : null;
   },
 
   getToken: (): string | null => {
-    return localStorage.getItem('token');
+    const session = authSessionManager.getSession();
+    return session ? session.access_token : null;
   },
 
   isAuthenticated: (): boolean => {
-    return !!localStorage.getItem('token');
+    return authSessionManager.isAuthenticated();
   },
 
   me: async (): Promise<User> => {
     const response = await api.get('/api/auth/me');
-    localStorage.setItem('user', JSON.stringify(response.data));
+    // Update the stored user data
+    const session = authSessionManager.getSession();
+    if (session) {
+      authSessionManager.setSession(session.access_token, session.refresh_token, response.data);
+    }
     return response.data;
   },
 
-
-
   setUser: (user: User): void => {
-    localStorage.setItem("user", JSON.stringify(user));
+    const session = authSessionManager.getSession();
+    if (session) {
+      authSessionManager.setSession(session.access_token, session.refresh_token, user as unknown as Record<string, unknown>);
+    } else {
+      // Fallback for cases where session isn't fully set up
+      localStorage.setItem("user", JSON.stringify(user));
+    }
   }
 };
-
-
 
 export { api };

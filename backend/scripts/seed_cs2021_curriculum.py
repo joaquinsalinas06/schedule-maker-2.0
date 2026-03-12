@@ -78,23 +78,23 @@ COURSES = [
     ("Computación Paralela y Distribuida", 7, 4, False),
     ("Interacción Humano Computador", 7, 4, False),
     ("Redes y Comunicaciones", 7, 3, False),
-    ("ELECTIVO1", 7, 4, True),
+    ("ELECTIVO1", 7, 0, True),
     # Semester 8
     ("Investigación en Computación", 8, 3, False),
     ("Arte y Tecnología", 8, 3, False),
     ("Proyecto Preprofesional", 8, 8, False),
     # Semester 9
     ("Internet de las Cosas", 9, 4, False),
-    ("Proyecto Final de Carrera - Trabajo de Investigación II", 9, 4, False),
-    ("ELECTIVO2", 9, 4, True),
-    ("ELECTIVO3", 9, 4, True),
+    ("Proyecto Final de Ciencia de la Computación I", 9, 4, False),
+    ("ELECTIVO2", 9, 0, True),
+    ("ELECTIVO3", 9, 0, True),
     ("Evaluación Financiera de Proyectos", 9, 3, False),
     ("Ética y Tecnología", 9, 3, False),
     # Semester 10
-    ("Proyecto Final de Carrera - Trabajo de Investigación III", 10, 4, False),
-    ("ELECTIVO4", 10, 4, True),
-    ("ELECTIVO5", 10, 4, True),
-    ("ELECTIVO6", 10, 4, True),
+    ("Proyecto Final de Ciencia de la Computación II", 10, 4, False),
+    ("ELECTIVO4", 10, 0, True),
+    ("ELECTIVO5", 10, 0, True),
+    ("ELECTIVO6", 10, 0, True),
     ("Estrategia y Organizaciones", 10, 3, False),
 ]
 
@@ -135,9 +135,9 @@ PREREQUISITES = [
     ("Ingeniería de Software", "course", "Cloud Computing"),
     ("Proyectos Interdisciplinarios 3", "course", "Proyectos Interdisciplinarios 2"),
     # Semester 6
-    ("Estructura de Datos Avanzados", "course", "Algoritmos y Estructuras de Datos"),
+    ("Estructura de Datos Avanzados", "course", "Análisis y Diseño de Algoritmos"),
     ("Sistemas Operativos", "course", "Arquitectura de Computadoras"),
-    ("Programación Competitiva", "course", "Algoritmos y Estructuras de Datos"),
+    ("Programación Competitiva", "course", "Análisis y Diseño de Algoritmos"),
     ("Machine Learning", "course", "Programación II"),
     ("Machine Learning", "course", "Estadística y Probabilidades I"),
     ("Finanzas Empresariales", "course", "Empresa y Consumidor"),
@@ -154,11 +154,11 @@ PREREQUISITES = [
     # Semester 9
     ("Internet de las Cosas", "course", "Programación II"),
     ("Internet de las Cosas", "course", "Arquitectura de Computadoras"),
-    ("Proyecto Final de Carrera - Trabajo de Investigación II", "credits", 130),
+    ("Proyecto Final de Ciencia de la Computación I", "credits", 130),
     ("Evaluación Financiera de Proyectos", "course", "Finanzas Empresariales"),
     # Semester 10
-    ("Proyecto Final de Carrera - Trabajo de Investigación III", "course",
-     "Proyecto Final de Carrera - Trabajo de Investigación II"),
+    ("Proyecto Final de Ciencia de la Computación II", "course",
+     "Proyecto Final de Ciencia de la Computación I"),
     ("Estrategia y Organizaciones", "course", "Evaluación Financiera de Proyectos"),
 ]
 

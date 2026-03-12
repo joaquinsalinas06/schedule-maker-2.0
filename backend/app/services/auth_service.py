@@ -43,15 +43,12 @@ class AuthService:
             student_id=user_data.student_id
         )
         
-        # Create tokens
+        # Create tokens — always generate refresh token
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             subject=user.id, expires_delta=access_token_expires
         )
-        
-        refresh_token = None
-        if remember_me:
-            refresh_token = create_refresh_token(subject=user.id)
+        refresh_token = create_refresh_token(subject=user.id, long_lived=remember_me)
         
         return access_token, refresh_token, user
 
@@ -74,15 +71,12 @@ class AuthService:
         # Update last login
         self.user_repo.update_last_login(user)
         
-        # Create tokens
+        # Create tokens — always generate refresh token
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             subject=user.id, expires_delta=access_token_expires
         )
-        
-        refresh_token = None
-        if remember_me:
-            refresh_token = create_refresh_token(subject=user.id)
+        refresh_token = create_refresh_token(subject=user.id, long_lived=remember_me)
         
         return access_token, refresh_token, user
 
