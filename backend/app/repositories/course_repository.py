@@ -116,3 +116,49 @@ class CourseRepository(BaseRepository[Course]):
             Course.university_id == university_id,
             Course.is_active == True
         ).all()
+
+    def get_bulk_mixed(self, course_ids: Optional[List[int]] = None, course_names: Optional[List[str]] = None, university_id: int = 1) -> List[Course]:
+        """Get full active course details by their database IDs or matching their normalized names"""
+        from sqlalchemy import or_, func
+        from app.utils.text_utils import normalize_text
+
+        print(f"[get_bulk_mixed] Start. IDs={course_ids}, Names={course_names}")
+
+        if not course_ids and not course_names:
+            print("[get_bulk_mixed] Neither IDs nor names provided, returning []")
+            return []
+
+        query = self.db.query(Course).join(University).options(
+            joinedload(Course.university),
+            joinedload(Course.sections).joinedload(Section.sessions)
+        ).filter(Course.is_active == True, Course.university_id == university_id)
+
+        conditions = []
+        if course_ids:
+            conditions.append(Course.id.in_(course_ids))
+            
+        if course_names:
+            normalized_names = []
+            for name in course_names:
+                norm = normalize_text(name)
+                if norm:
+                    normalized_names.append(norm)
+            
+            print(f"[get_bulk_mixed] Normalized name array: {normalized_names}")
+            
+            if normalized_names:
+                db_name_norm = func.lower(func.translate(
+                    Course.name, 
+                    'áéíóúñÁÉÍÓÚÑàèìòùÀÈÌÒÙâêîôûÂÊÎÔÛäëïöüÄËÏÖÜçÇ', 
+                    'aeiounAEIOUaeiouAEIOUaeiouAEIOUaeiouAEIOUcC'
+                ))
+                db_name_trimmed = func.trim(db_name_norm)
+                conditions.append(db_name_trimmed.in_(normalized_names))
+
+        if not conditions:
+            print("[get_bulk_mixed] No valid conditions constructed, returning []")
+            return []
+
+        results = query.filter(or_(*conditions)).all()
+        print(f"[get_bulk_mixed] Query generated. Returned {len(results)} courses: {[c.name for c in results]}")
+        return results

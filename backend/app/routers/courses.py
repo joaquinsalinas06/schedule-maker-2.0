@@ -1,6 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, File, UploadFile, HTTPException
-from app.schemas import CourseWithSections, ParseCargaHabilResponse, BulkCourseDetailsRequest
+from app.schemas import CourseWithSections, ParseCargaHabilResponse, BulkCourseDetailsRequest, BulkCourseByIdsRequest
 from app.utils.dependencies import get_course_service
 from app.utils.text_utils import should_perform_search
 from app.services.pdf_parser import PDFParserService
@@ -104,3 +104,19 @@ def get_bulk_course_details(
     if not request.course_codes:
         return []
     return course_service.get_courses_by_codes(request.course_codes, request.university_id)
+
+@router.post("/bulk-by-ids", response_model=List[CourseWithSections])
+def get_bulk_courses_by_ids(
+    request: BulkCourseByIdsRequest,
+    course_service = Depends(get_course_service)
+):
+    """
+    Fetches full course details (with active sections and sessions) for a given list of database IDs.
+    """
+    if not request.course_ids and not request.course_names:
+        return []
+    return course_service.get_bulk_mixed(
+        course_ids=request.course_ids,
+        course_names=request.course_names,
+        university_id=request.university_id
+    )

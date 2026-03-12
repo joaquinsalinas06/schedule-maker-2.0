@@ -79,11 +79,14 @@ class UserCurriculumProgress(BaseModel):
     status = Column(String(20), nullable=False, default="pending")  # "completed", "in_progress", "pending"
     completed_at = Column(DateTime, nullable=True)
     grade = Column(String(10), nullable=True)
+    planned_period = Column(String(10), nullable=True)  # e.g. "2026-2"
+    linked_course_override = Column(Integer, ForeignKey("courses.id", ondelete="SET NULL"), nullable=True)
 
     # Relationships
     user = relationship("User", backref="curriculum_progress")
     curriculum = relationship("Curriculum")
     curriculum_course = relationship("CurriculumCourse")
+    linked_course_override_rel = relationship("Course", foreign_keys=[linked_course_override])
 
     __table_args__ = (
         UniqueConstraint('user_id', 'curriculum_course_id', name='uq_user_curriculum_course'),

@@ -169,3 +169,35 @@ class CurriculumService:
             user.curriculum_id = curriculum_id
             self.db.commit()
         return user
+
+    def get_planning_data(self, user_id: int, curriculum_id: int) -> dict:
+        """Get user's planned periods and elective links for a curriculum."""
+        progress_list = self.repo.get_planning_data(user_id, curriculum_id)
+        
+        planned_periods = {}
+        elective_links = {}
+        
+        for p in progress_list:
+            if p.planned_period is not None:
+                planned_periods[p.curriculum_course_id] = p.planned_period
+            if p.linked_course_override is not None:
+                elective_links[p.curriculum_course_id] = p.linked_course_override
+                
+        return {
+            "planned_periods": planned_periods,
+            "elective_links": elective_links
+        }
+
+    def update_planning_data(self, user_id: int, curriculum_id: int, plans: List[dict], elective_links: List[dict]):
+        """Bulk update planned periods and elective links."""
+        for p in plans:
+            self.repo.upsert_planned_period(
+                user_id, curriculum_id, p["curriculum_course_id"], p.get("planned_period")
+            )
+            
+        for e in elective_links:
+            self.repo.upsert_elective_link(
+                user_id, curriculum_id, e["curriculum_course_id"], e.get("linked_course_id")
+            )
+        
+        return self.get_planning_data(user_id, curriculum_id)

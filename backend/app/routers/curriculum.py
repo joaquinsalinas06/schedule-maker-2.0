@@ -10,6 +10,8 @@ from app.schemas import (
     BulkUpdateStatusRequest,
     UnlockedCoursesResponse,
     SetCurriculumRequest,
+    PlanningDataResponse,
+    BulkPlanningRequest,
 )
 
 router = APIRouter(prefix="/api/curricula", tags=["curriculum"])
@@ -100,3 +102,24 @@ def set_user_curriculum(
 ):
     curriculum_service.set_user_curriculum(current_user.id, request.curriculum_id)
     return {"message": "Curriculum updated", "curriculum_id": request.curriculum_id}
+
+@router.get("/{curriculum_id}/planning", response_model=PlanningDataResponse)
+def get_planning_data(
+    curriculum_id: int,
+    curriculum_service=Depends(get_curriculum_service),
+    current_user: User = Depends(get_current_active_user),
+):
+    return curriculum_service.get_planning_data(current_user.id, curriculum_id)
+
+@router.post("/{curriculum_id}/planning", response_model=PlanningDataResponse)
+def update_planning_data(
+    curriculum_id: int,
+    request: BulkPlanningRequest,
+    curriculum_service=Depends(get_curriculum_service),
+    current_user: User = Depends(get_current_active_user),
+):
+    plans = [p.model_dump() for p in request.plans]
+    elective_links = [e.model_dump() for e in request.elective_links]
+    return curriculum_service.update_planning_data(
+        current_user.id, curriculum_id, plans, elective_links
+    )

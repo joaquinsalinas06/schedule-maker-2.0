@@ -433,6 +433,27 @@ class UnlockedCoursesResponse(BaseModel):
 class SetCurriculumRequest(BaseModel):
     curriculum_id: Optional[int] = None
 
+class BulkCourseByIdsRequest(BaseModel):
+    course_ids: Optional[List[int]] = None
+    course_names: Optional[List[str]] = None
+    university_id: Optional[int] = 1
+
+class PlanningUpdateItem(BaseModel):
+    curriculum_course_id: int
+    planned_period: Optional[str] = None  # e.g. "2026-2" or null to clear
+
+class ElectiveLinkItem(BaseModel):
+    curriculum_course_id: int
+    linked_course_id: Optional[int] = None  # course ID or null to clear
+
+class BulkPlanningRequest(BaseModel):
+    plans: List[PlanningUpdateItem] = []
+    elective_links: List[ElectiveLinkItem] = []
+
+class PlanningDataResponse(BaseModel):
+    planned_periods: Dict[int, str] = {}  # curriculum_course_id -> period
+    elective_links: Dict[int, int] = {}   # curriculum_course_id -> course_id
+
 # Friend request schemas
 class FriendRequestCreate(BaseModel):
     receiver_id: int

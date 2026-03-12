@@ -76,3 +76,54 @@ class CurriculumRepository(BaseRepository[Curriculum]):
             CurriculumCourse.curriculum_id == curriculum_id,
             CurriculumCourse.is_active == True
         ).all()
+
+    def get_planning_data(self, user_id: int, curriculum_id: int) -> List[UserCurriculumProgress]:
+        return self.db.query(UserCurriculumProgress).filter(
+            UserCurriculumProgress.user_id == user_id,
+            UserCurriculumProgress.curriculum_id == curriculum_id,
+            UserCurriculumProgress.is_active == True
+        ).all()
+
+    def upsert_planned_period(self, user_id: int, curriculum_id: int, curriculum_course_id: int, period: Optional[str]) -> UserCurriculumProgress:
+        progress = self.db.query(UserCurriculumProgress).filter(
+            UserCurriculumProgress.user_id == user_id,
+            UserCurriculumProgress.curriculum_course_id == curriculum_course_id
+        ).first()
+
+        if progress:
+            progress.planned_period = period
+        else:
+            progress = UserCurriculumProgress(
+                user_id=user_id,
+                curriculum_id=curriculum_id,
+                curriculum_course_id=curriculum_course_id,
+                status="pending",
+                planned_period=period,
+            )
+            self.db.add(progress)
+
+        self.db.commit()
+        self.db.refresh(progress)
+        return progress
+
+    def upsert_elective_link(self, user_id: int, curriculum_id: int, curriculum_course_id: int, linked_course_id: Optional[int]) -> UserCurriculumProgress:
+        progress = self.db.query(UserCurriculumProgress).filter(
+            UserCurriculumProgress.user_id == user_id,
+            UserCurriculumProgress.curriculum_course_id == curriculum_course_id
+        ).first()
+
+        if progress:
+            progress.linked_course_override = linked_course_id
+        else:
+            progress = UserCurriculumProgress(
+                user_id=user_id,
+                curriculum_id=curriculum_id,
+                curriculum_course_id=curriculum_course_id,
+                status="pending",
+                linked_course_override=linked_course_id,
+            )
+            self.db.add(progress)
+
+        self.db.commit()
+        self.db.refresh(progress)
+        return progress
