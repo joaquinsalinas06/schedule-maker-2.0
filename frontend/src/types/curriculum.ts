@@ -65,4 +65,4 @@ export interface UnlockedCourses {
   unlocked_course_ids: number[];
 }
 
-export type CourseStatus = "completed" | "in_progress" | "pending" | "locked" | "unlocked";
+export type CourseStatus = "completed" | "in_progress" | "pending" | "locked" | "unlocked" | "planned";

@@ -55,4 +55,27 @@ export class CurriculumAPI {
       curriculum_id: curriculumId,
     });
   }
+
+  static async getPlanningData(curriculumId: number): Promise<{
+    planned_periods: Record<number, string>;
+    elective_links: Record<number, number>;
+  }> {
+    const response = await api.get(`/api/curricula/${curriculumId}/planning`);
+    return response.data;
+  }
+
+  static async updatePlanningData(
+    curriculumId: number,
+    plans: { curriculum_course_id: number; planned_period: string | null }[],
+    electiveLinks: { curriculum_course_id: number; linked_course_id: number | null }[]
+  ): Promise<{
+    planned_periods: Record<number, string>;
+    elective_links: Record<number, number>;
+  }> {
+    const response = await api.post(`/api/curricula/${curriculumId}/planning`, {
+      plans,
+      elective_links: electiveLinks,
+    });
+    return response.data;
+  }
 }
