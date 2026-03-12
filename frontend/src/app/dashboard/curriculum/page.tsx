@@ -124,7 +124,7 @@ export default function CurriculumPage() {
           <div className="flex-1">
             <h4 className="text-sm font-medium text-blue-200">Información sobre mallas curriculares</h4>
             <p className="text-xs text-blue-300/80 mt-1 leading-relaxed">
-              El sistema se encuentra optimizado principalmente para la malla de <strong>Ciencia de la Computación 2021</strong>. 
+              Selecciona tu malla curricular usando el selector de arriba. Actualmente soportamos <strong>Ciencia de la Computación 2021</strong> y <strong>Ciencia de Datos 2021</strong>.
               Si necesitas que incorporemos la malla de otra carrera, no dudes en escribirnos a través del botón de ayuda.
             </p>
           </div>
@@ -156,7 +156,7 @@ export default function CurriculumPage() {
                   <select
                     value={selectedId || ""}
                     onChange={(e) => setSelectedId(Number(e.target.value))}
-                    className="appearance-none bg-zinc-900/80 backdrop-blur-md border border-zinc-800 rounded-xl px-3 py-2 pr-8 text-xs font-medium text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xl"
+                    className="appearance-none bg-zinc-900/80 backdrop-blur-md border border-zinc-800 rounded-xl px-3 py-2 pr-8 text-xs font-medium text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xl cursor-pointer"
                   >
                     {curricula.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -165,6 +165,11 @@ export default function CurriculumPage() {
                     ))}
                   </select>
                   <ChevronDown className="w-3 h-3 absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+                </div>
+              )}
+              {curricula.length === 1 && (
+                <div className="bg-zinc-900/80 backdrop-blur-md border border-zinc-800 rounded-xl px-3 py-2 shadow-lg">
+                  <p className="text-[10px] text-zinc-500">Malla única disponible</p>
                 </div>
               )}
             </div>
