@@ -58,6 +58,33 @@ class AuthSessionManagerImpl {
   private isRefreshing = false;
   private refreshPromise: Promise<string | null> | null = null;
 
+  constructor() {
+    // On initialization, sync the cookie from localStorage if needed.
+    // This handles users who were logged in before the middleware was deployed.
+    this.syncCookieFromStorage();
+  }
+
+  /**
+   * Sync the auth-token cookie from localStorage.
+   * Handles the case where a user has a valid token in localStorage
+   * but no cookie (e.g., they were logged in before the middleware was added).
+   */
+  syncCookieFromStorage(): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (!token) return;
+
+    // Check if the cookie already exists
+    const hasCookie = document.cookie.split(';').some(c => c.trim().startsWith('auth-token='));
+    if (hasCookie) return;
+
+    // Token exists in localStorage but not as a cookie — sync it
+    if (!isTokenExpired(token)) {
+      this.setTokenCookie(token);
+    }
+  }
+
   /**
    * Get the current session from localStorage.
    * Returns null if no valid session exists.

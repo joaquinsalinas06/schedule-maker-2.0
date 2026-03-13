@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,9 +20,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { authService } from "@/services/auth";
+import { authSessionManager } from "@/lib/authSessionManager";
 import { ButtonLoader } from "@/components/ui/loading-skeletons";
 
 export default function AuthPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -36,6 +39,16 @@ export default function AuthPage() {
     rememberMe: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // If user is already authenticated, sync the cookie and redirect to dashboard
+  useEffect(() => {
+    authSessionManager.syncCookieFromStorage();
+    if (authSessionManager.isAuthenticated()) {
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get("redirect") || "/dashboard";
+      router.replace(redirectTo);
+    }
+  }, [router]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
