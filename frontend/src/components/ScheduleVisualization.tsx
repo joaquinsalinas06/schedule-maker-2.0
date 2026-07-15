@@ -811,18 +811,10 @@ export function ScheduleVisualization({
           ctx.fillStyle = color.bg.replace("0.9", "0.7");
           ctx.fillRect(xPos + 4, yPos + 2, blockWidth - 8, 3);
 
-          // Soft red wash over conflicting blocks so they read as "flagged"
-          // without the block turning into a solid red rectangle.
-          if (isConflicting) {
-            ctx.fillStyle = "rgba(185, 28, 28, 0.28)";
-            ctx.fillRect(xPos + 4, yPos + 2, blockWidth - 8, blockHeight - 4);
-          }
-
-          // Draw border — muted dark red (not saturated) and a touch thicker
-          // for courses in a blocking conflict, so the grid connects visually
-          // to the explanation message above it without shouting.
+          // Conflicting blocks keep their normal fill — only the outline goes
+          // muted red so the grid connects to the explanation without shouting.
           ctx.strokeStyle = isConflicting ? "rgba(185, 28, 28, 0.8)" : color.bg.replace("0.9", "1");
-          ctx.lineWidth = isConflicting ? 2 : 2;
+          ctx.lineWidth = 2;
           ctx.strokeRect(xPos + 4, yPos + 2, blockWidth - 8, blockHeight - 4);
 
           // Store clickable block info

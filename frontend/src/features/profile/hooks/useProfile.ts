@@ -19,6 +19,10 @@ export function useProfile() {
     setLoading(true)
     try {
       setProfile(await data.getProfile(user.id))
+    } catch {
+      // Never keep a previous user's profile on screen (e.g. right after
+      // sign-out swaps to a fresh anonymous uid whose row may not exist yet).
+      setProfile(null)
     } finally {
       setLoading(false)
     }

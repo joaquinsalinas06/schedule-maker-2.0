@@ -99,7 +99,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase])
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut()
+    setUser(null)
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // Global sign-out can fail if the server session is already gone;
+      // clear the local session regardless so the UI never stays "logged in".
+      await supabase.auth.signOut({ scope: "local" }).catch(() => {})
+    }
     // Dashboard is anon-accessible, so drop straight back into an anonymous
     // session rather than leaving the user with no session at all.
     const { data } = await supabase.auth.signInAnonymously()

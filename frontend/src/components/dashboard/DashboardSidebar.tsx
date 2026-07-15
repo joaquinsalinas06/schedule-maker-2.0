@@ -211,8 +211,10 @@ export function DashboardSidebar({
           </button>
 
           <button
-            onClick={() => {
-              signOut()
+            onClick={async () => {
+              await signOut()
+              // Land on the public home so the sign-out is visible.
+              window.location.assign("/")
             }}
             className={`
               w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer
