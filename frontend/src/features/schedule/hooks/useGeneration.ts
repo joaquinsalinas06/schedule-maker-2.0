@@ -19,15 +19,21 @@ function toSectionOption(s: SelectedSection): SectionOption {
     course_name: s.courseName,
     section_number: s.sectionCode,
     professor: s.professor,
-    sessions: (s.sessions || []).map((session) => ({
-      id: session.id,
-      session_type: session.session_type,
-      day: session.day_of_week,
-      start_time: session.start_time,
-      end_time: session.end_time,
-      location: session.classroom,
-      modality: (session as unknown as { modality?: string }).modality ?? "Presencial",
-    })),
+    sessions: (s.sessions || []).map((session) => {
+      // Sessions arrive in two shapes: the legacy REST shape (day_of_week
+      // numeric, classroom) and raw Supabase rows (day string, location).
+      // Dropping the day silently disables ALL conflict detection, so accept both.
+      const raw = session as unknown as { day?: string | number; location?: string; modality?: string };
+      return {
+        id: session.id,
+        session_type: session.session_type,
+        day: session.day_of_week ?? raw.day ?? null,
+        start_time: session.start_time,
+        end_time: session.end_time,
+        location: session.classroom ?? raw.location ?? null,
+        modality: raw.modality ?? "Presencial",
+      };
+    }),
   };
 }
 

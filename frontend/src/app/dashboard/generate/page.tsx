@@ -326,10 +326,11 @@ export default function GeneratePage() {
             sessions: (s.sessions || []).map((session) => ({
               session_id: session.id,
               session_type: session.session_type,
-              day: session.day_of_week,
+              // sessions carry either day_of_week (legacy) or day (supabase row)
+              day: session.day_of_week ?? (session as unknown as { day?: string }).day,
               start_time: session.start_time,
               end_time: session.end_time,
-              location: session.classroom,
+              location: session.classroom ?? (session as unknown as { location?: string }).location,
               modality: "Presencial",
             })),
           })),
