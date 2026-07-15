@@ -28,5 +28,5 @@ CLI (`supabase db push`) against your project.
 - `npm run type-check` - `tsc --noEmit`
 
 ## Licencia
-
+ 
 MIT - ver [LICENSE](LICENSE).
