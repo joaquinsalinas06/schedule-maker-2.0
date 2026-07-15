@@ -225,127 +225,149 @@ async function executeUpdate(coursesData: CourseImportRow[], universityId: numbe
     sessionsBySection.set(s.section_id, list as typeof allSessions)
   }
 
-  // ponytail: per-course sequential loop, mirrors the original Python script's
-  // row-by-row processing. Fine for admin one-off imports; batch if a real
-  // file ever times out.
+  // Diff everything in memory first, then hit the DB with bulk operations:
+  // one insert + one deactivate per table; per-row updates only for rows that
+  // actually changed (typically a small minority of the file).
+
+  // ── Courses ────────────────────────────────────────────────────────────────
+  const newCourses = coursesData.filter((c) => !existingByCode.has(c.code))
+  const courseIdByCode = new Map((existingCourses ?? []).map((c) => [c.code, c.id]))
+  for (const batch of chunk(newCourses, 500)) {
+    const { data, error } = await admin
+      .from("courses")
+      .insert(batch.map((c) => ({ code: c.code, name: c.name, department: c.department, university_id: universityId, is_active: true })))
+      .select("id, code")
+    if (error) {
+      stats.errors.push(`Error creando cursos: ${error.message}`)
+      continue
+    }
+    for (const c of data ?? []) courseIdByCode.set(c.code, c.id)
+    stats.courses_created! += data?.length ?? 0
+  }
+
   for (const course of coursesData) {
-    try {
-      let courseId: number
-      const existingCourse = existingByCode.get(course.code)
-      if (existingCourse) {
-        courseId = existingCourse.id
-        if (existingCourse.name !== course.name || existingCourse.department !== course.department) {
-          await admin.from("courses").update({ name: course.name, department: course.department }).eq("id", courseId)
-          stats.courses_updated!++
+    const existing = existingByCode.get(course.code)
+    if (existing && (existing.name !== course.name || existing.department !== course.department)) {
+      const { error } = await admin.from("courses").update({ name: course.name, department: course.department }).eq("id", existing.id)
+      if (error) stats.errors.push(`Error actualizando curso ${course.code}: ${error.message}`)
+      else stats.courses_updated!++
+    }
+  }
+
+  // ── Sections ───────────────────────────────────────────────────────────────
+  const sectionByKey = new Map<string, NonNullable<typeof allSections>[number]>()
+  for (const s of allSections ?? []) sectionByKey.set(`${s.course_id}|${s.section_number}`, s)
+
+  const sectionKey = (courseCode: string, sectionNumber: string) => `${courseIdByCode.get(courseCode)}|${sectionNumber}`
+
+  const csvSectionKeys = new Set(coursesData.flatMap((c) => c.sections.map((s) => sectionKey(c.code, s.section_number))))
+  const sectionsToDeactivate = (allSections ?? []).filter((s) => s.is_active && !csvSectionKeys.has(`${s.course_id}|${s.section_number}`)).map((s) => s.id)
+  for (const batch of chunk(sectionsToDeactivate, 500)) {
+    const { error } = await admin.from("sections").update({ is_active: false }).in("id", batch)
+    if (error) stats.errors.push(`Error desactivando secciones: ${error.message}`)
+    else stats.sections_deactivated! += batch.length
+  }
+
+  const flatSections = coursesData.flatMap((c) => c.sections.map((s) => ({ courseCode: c.code, s })))
+  const newSections = flatSections.filter(({ courseCode, s }) => !sectionByKey.has(sectionKey(courseCode, s.section_number)))
+  const sectionIdByKey = new Map<string, number>()
+  for (const [key, s] of sectionByKey) sectionIdByKey.set(key, s.id)
+  for (const batch of chunk(newSections, 500)) {
+    const { data, error } = await admin
+      .from("sections")
+      .insert(batch.map(({ courseCode, s }) => ({
+        course_id: courseIdByCode.get(courseCode)!,
+        section_number: s.section_number,
+        capacity: s.capacity,
+        enrolled: s.enrolled,
+        professor: s.professor,
+        professor_email: s.professor_email,
+        is_active: true,
+      })))
+      .select("id, course_id, section_number")
+    if (error) {
+      stats.errors.push(`Error creando secciones: ${error.message}`)
+      continue
+    }
+    for (const s of data ?? []) sectionIdByKey.set(`${s.course_id}|${s.section_number}`, s.id)
+    stats.sections_created! += data?.length ?? 0
+  }
+
+  for (const { courseCode, s } of flatSections) {
+    const existing = sectionByKey.get(sectionKey(courseCode, s.section_number))
+    if (!existing) continue
+    const updates: TablesUpdate<"sections"> = {}
+    if (existing.capacity !== s.capacity) updates.capacity = s.capacity
+    if (existing.enrolled !== s.enrolled) updates.enrolled = s.enrolled
+    if (existing.professor !== s.professor) updates.professor = s.professor
+    if (existing.professor_email !== s.professor_email) updates.professor_email = s.professor_email
+    if (!existing.is_active) updates.is_active = true
+    if (Object.keys(updates).length > 0) {
+      const { error } = await admin.from("sections").update(updates).eq("id", existing.id)
+      if (error) stats.errors.push(`Error actualizando sección ${courseCode}/${s.section_number}: ${error.message}`)
+      else stats.sections_updated!++
+    }
+  }
+
+  // ── Sessions ───────────────────────────────────────────────────────────────
+  const sessionsToDeactivate: number[] = []
+  const sessionsToCreate: Record<string, unknown>[] = []
+
+  for (const { courseCode, s } of flatSections) {
+    const sectionId = sectionIdByKey.get(sectionKey(courseCode, s.section_number))
+    if (!sectionId) continue
+    const existingSessions = sessionsBySection.get(sectionId) ?? []
+    const csvSigs = new Set(s.sessions.map((x) => sessionSignature(x.session_type, x.day, x.start_time, x.end_time)))
+
+    for (const es of existingSessions) {
+      if (es.is_active && !csvSigs.has(sessionSignature(es.session_type, es.day, es.start_time, es.end_time))) {
+        sessionsToDeactivate.push(es.id)
+      }
+    }
+
+    for (const sess of s.sessions) {
+      const sig = sessionSignature(sess.session_type, sess.day, sess.start_time, sess.end_time)
+      const match = existingSessions.find((es) => sessionSignature(es.session_type, es.day, es.start_time, es.end_time) === sig)
+      if (match) {
+        const updates: TablesUpdate<"sessions"> = {}
+        if (match.location !== sess.location) updates.location = sess.location
+        if (match.building !== sess.building) updates.building = sess.building
+        if (match.room !== sess.room) updates.room = sess.room
+        if (match.modality !== sess.modality) updates.modality = sess.modality
+        if (match.frequency !== sess.frequency) updates.frequency = sess.frequency
+        if (!match.is_active) updates.is_active = true
+        if (Object.keys(updates).length > 0) {
+          const { error } = await admin.from("sessions").update(updates).eq("id", match.id)
+          if (error) stats.errors.push(`Error actualizando sesión ${courseCode}: ${error.message}`)
+          else stats.sessions_updated!++
         }
       } else {
-        const { data: created, error } = await admin
-          .from("courses")
-          .insert({ code: course.code, name: course.name, department: course.department, university_id: universityId, is_active: true })
-          .select("id")
-          .single()
-        if (error || !created) throw new Error(error?.message ?? "insert failed")
-        courseId = created.id
-        stats.courses_created!++
+        sessionsToCreate.push({
+          section_id: sectionId,
+          session_type: sess.session_type,
+          day: sess.day,
+          start_time: sess.start_time,
+          end_time: sess.end_time,
+          location: sess.location,
+          building: sess.building,
+          room: sess.room,
+          modality: sess.modality,
+          frequency: sess.frequency,
+          is_active: true,
+        })
       }
-
-      const existingSections = sectionsByCourse.get(courseId) ?? []
-      const csvSectionNumbers = new Set(course.sections.map((s) => s.section_number))
-      for (const section of existingSections) {
-        if (!csvSectionNumbers.has(section.section_number) && section.is_active) {
-          await admin.from("sections").update({ is_active: false }).eq("id", section.id)
-          stats.sections_deactivated!++
-        }
-      }
-
-      for (const sectionData of course.sections) {
-        const existingSection = existingSections.find((s) => s.section_number === sectionData.section_number)
-        let sectionId: number
-
-        if (existingSection) {
-          sectionId = existingSection.id
-          const updates: TablesUpdate<"sections"> = {}
-          if (existingSection.capacity !== sectionData.capacity) updates.capacity = sectionData.capacity
-          if (existingSection.enrolled !== sectionData.enrolled) updates.enrolled = sectionData.enrolled
-          if (existingSection.professor !== sectionData.professor) updates.professor = sectionData.professor
-          if (existingSection.professor_email !== sectionData.professor_email) updates.professor_email = sectionData.professor_email
-          if (!existingSection.is_active) updates.is_active = true
-          if (Object.keys(updates).length > 0) {
-            await admin.from("sections").update(updates).eq("id", sectionId)
-            stats.sections_updated!++
-          }
-        } else {
-          const { data: created, error } = await admin
-            .from("sections")
-            .insert({
-              course_id: courseId,
-              section_number: sectionData.section_number,
-              capacity: sectionData.capacity,
-              enrolled: sectionData.enrolled,
-              professor: sectionData.professor,
-              professor_email: sectionData.professor_email,
-              is_active: true,
-            })
-            .select("id")
-            .single()
-          if (error || !created) throw new Error(error?.message ?? "insert failed")
-          sectionId = created.id
-          stats.sections_created!++
-        }
-
-        const existingSessions = sessionsBySection.get(sectionId) ?? []
-        const csvSignatures = new Set(
-          sectionData.sessions.map((s) => sessionSignature(s.session_type, s.day, s.start_time, s.end_time))
-        )
-
-        for (const existingSession of existingSessions) {
-          if (!existingSession.is_active) continue
-          const sig = sessionSignature(existingSession.session_type, existingSession.day, existingSession.start_time, existingSession.end_time)
-          if (!csvSignatures.has(sig)) {
-            await admin.from("sessions").update({ is_active: false }).eq("id", existingSession.id)
-            stats.sessions_deactivated!++
-          }
-        }
-
-        for (const sessionData of sectionData.sessions) {
-          const sig = sessionSignature(sessionData.session_type, sessionData.day, sessionData.start_time, sessionData.end_time)
-          const match = existingSessions.find(
-            (s) => sessionSignature(s.session_type, s.day, s.start_time, s.end_time) === sig
-          )
-
-          if (match) {
-            const updates: TablesUpdate<"sessions"> = {}
-            if (match.location !== sessionData.location) updates.location = sessionData.location
-            if (match.building !== sessionData.building) updates.building = sessionData.building
-            if (match.room !== sessionData.room) updates.room = sessionData.room
-            if (match.modality !== sessionData.modality) updates.modality = sessionData.modality
-            if (match.frequency !== sessionData.frequency) updates.frequency = sessionData.frequency
-            if (!match.is_active) updates.is_active = true
-            if (Object.keys(updates).length > 0) {
-              await admin.from("sessions").update(updates).eq("id", match.id)
-              stats.sessions_updated!++
-            }
-          } else {
-            await admin.from("sessions").insert({
-              section_id: sectionId,
-              session_type: sessionData.session_type,
-              day: sessionData.day,
-              start_time: sessionData.start_time,
-              end_time: sessionData.end_time,
-              location: sessionData.location,
-              building: sessionData.building,
-              room: sessionData.room,
-              modality: sessionData.modality,
-              frequency: sessionData.frequency,
-              is_active: true,
-            })
-            stats.sessions_created!++
-          }
-        }
-      }
-    } catch (e) {
-      stats.errors.push(`Error actualizando curso ${course.code}: ${e instanceof Error ? e.message : String(e)}`)
     }
+  }
+
+  for (const batch of chunk(sessionsToDeactivate, 500)) {
+    const { error } = await admin.from("sessions").update({ is_active: false }).in("id", batch)
+    if (error) stats.errors.push(`Error desactivando sesiones: ${error.message}`)
+    else stats.sessions_deactivated! += batch.length
+  }
+  for (const batch of chunk(sessionsToCreate, 500)) {
+    const { error } = await admin.from("sessions").insert(batch as never)
+    if (error) stats.errors.push(`Error creando sesiones: ${error.message}`)
+    else stats.sessions_created! += batch.length
   }
 
   return stats
