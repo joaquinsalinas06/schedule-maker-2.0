@@ -70,6 +70,8 @@ interface ScheduleVisualizationProps {
   scheduleName?: string;
   /** Course names to render with destructive-red styling (blocks + legend), e.g. courses in a blocking conflict. */
   conflictingCourseNames?: ReadonlySet<string>;
+  /** True when scheduleData is a synthetic zero-result conflict preview (not a real generated schedule). Swaps the header copy so it doesn't claim "N combinaciones posibles". */
+  isConflictPreview?: boolean;
 }
 
 const EMPTY_FAVORITES: ReadonlySet<string> = new Set();
@@ -201,6 +203,7 @@ export function ScheduleVisualization({
   favoritedCombinations = EMPTY_FAVORITES,
   scheduleName,
   conflictingCourseNames = EMPTY_CONFLICTS,
+  isConflictPreview = false,
 }: ScheduleVisualizationProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -808,10 +811,18 @@ export function ScheduleVisualization({
           ctx.fillStyle = color.bg.replace("0.9", "0.7");
           ctx.fillRect(xPos + 4, yPos + 2, blockWidth - 8, 3);
 
-          // Draw border — red + thicker for courses in a blocking conflict, so
-          // the grid connects visually to the explanation message above it.
-          ctx.strokeStyle = isConflicting ? "#ef4444" : color.bg.replace("0.9", "1");
-          ctx.lineWidth = isConflicting ? 3 : 2;
+          // Soft red wash over conflicting blocks so they read as "flagged"
+          // without the block turning into a solid red rectangle.
+          if (isConflicting) {
+            ctx.fillStyle = "rgba(185, 28, 28, 0.28)";
+            ctx.fillRect(xPos + 4, yPos + 2, blockWidth - 8, blockHeight - 4);
+          }
+
+          // Draw border — muted dark red (not saturated) and a touch thicker
+          // for courses in a blocking conflict, so the grid connects visually
+          // to the explanation message above it without shouting.
+          ctx.strokeStyle = isConflicting ? "rgba(185, 28, 28, 0.8)" : color.bg.replace("0.9", "1");
+          ctx.lineWidth = isConflicting ? 2 : 2;
           ctx.strokeRect(xPos + 4, yPos + 2, blockWidth - 8, blockHeight - 4);
 
           // Store clickable block info
@@ -1313,7 +1324,9 @@ export function ScheduleVisualization({
                 <CardDescription className="text-sm mt-0.5">
                   {scheduleName
                     ? `Horario Compartido • ${combinations[currentScheduleIndex]?.courses.length || 0} cursos`
-                    : `${total_combinations} combinaciones posibles • ${combinations[currentScheduleIndex]?.courses.length || 0} cursos`}
+                    : isConflictPreview
+                      ? `0 combinaciones — cursos en conflicto`
+                      : `${total_combinations} combinaciones posibles • ${combinations[currentScheduleIndex]?.courses.length || 0} cursos`}
                 </CardDescription>
               </div>
             </div>
@@ -1447,7 +1460,7 @@ export function ScheduleVisualization({
                       key={`course-${courseSection.course_id}-${index}`}
                       className={`flex items-center gap-3 p-3 border rounded-lg bg-muted/30 ${
                         isConflicting
-                          ? "border-destructive ring-1 ring-destructive"
+                          ? "border-destructive/60 bg-destructive/5"
                           : "border-border"
                       } ${
                         !isMobile

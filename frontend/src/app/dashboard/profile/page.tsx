@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -14,13 +15,17 @@ import {
   Edit,
   Camera,
   FileText,
+  LogIn,
 } from "lucide-react"
 import { ProfileSkeleton } from "@/components/ui/loading-skeletons"
+import { useAuth } from "@/features/auth"
 import { useProfile, ProfileEditModal } from "@/features/profile"
 
 type EditField = 'personal' | 'photo' | 'description' | null
 
 export default function ProfilePage() {
+  const router = useRouter()
+  const { isAnonymous, loading: authLoading } = useAuth()
   const { profile, loading, email, updateProfile, uploadAvatar } = useProfile()
   const [editingField, setEditingField] = useState<EditField>(null)
 
@@ -37,8 +42,29 @@ export default function ProfilePage() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }
 
-  if (loading) {
+  if (loading || authLoading) {
     return <ProfileSkeleton />
+  }
+
+  // Anonymous users have no profiles row (nothing was ever registered), so
+  // getProfile() fails and profile stays null — show an upgrade prompt
+  // instead of the generic "couldn't load" error below.
+  if (isAnonymous) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center text-muted-foreground max-w-sm">
+          <UserIcon className="h-12 w-12 mx-auto mb-4 opacity-40" />
+          <h3 className="text-lg font-medium text-foreground mb-1">Inicia sesion para ver tu perfil</h3>
+          <p className="text-sm mb-4">
+            Crea una cuenta o inicia sesion para guardar tu informacion personal
+          </p>
+          <Button onClick={() => router.push('/auth')} className="gap-2">
+            <LogIn className="w-4 h-4" />
+            Iniciar sesion
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   if (!profile) {

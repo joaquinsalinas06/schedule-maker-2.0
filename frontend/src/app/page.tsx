@@ -190,7 +190,7 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 fill-mode-both">
-            <Link href="/auth">
+            <Link href="/dashboard/generate">
               <Button
                 size="lg"
                 className="h-11 px-8 text-sm font-medium gap-2 rounded-lg"
@@ -412,7 +412,7 @@ export default function LandingPage() {
             planificación de sus cursos.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/auth">
+            <Link href="/dashboard/generate">
               <Button
                 size="lg"
                 className="h-11 px-8 text-sm font-medium gap-2 rounded-lg"

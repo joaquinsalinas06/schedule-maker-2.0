@@ -34,10 +34,11 @@ function GoogleIcon() {
 
 export default function AuthPage() {
   const router = useRouter();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
+  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, signInAnonymously } = useAuth();
   const [activeTab, setActiveTab] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -50,6 +51,25 @@ export default function AuthPage() {
     } catch {
       setError("No se pudo iniciar sesion con Google. Intenta nuevamente.");
       setIsLoading(false);
+    }
+  };
+
+  const handleGuest = async () => {
+    // AuthProvider already starts an anonymous session on mount whenever
+    // there's no session at all, so most of the time we already have a user
+    // here — only call signInAnonymously as a retry if that attempt failed.
+    if (user) {
+      router.push("/dashboard");
+      return;
+    }
+    setError("");
+    setIsGuestLoading(true);
+    try {
+      await signInAnonymously();
+      router.push("/dashboard");
+    } catch {
+      setError("No se pudo continuar sin cuenta. Intenta nuevamente.");
+      setIsGuestLoading(false);
     }
   };
 
@@ -246,6 +266,15 @@ export default function AuthPage() {
               </TabsContent>
             </form>
           </Tabs>
+
+          <button
+            type="button"
+            onClick={handleGuest}
+            disabled={isGuestLoading}
+            className="w-full mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-60"
+          >
+            {isGuestLoading ? <ButtonLoader /> : "Continuar sin cuenta"}
+          </button>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 export { generateSchedules } from "./hooks/useGeneration";
 export { findBlockingConflicts, type BlockingConflict } from "./logic/conflictExplainer";
+export { DAY_ES } from "./dayEs";
 export type { GenerateSchedulesParams, SectionOption, CombinationDict } from "./types";
 export {
   saveSchedule,

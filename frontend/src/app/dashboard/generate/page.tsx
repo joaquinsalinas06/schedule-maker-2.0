@@ -3,8 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { searchCourses, getBulkCoursesByIds } from "@/features/catalog";
-import { generateSchedules, type BlockingConflict } from "@/features/schedule";
-import { ScheduleVisualization } from "@/components/ScheduleVisualization";
+import { generateSchedules } from "@/features/schedule";
 import {
   Course,
   SelectedSection,
@@ -21,16 +20,6 @@ import { SectionSelectionPopup } from "@/components/dashboard/SectionSelectionPo
 import { CargaHabilModal } from "@/components/dashboard/CargaHabilModal";
 import PlannedCoursesBanner from "@/components/dashboard/PlannedCoursesBanner";
 import { Upload } from "lucide-react";
-
-const DAY_ES: Record<string, string> = {
-  Monday: "Lunes",
-  Tuesday: "Martes",
-  Wednesday: "Miércoles",
-  Thursday: "Jueves",
-  Friday: "Viernes",
-  Saturday: "Sábado",
-  Sunday: "Domingo",
-};
 
 export default function GeneratePage() {
   const router = useRouter();
@@ -61,7 +50,6 @@ export default function GeneratePage() {
   const [maxOptionalCourses, setMaxOptionalCourses] = useState<number>(1);
   const [curriculumFilterEnabled, setCurriculumFilterEnabled] = useState(false);
   const [isCargaHabilModalOpen, setIsCargaHabilModalOpen] = useState(false);
-  const [blockingConflicts, setBlockingConflicts] = useState<BlockingConflict[] | null>(null);
 
   // Curriculum integration
   const { curriculum, unlockedCourseDbIds, fetchProgress, fetchCurriculum, getPlannedCoursesForPeriod, getCurrentPeriod } = useCurriculumStore();
@@ -296,56 +284,10 @@ export default function GeneratePage() {
   ];
   const totalCoursesCount = uniqueCourses.length;
 
-  // Course names involved in a blocking conflict, so the grid below the
-  // explanation can highlight exactly those blocks in red.
-  const conflictingCourseNames = useMemo(
-    () =>
-      new Set(
-        (blockingConflicts ?? []).flatMap((c) => [c.courseA, c.courseB]),
-      ),
-    [blockingConflicts],
-  );
-
-  // Synthetic "combination" built straight from the user's selection (not a
-  // real generated schedule — there are none) so ScheduleVisualization can
-  // render the conflicting classes overlapped on the weekly grid.
-  const conflictPreviewData = useMemo(() => {
-    if (blockingConflicts === null) return null;
-    return {
-      combinations: [
-        {
-          combination_id: "conflict-preview",
-          course_count: totalCoursesCount,
-          courses: selectedSections.map((s) => ({
-            course_id: s.courseId ?? s.sectionId,
-            course_code: s.courseCode,
-            course_name: s.courseName,
-            section_id: s.sectionId,
-            section_number: s.sectionCode,
-            professor: s.professor,
-            sessions: (s.sessions || []).map((session) => ({
-              session_id: session.id,
-              session_type: session.session_type,
-              // sessions carry either day_of_week (legacy) or day (supabase row)
-              day: session.day_of_week ?? (session as unknown as { day?: string }).day,
-              start_time: session.start_time,
-              end_time: session.end_time,
-              location: session.classroom ?? (session as unknown as { location?: string }).location,
-              modality: "Presencial",
-            })),
-          })),
-        },
-      ],
-      total_combinations: 1,
-      selected_courses_count: totalCoursesCount,
-    };
-  }, [blockingConflicts, selectedSections, totalCoursesCount]);
-
   const handleGenerateSchedules = async () => {
     if (selectedSections.length === 0) return;
 
     setIsLoading(true);
-    setBlockingConflicts(null);
     try {
       const result = generateSchedules({
         selectedSections,
@@ -353,12 +295,9 @@ export default function GeneratePage() {
         maxOptionalCourses,
       });
 
-      if (result.total_combinations === 0) {
-        // Stay on the page and explain instead of navigating to an empty list.
-        setBlockingConflicts(result.blocking_conflicts ?? []);
-        return;
-      }
-
+      // Zero-result conflicts are explained on /dashboard/schedules now, not
+      // here — always store the full result (including blocking_conflicts)
+      // and navigate, same as the success path.
       sessionStorage.setItem(
         "generatedSchedules",
         JSON.stringify(result),
@@ -483,58 +422,6 @@ export default function GeneratePage() {
           </div>
         </div>
       </div>
-
-      {/* Zero-results explanation: message + the conflicting classes rendered
-          overlapped on the weekly grid, so the collision is visible and not
-          just described. */}
-      {blockingConflicts !== null && (
-        <div className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4 sm:p-8">
-          <div className="w-full max-w-4xl space-y-4 my-auto">
-            <div className="rounded-lg border border-destructive/40 bg-background shadow-lg p-4 space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <p className="font-semibold text-destructive">
-                  No se puede generar ningún horario con esta selección
-                </p>
-                <button
-                  onClick={() => setBlockingConflicts(null)}
-                  className="text-muted-foreground hover:text-foreground text-sm"
-                  aria-label="Cerrar"
-                >
-                  ✕
-                </button>
-              </div>
-              {blockingConflicts.length > 0 ? (
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  {blockingConflicts.map((c, i) => (
-                    <li key={i}>
-                      <span className="text-destructive font-medium">{c.courseA}</span> (Sección {c.example.sectionA}){" "}
-                      siempre choca con{" "}
-                      <span className="text-destructive font-medium">{c.courseB}</span> (Sección {c.example.sectionB}):{" "}
-                      {DAY_ES[c.example.day] ?? c.example.day} {c.example.startA}–{c.example.endA} vs {c.example.startB}–{c.example.endB}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Los cruces involucran a más de dos cursos a la vez. Marca algunos cursos como
-                  opcionales o quita alguno para encontrar combinaciones válidas.
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Quita uno de los cursos en conflicto o márcalo como opcional. Los cursos resaltados
-                en rojo abajo son los que chocan entre sí.
-              </p>
-            </div>
-
-            {conflictPreviewData && (
-              <ScheduleVisualization
-                scheduleData={conflictPreviewData}
-                conflictingCourseNames={conflictingCourseNames}
-              />
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Mobile Selected Sections (shown as floating panel) */}
       {selectedSections.length > 0 && (

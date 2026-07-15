@@ -11,6 +11,7 @@ interface AuthContextValue {
   signInWithGoogle: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<void>
   signUpWithEmail: (email: string, password: string) => Promise<void>
+  signInAnonymously: () => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -88,6 +89,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [supabase, isAnonymous]
   )
 
+  // Exposed for entry points that need an explicit "continue without an
+  // account" action (e.g. the auth page). Also serves as a manual retry if
+  // the mount-time attempt in ensureSession above failed.
+  const signInAnonymously = useCallback(async () => {
+    const { data, error } = await supabase.auth.signInAnonymously()
+    if (error) throw error
+    setUser(data.user)
+  }, [supabase])
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut()
     // Dashboard is anon-accessible, so drop straight back into an anonymous
@@ -103,6 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,
+    signInAnonymously,
     signOut,
   }
 

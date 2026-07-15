@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
   listMySchedules,
   saveSchedule,
   deleteSchedule,
+  DAY_ES,
   type ScheduleRow,
 } from "@/features/schedule";
 import {
@@ -110,6 +111,64 @@ export default function SchedulesPage() {
       .map((row) => row.combination_data?.combination_id?.toString())
       .filter((id): id is string => Boolean(id)),
   );
+
+  // Zero-result conflict state: generate/page.tsx now always forwards its
+  // result (including blocking_conflicts) here instead of explaining it
+  // in-place, so a fresh generation with no valid combinations lands as
+  // generatedSchedules.total_combinations === 0.
+  const isZeroConflict =
+    !viewingFavoriteSchedule &&
+    !!generatedSchedules &&
+    generatedSchedules.total_combinations === 0;
+
+  const blockingConflicts = generatedSchedules?.blocking_conflicts ?? [];
+
+  // Course names involved in a blocking conflict, so the grid below the
+  // explanation can highlight exactly those blocks.
+  const conflictingCourseNames = useMemo(
+    () => new Set(blockingConflicts.flatMap((c) => [c.courseA, c.courseB])),
+    [blockingConflicts],
+  );
+
+  // Synthetic "combination" built straight from the user's selection (not a
+  // real generated schedule — there are none) so ScheduleVisualization can
+  // render the conflicting classes overlapped on the weekly grid.
+  const conflictPreviewData = useMemo(() => {
+    const totalCourses = new Set(selectedSections.map((s) => s.courseCode))
+      .size;
+    return {
+      combinations: [
+        {
+          combination_id: "conflict-preview",
+          course_count: totalCourses,
+          courses: selectedSections.map((s) => ({
+            course_id: s.courseId ?? s.sectionId,
+            course_code: s.courseCode,
+            course_name: s.courseName,
+            section_id: s.sectionId,
+            section_number: s.sectionCode,
+            professor: s.professor,
+            sessions: (s.sessions || []).map((session) => ({
+              session_id: session.id,
+              session_type: session.session_type,
+              // sessions carry either day_of_week (legacy) or day (supabase row)
+              day:
+                session.day_of_week ??
+                (session as unknown as { day?: string }).day,
+              start_time: session.start_time,
+              end_time: session.end_time,
+              location:
+                session.classroom ??
+                (session as unknown as { location?: string }).location,
+              modality: "Presencial",
+            })),
+          })),
+        },
+      ],
+      total_combinations: 0,
+      selected_courses_count: totalCourses,
+    };
+  }, [selectedSections]);
 
   const calculateImpossibleSections = (
     schedules: any,
@@ -452,6 +511,56 @@ export default function SchedulesPage() {
                       <Skeleton className="h-40 col-start-5 col-span-1 bg-muted/50 rounded mt-4" />
                     </div>
                   </div>
+                </div>
+              ) : isZeroConflict ? (
+                <div className="space-y-4">
+                  <Card className="border-destructive/40 bg-card/80 backdrop-blur-sm shadow-lg">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-destructive text-base">
+                        No se puede generar ningún horario con esta selección
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {blockingConflicts.length > 0 ? (
+                        <ul className="text-sm text-muted-foreground space-y-1.5">
+                          {blockingConflicts.map((c, i) => (
+                            <li key={i}>
+                              <span className="text-destructive font-medium">
+                                {c.courseA}
+                              </span>{" "}
+                              (Sección {c.example.sectionA}) siempre choca con{" "}
+                              <span className="text-destructive font-medium">
+                                {c.courseB}
+                              </span>{" "}
+                              (Sección {c.example.sectionB}):{" "}
+                              {DAY_ES[c.example.day] ?? c.example.day}{" "}
+                              {c.example.startA}–{c.example.endA} vs{" "}
+                              {c.example.startB}–{c.example.endB}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Los cruces involucran a más de dos cursos a la vez.
+                          Marca algunos cursos como opcionales o quita alguno
+                          para encontrar combinaciones válidas.
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Quita uno de los cursos en conflicto o márcalo como
+                        opcional en el panel de la derecha. Los cursos
+                        resaltados abajo son los que chocan entre sí.
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <ScheduleVisualization
+                    scheduleData={conflictPreviewData}
+                    conflictingCourseNames={conflictingCourseNames}
+                    isConflictPreview
+                    showBackButton={true}
+                    onBackToSelection={() => router.push("/dashboard/generate")}
+                  />
                 </div>
               ) : (
                 <ScheduleVisualization
