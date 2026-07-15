@@ -16,6 +16,7 @@ import {
   EyeOff,
   AlertCircle,
   CheckCircle2,
+  UserRound,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/features/auth";
@@ -35,6 +36,7 @@ function GoogleIcon() {
 export default function AuthPage() {
   const router = useRouter();
   const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, signInAnonymously } = useAuth();
+  const [method, setMethod] = useState<"choice" | "email">("choice");
   const [activeTab, setActiveTab] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -136,7 +138,7 @@ export default function AuthPage() {
           {[
             { icon: CheckCircle2, text: "Generacion automatica de horarios" },
             { icon: CheckCircle2, text: "Cero conflictos garantizados" },
-            { icon: CheckCircle2, text: "Colaboracion en tiempo real" },
+            { icon: CheckCircle2, text: "Comparte tus horarios con un enlace" },
           ].map((item, index) => (
             <div
               key={index}
@@ -149,7 +151,7 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* Right Side - Auth Form */}
+      {/* Right Side - Auth */}
       <div className="flex-1 flex items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-500">
         <div className="w-full max-w-sm">
           <Link
@@ -169,112 +171,157 @@ export default function AuthPage() {
             </span>
           </div>
 
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-foreground mb-2">
-              {activeTab === "login" ? "Bienvenido de nuevo" : "Crear cuenta"}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {activeTab === "login"
-                ? "Ingresa tus credenciales para continuar"
-                : "Completa el formulario para crear tu cuenta"}
-            </p>
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full h-10 mb-6 gap-2"
-            onClick={handleGoogle}
-            disabled={isLoading}
-          >
-            <GoogleIcon />
-            Continuar con Google
-          </Button>
-
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                O con tu correo
-              </span>
-            </div>
-          </div>
-
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full grid grid-cols-2 mb-6">
-              <TabsTrigger value="login">Ingresar</TabsTrigger>
-              <TabsTrigger value="signup">Registrarse</TabsTrigger>
-            </TabsList>
-
-            {error && (
-              <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                <div className="flex items-center gap-2 text-destructive text-sm">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{error}</span>
-                </div>
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+              <div className="flex items-center gap-2 text-destructive text-sm">
+                <AlertCircle className="w-4 h-4" />
+                <span>{error}</span>
               </div>
-            )}
+            </div>
+          )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <TabsContent value={activeTab} className="space-y-4 mt-0">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">
-                    Correo Electronico
-                  </Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="tu.correo@utec.edu.pe"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 h-10"
-                    />
-                  </div>
-                </div>
+          {method === "choice" ? (
+            <>
+              <div className="mb-8">
+                <h2 className="text-2xl font-semibold text-foreground mb-2">
+                  Bienvenido
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Elige como quieres continuar
+                </p>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium">
-                    Contrasena
-                  </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Minimo 6 caracteres"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 pr-10 h-10"
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full h-10" disabled={isLoading}>
-                  {isLoading ? <ButtonLoader /> : activeTab === "login" ? "Ingresar" : "Crear cuenta"}
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-11 gap-2 justify-start px-4"
+                  onClick={handleGoogle}
+                  disabled={isLoading}
+                >
+                  <GoogleIcon />
+                  <span className="flex-1 text-left">Continuar con Google</span>
                 </Button>
-              </TabsContent>
-            </form>
-          </Tabs>
 
-          <button
-            type="button"
-            onClick={handleGuest}
-            disabled={isGuestLoading}
-            className="w-full mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-60"
-          >
-            {isGuestLoading ? <ButtonLoader /> : "Continuar sin cuenta"}
-          </button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-11 gap-2 justify-start px-4"
+                  onClick={() => {
+                    setError("");
+                    setMethod("email");
+                  }}
+                >
+                  <Mail className="w-4 h-4" />
+                  <span className="flex-1 text-left">Continuar con correo</span>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-11 gap-2 justify-start px-4"
+                  onClick={handleGuest}
+                  disabled={isGuestLoading}
+                >
+                  {isGuestLoading ? (
+                    <ButtonLoader />
+                  ) : (
+                    <>
+                      <UserRound className="w-4 h-4" />
+                      <span className="flex-1 text-left">Continuar sin cuenta</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              <p className="mt-6 text-xs text-muted-foreground leading-relaxed">
+                Sin cuenta puedes generar y compartir horarios. Con una cuenta
+                ademas sincronizas tus horarios, tu malla y tus amigos en todos
+                tus dispositivos.
+              </p>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setError("");
+                  setMethod("choice");
+                }}
+                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Otras opciones
+              </button>
+
+              <div className="mb-8">
+                <h2 className="text-2xl font-semibold text-foreground mb-2">
+                  {activeTab === "login" ? "Bienvenido de nuevo" : "Crear cuenta"}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {activeTab === "login"
+                    ? "Ingresa tus credenciales para continuar"
+                    : "Completa el formulario para crear tu cuenta"}
+                </p>
+              </div>
+
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="w-full grid grid-cols-2 mb-6">
+                  <TabsTrigger value="login">Ingresar</TabsTrigger>
+                  <TabsTrigger value="signup">Registrarse</TabsTrigger>
+                </TabsList>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <TabsContent value={activeTab} className="space-y-4 mt-0">
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-sm font-medium">
+                        Correo Electronico
+                      </Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="tu.correo@utec.edu.pe"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="pl-10 h-10"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="password" className="text-sm font-medium">
+                        Contrasena
+                      </Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Minimo 6 caracteres"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="pl-10 pr-10 h-10"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <Button type="submit" className="w-full h-10" disabled={isLoading}>
+                      {isLoading ? <ButtonLoader /> : activeTab === "login" ? "Ingresar" : "Crear cuenta"}
+                    </Button>
+                  </TabsContent>
+                </form>
+              </Tabs>
+            </>
+          )}
         </div>
       </div>
     </div>
