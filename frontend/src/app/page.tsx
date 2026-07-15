@@ -9,100 +9,15 @@ import {
   Zap,
   Clock,
   Sparkles,
-  Building2,
-  LayoutGrid,
-  Download,
-  Star,
 } from "lucide-react"
+import { motion, MotionConfig } from "motion/react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
-
-/** Mini schedule grid preview for the hero section */
-function SchedulePreview() {
-  const days = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
-  const hours = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00"]
-
-  const blocks = [
-    { day: 0, hour: 0, span: 2, label: "Cálculo II", color: "bg-primary/15 border-primary/30 text-primary" },
-    { day: 1, hour: 1, span: 2, label: "Física I", color: "bg-muted border-border text-foreground/70" },
-    { day: 2, hour: 0, span: 2, label: "Cálculo II", color: "bg-primary/15 border-primary/30 text-primary" },
-    { day: 3, hour: 2, span: 2, label: "Programación", color: "bg-foreground/5 border-foreground/10 text-foreground/60" },
-    { day: 4, hour: 1, span: 2, label: "Física I", color: "bg-muted border-border text-foreground/70" },
-    { day: 0, hour: 3, span: 2, label: "Química", color: "bg-foreground/5 border-foreground/10 text-foreground/60" },
-    { day: 2, hour: 4, span: 2, label: "Lab. Física", color: "bg-primary/10 border-primary/20 text-primary/80" },
-    { day: 4, hour: 4, span: 1, label: "Tutoría", color: "bg-muted/80 border-border text-foreground/50" },
-  ]
-
-  return (
-    <div className="relative mx-auto max-w-2xl mt-16">
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-        {/* Toolbar */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/30">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-destructive/40" />
-            <div className="w-3 h-3 rounded-full bg-warning/40" />
-            <div className="w-3 h-3 rounded-full bg-success/40" />
-          </div>
-          <span className="text-xs text-muted-foreground font-medium">Combinación 1 de 24</span>
-          <div className="flex items-center gap-1.5">
-            <Download className="w-3.5 h-3.5 text-muted-foreground" />
-            <Star className="w-3.5 h-3.5 text-muted-foreground" />
-          </div>
-        </div>
-
-        {/* Grid */}
-        <div className="p-3">
-          {/* Day headers */}
-          <div className="grid grid-cols-[48px_repeat(6,1fr)] gap-0.5 mb-1">
-            <div />
-            {days.map((day) => (
-              <div key={day} className="text-center text-[11px] font-medium text-muted-foreground py-1">
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* Time grid */}
-          <div className="relative grid grid-cols-[48px_repeat(6,1fr)] gap-0.5">
-            {hours.map((hour, hi) => (
-              <div key={hour} className="contents">
-                <div className="text-[10px] text-muted-foreground/60 text-right pr-2 py-2 leading-none">
-                  {hour}
-                </div>
-                {days.map((_, di) => {
-                  const block = blocks.find(b => b.day === di && b.hour === hi)
-                  if (block) {
-                    return (
-                      <div
-                        key={`${di}-${hi}`}
-                        className={`rounded-md border text-[10px] font-medium px-1.5 py-1 ${block.color}`}
-                        style={{ gridRow: `span ${block.span}` }}
-                      >
-                        {block.label}
-                      </div>
-                    )
-                  }
-                  // Skip cells covered by spanning blocks
-                  const isOccupied = blocks.some(b => b.day === di && hi > b.hour && hi < b.hour + b.span)
-                  if (isOccupied) return null
-                  return (
-                    <div key={`${di}-${hi}`} className="rounded-sm bg-muted/20 min-h-[28px]" />
-                  )
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Decorative glow */}
-      <div className="absolute -inset-4 bg-primary/5 rounded-2xl -z-10 blur-2xl" />
-    </div>
-  )
-}
+import { HeroScheduleAnimation } from "@/components/landing/HeroScheduleAnimation"
+import { Reveal, RevealGroup, RevealItem } from "@/components/landing/Reveal"
 
 export default function LandingPage() {
   const [activeUniversity, setActiveUniversity] = useState("utec")
@@ -168,50 +83,76 @@ export default function LandingPage() {
   ]
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="min-h-screen bg-background">
       <Navbar />
 
       {/* Hero Section */}
       <section className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 animate-fade-in transition-transform hover:scale-105 duration-300">
+          <motion.div
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Optimiza tu tiempo académico</span>
-          </div>
+          </motion.div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-5 tracking-tight text-balance leading-[1.15] animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <motion.h1
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-5 tracking-tight text-balance leading-[1.15]"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+          >
             Crea tu horario perfecto{" "}
             <span className="text-primary">en minutos</span>
-          </h1>
+          </motion.h1>
 
-          <p className="text-base sm:text-lg text-muted-foreground mb-8 max-w-xl mx-auto leading-relaxed text-pretty animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-both">
+          <motion.p
+            className="text-base sm:text-lg text-muted-foreground mb-8 max-w-xl mx-auto leading-relaxed text-pretty"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+          >
             Genera horarios universitarios optimizados automáticamente.
             Selecciona tus cursos, evita conflictos y compártelos con compañeros.
-          </p>
+          </motion.p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 fill-mode-both">
+          <motion.div
+            className="flex flex-col sm:flex-row gap-3 justify-center items-center"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
+          >
             <Link href="/dashboard/generate">
-              <Button
-                size="lg"
-                className="h-11 px-8 text-sm font-medium gap-2 rounded-lg"
-              >
-                Comenzar gratis
-                <ArrowRight className="w-4 h-4" />
-              </Button>
+              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  size="lg"
+                  className="h-11 px-8 text-sm font-medium gap-2 rounded-lg"
+                >
+                  Comenzar gratis
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </motion.div>
             </Link>
             <Link href="#como-funciona">
-              <Button
-                variant="ghost"
-                size="lg"
-                className="h-11 px-6 text-sm font-medium text-muted-foreground hover:text-foreground"
-              >
-                Cómo funciona
-              </Button>
+              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  className="h-11 px-6 text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Cómo funciona
+                </Button>
+              </motion.div>
             </Link>
-          </div>
+          </motion.div>
 
           {/* Schedule Preview */}
-          <SchedulePreview />
+          <HeroScheduleAnimation />
         </div>
       </section>
 
@@ -221,21 +162,20 @@ export default function LandingPage() {
         className="py-20 px-4 sm:px-6 border-t border-border"
       >
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-14">
+          <Reveal className="text-center mb-14">
             <p className="text-sm font-medium text-primary mb-3">
               Cómo funciona
             </p>
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
               Tres pasos simples
             </h2>
-          </div>
+          </Reveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
+          <RevealGroup className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
             {steps.map((step, i) => (
-              <div
+              <RevealItem
                 key={step.num}
-                className="relative text-center md:text-left animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both group"
-                style={{ animationDelay: `${150 * (i + 1)}ms` }}
+                className="relative text-center md:text-left group"
               >
                 <div className="text-4xl font-bold text-primary/15 mb-3 tabular-nums group-hover:text-primary/30 transition-colors duration-300">
                   {step.num}
@@ -249,16 +189,16 @@ export default function LandingPage() {
                 {i < steps.length - 1 && (
                   <ArrowRight className="hidden md:block absolute top-6 -right-3 w-4 h-4 text-border" />
                 )}
-              </div>
+              </RevealItem>
             ))}
-          </div>
+          </RevealGroup>
         </div>
       </section>
 
       {/* Features Section */}
       <section className="py-20 px-4 sm:px-6 bg-muted/30 border-t border-border">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
+          <Reveal className="text-center mb-14">
             <p className="text-sm font-medium text-primary mb-3">
               Características
             </p>
@@ -269,18 +209,21 @@ export default function LandingPage() {
               Herramientas inteligentes que simplifican la creación de horarios
               académicos.
             </p>
-          </div>
+          </Reveal>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {features.map((feature, i) => (
-              <div
+          <RevealGroup className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {features.map((feature) => (
+              <RevealItem
                 key={feature.title}
-                className="group flex gap-4 p-5 rounded-xl border border-border bg-card hover:border-primary/30 hover:shadow-md transition-all duration-300 hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both"
-                style={{ animationDelay: `${100 * (i + 1)}ms` }}
+                className="group flex gap-4 p-5 rounded-xl border border-border bg-card hover:border-primary/30 hover:shadow-md transition-all duration-300 hover:-translate-y-1"
               >
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/15 transition-colors">
+                <motion.div
+                  className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/15 transition-colors"
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                >
                   <feature.icon className="w-5 h-5 text-primary" />
-                </div>
+                </motion.div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline justify-between gap-2 mb-1">
                     <h3 className="text-sm font-semibold text-foreground">
@@ -294,16 +237,16 @@ export default function LandingPage() {
                     {feature.description}
                   </p>
                 </div>
-              </div>
+              </RevealItem>
             ))}
-          </div>
+          </RevealGroup>
         </div>
       </section>
 
       {/* Universities Section */}
       <section className="py-20 px-4 sm:px-6 border-t border-border">
         <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
+          <Reveal className="text-center mb-12">
             <p className="text-sm font-medium text-primary mb-3">
               Universidades
             </p>
@@ -313,8 +256,9 @@ export default function LandingPage() {
             <p className="text-muted-foreground max-w-lg mx-auto text-sm">
               Estamos expandiendo nuestra cobertura constantemente.
             </p>
-          </div>
+          </Reveal>
 
+          <Reveal delay={0.15}>
           <Tabs
             value={activeUniversity}
             onValueChange={setActiveUniversity}
@@ -398,12 +342,13 @@ export default function LandingPage() {
               </TabsContent>
             ))}
           </Tabs>
+          </Reveal>
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 border-t border-border bg-muted/30">
-        <div className="max-w-2xl mx-auto text-center">
+        <Reveal className="max-w-2xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
             Listo para optimizar tu horario?
           </h2>
@@ -413,13 +358,19 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/dashboard/generate">
-              <Button
-                size="lg"
-                className="h-11 px-8 text-sm font-medium gap-2 rounded-lg"
+              <motion.div
+                className="inline-block"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <Calendar className="w-4 h-4" />
-                Comenzar gratis
-              </Button>
+                <Button
+                  size="lg"
+                  className="h-11 px-8 text-sm font-medium gap-2 rounded-lg"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Comenzar gratis
+                </Button>
+              </motion.div>
             </Link>
           </div>
           <div className="mt-8 flex items-center justify-center gap-5 text-xs text-muted-foreground">
@@ -433,10 +384,11 @@ export default function LandingPage() {
               <span>Sin tarjeta de crédito</span>
             </div>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       <Footer />
     </div>
+    </MotionConfig>
   );
 }
