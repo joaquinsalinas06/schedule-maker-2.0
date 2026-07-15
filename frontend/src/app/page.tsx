@@ -122,9 +122,9 @@ export default function LandingPage() {
     },
     {
       icon: Users,
-      title: "Colaboración en tiempo real",
-      description: "Trabaja con compañeros para encontrar horarios compatibles.",
-      stat: "En equipo",
+      title: "Comparte con tus amigos",
+      description: "Comparte tu horario con un enlace y coordina con tus compañeros.",
+      stat: "Con un link",
     },
     {
       icon: Clock,
@@ -186,7 +186,7 @@ export default function LandingPage() {
 
           <p className="text-base sm:text-lg text-muted-foreground mb-8 max-w-xl mx-auto leading-relaxed text-pretty animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-both">
             Genera horarios universitarios optimizados automáticamente.
-            Selecciona tus cursos, evita conflictos y colabora con compañeros.
+            Selecciona tus cursos, evita conflictos y compártelos con compañeros.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 fill-mode-both">

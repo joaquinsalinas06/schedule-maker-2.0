@@ -2,9 +2,8 @@
 
 import { useState, useCallback, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, RefreshCw, Database, X, Clock, ArrowLeft, ChevronDown, ChevronRight, MapPin, User, Users } from "lucide-react"
-import { authService } from "@/services/auth"
-import { adminAPI, ImportAnalysis, ImportStats, AuditLogEntry, CoursePreview } from "@/services/adminAPI"
+import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, RefreshCw, Database, ArrowLeft, ChevronDown, ChevronRight, MapPin, User, Users } from "lucide-react"
+import { analyzeImport, executeImport, checkIsAdmin, ImportAnalysis, ImportStats } from "@/features/admin"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -28,19 +27,16 @@ export default function AdminImportPage() {
   const [loading, setLoading] = useState<boolean>(true)
   const [dragOver, setDragOver] = useState(false)
   const [confirmText, setConfirmText] = useState('')
-  const [history, setHistory] = useState<AuditLogEntry[]>([])
-  const [showHistory, setShowHistory] = useState(false)
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const checkAdmin = async () => {
       try {
-        const user = authService.getCurrentUser()
-        if (!user || user.role !== 'admin') {
+        const admin = await checkIsAdmin()
+        if (!admin) {
           router.push('/dashboard/generate')
           return
         }
-        await adminAPI.checkAdminStatus()
         setIsAdmin(true)
       } catch {
         router.push('/dashboard/generate')
@@ -52,10 +48,10 @@ export default function AdminImportPage() {
   }, [router])
 
   const validateAndSetFile = useCallback((file: File) => {
-    const allowedExtensions = ['.csv', '.xlsx', '.xls']
+    const allowedExtensions = ['.csv']
     const ext = '.' + (file.name.split('.').pop()?.toLowerCase() || '')
     if (!allowedExtensions.includes(ext)) {
-      setError('Solo se permiten archivos CSV y Excel (.csv, .xlsx, .xls)')
+      setError('Solo se permiten archivos CSV (.csv)')
       return
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -93,12 +89,11 @@ export default function AdminImportPage() {
     setPageState('analyzing')
     setError('')
     try {
-      const result = await adminAPI.analyzeImport(selectedFile, importMode)
+      const result = await analyzeImport(selectedFile, importMode)
       setAnalysis(result.analysis)
       setPageState('preview')
     } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { detail?: string } } }
-      setError(axiosError.response?.data?.detail || 'Error al analizar el archivo')
+      setError(err instanceof Error ? err.message : 'Error al analizar el archivo')
       setPageState('error')
     }
   }
@@ -109,12 +104,11 @@ export default function AdminImportPage() {
     setPageState('importing')
     setError('')
     try {
-      const result = await adminAPI.executeImport(selectedFile, importMode)
+      const result = await executeImport(selectedFile, importMode)
       setImportResult({ message: result.message, stats: result.stats })
       setPageState('results')
     } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { detail?: string } } }
-      setError(axiosError.response?.data?.detail || 'Error en la importacion')
+      setError(err instanceof Error ? err.message : 'Error en la importacion')
       setPageState('error')
     }
   }
@@ -153,16 +147,6 @@ export default function AdminImportPage() {
     'Thursday': 'Jue', 'Friday': 'Vie', 'Saturday': 'Sab', 'Sunday': 'Dom'
   }
 
-  const loadHistory = async () => {
-    try {
-      const logs = await adminAPI.getImportHistory(10)
-      setHistory(logs)
-      setShowHistory(true)
-    } catch {
-      // silent fail
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
@@ -184,99 +168,10 @@ export default function AdminImportPage() {
               Panel de Importacion
             </h1>
             <p className="text-muted-foreground mt-1">
-              Sube un archivo CSV o Excel para importar cursos
+              Sube un archivo CSV para importar cursos
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={loadHistory}>
-            <Clock className="w-4 h-4 mr-2" />
-            Historial
-          </Button>
         </div>
-
-        {/* History Modal */}
-        {showHistory && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
-            onClick={() => setShowHistory(false)}
-          >
-            <Card
-              className="max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <CardHeader className="flex flex-row items-center justify-between border-b">
-                <CardTitle className="text-lg">
-                  Historial de Importaciones
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowHistory(false)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardHeader>
-              <CardContent className="p-0 max-h-[60vh] overflow-y-auto">
-                {history.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-12">
-                    No hay importaciones registradas
-                  </p>
-                ) : (
-                  <div className="divide-y divide-border">
-                    {history.map((log) => (
-                      <div key={log.id} className="p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <Badge
-                            variant={
-                              log.status === "success"
-                                ? "default"
-                                : "destructive"
-                            }
-                            className="text-xs"
-                          >
-                            {log.status === "success" ? "Exitoso" : "Fallido"}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {log.executed_at
-                              ? new Date(log.executed_at).toLocaleString(
-                                  "es-PE",
-                                )
-                              : "-"}
-                          </span>
-                        </div>
-                        <p className="text-sm">
-                          {log.action === "csv_import_reset"
-                            ? "Reset (Nuevo Ciclo)"
-                            : "Update (Actualizacion)"}
-                          {log.file_name && (
-                            <span className="text-muted-foreground ml-2">
-                              - {log.file_name}
-                            </span>
-                          )}
-                        </p>
-                        {log.details && log.status === "success" && (
-                          <div className="mt-2 text-xs text-muted-foreground grid grid-cols-2 gap-1">
-                            {Object.entries(log.details)
-                              .filter(
-                                ([key]) => key !== "mode" && key !== "errors",
-                              )
-                              .map(([key, value]) => (
-                                <span key={key}>
-                                  {key.replace(/_/g, " ")}:{" "}
-                                  <span className="text-foreground">
-                                    {String(value)}
-                                  </span>
-                                </span>
-                              ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* Upload State */}
         {pageState === "upload" && (
@@ -349,7 +244,7 @@ export default function AdminImportPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".csv,.xlsx,.xls"
+                accept=".csv"
                 onChange={handleFileInput}
                 className="hidden"
               />
@@ -369,7 +264,7 @@ export default function AdminImportPage() {
                     Arrastra un archivo aqui o haz click para seleccionar
                   </p>
                   <p className="text-sm text-muted-foreground/60">
-                    CSV, XLSX o XLS (max 10MB)
+                    CSV (max 10MB)
                   </p>
                 </div>
               )}

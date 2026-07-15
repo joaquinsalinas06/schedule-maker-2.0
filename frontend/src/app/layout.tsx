@@ -12,6 +12,7 @@ import {
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/features/auth";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -98,9 +99,11 @@ export default function RootLayout({
         >
           <TooltipProvider delayDuration={200}>
             <ToastProvider>
-              {children}
-              <SpeedInsights />
-              <Analytics />
+              <AuthProvider>
+                {children}
+                <SpeedInsights />
+                <Analytics />
+              </AuthProvider>
             </ToastProvider>
           </TooltipProvider>
         </ThemeProvider>

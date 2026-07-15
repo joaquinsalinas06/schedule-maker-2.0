@@ -34,19 +34,6 @@ export interface UseAutocompleteResult {
   selectSuggestion: (suggestion: any) => void;
 }
 
-// WebSocket Types
-export interface WebSocketMessage {
-  type: string;
-  payload: any;
-  timestamp: string;
-}
-
-export interface UseWebSocketOptions {
-  onMessage?: (message: WebSocketMessage) => void;
-  onConnect?: () => void;
-  onDisconnect?: () => void;
-}
-
 // UI Component Props
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'secondary' | 'destructive' | 'outline';

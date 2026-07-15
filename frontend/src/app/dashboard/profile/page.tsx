@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -16,38 +16,20 @@ import {
   FileText,
 } from "lucide-react"
 import { ProfileSkeleton } from "@/components/ui/loading-skeletons"
-import { User as UserType } from "@/types"
-import { ProfileAPI } from "@/services/profileAPI"
-import { ProfileEditModal } from "@/components/ProfileEditModal"
+import { useProfile, ProfileEditModal } from "@/features/profile"
 
 type EditField = 'personal' | 'photo' | 'description' | null
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<UserType | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { profile, loading, email, updateProfile, uploadAvatar } = useProfile()
   const [editingField, setEditingField] = useState<EditField>(null)
 
-  useEffect(() => {
-    loadUserData()
-  }, [])
-
-  const loadUserData = async () => {
-    try {
-      const userData = await ProfileAPI.getCurrentUser()
-      setUser(userData)
-    } catch (error) {
-      console.error('Error loading user data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const getDisplayName = () => {
-    if (!user) return 'Usuario'
-    if (user.nickname) return user.nickname
-    if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`
-    if (user.first_name) return user.first_name
-    return user.email?.split('@')[0] || 'Usuario'
+    if (!profile) return 'Usuario'
+    if (profile.nickname) return profile.nickname
+    if (profile.first_name && profile.last_name) return `${profile.first_name} ${profile.last_name}`
+    if (profile.first_name) return profile.first_name
+    return email?.split('@')[0] || 'Usuario'
   }
 
   const getInitials = () => {
@@ -55,16 +37,11 @@ export default function ProfilePage() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }
 
-  const handleEditComplete = (updatedUser: UserType) => {
-    setUser(updatedUser)
-    setEditingField(null)
-  }
-
   if (loading) {
     return <ProfileSkeleton />
   }
 
-  if (!user) {
+  if (!profile) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="text-center text-muted-foreground max-w-sm">
@@ -93,7 +70,7 @@ export default function ProfilePage() {
             <div className="flex flex-col sm:flex-row items-center gap-6">
               <div className="relative group">
                 <Avatar className="w-24 h-24 border-2 border-border">
-                  <AvatarImage src={user.profile_photo} />
+                  <AvatarImage src={profile.profile_photo || undefined} />
                   <AvatarFallback className="text-xl font-medium bg-muted">
                     {getInitials()}
                   </AvatarFallback>
@@ -107,33 +84,35 @@ export default function ProfilePage() {
                   <Camera className="w-3.5 h-3.5" />
                 </Button>
               </div>
-              
+
               <div className="flex-1 text-center sm:text-left space-y-3">
                 <div>
                   <h2 className="text-xl font-semibold">{getDisplayName()}</h2>
-                  <p className="text-muted-foreground">{user.email}</p>
+                  <p className="text-muted-foreground">{email}</p>
                 </div>
-                
+
                 <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-                  <Badge variant="secondary" className="text-xs font-normal">
-                    <Building2 className="w-3 h-3 mr-1.5" />
-                    {user.university?.short_name || user.university?.name}
-                  </Badge>
-                  {user.student_id && (
+                  {profile.university && (
+                    <Badge variant="secondary" className="text-xs font-normal">
+                      <Building2 className="w-3 h-3 mr-1.5" />
+                      {profile.university.short_name || profile.university.name}
+                    </Badge>
+                  )}
+                  {profile.student_id && (
                     <Badge variant="outline" className="text-xs font-normal">
                       <IdCard className="w-3 h-3 mr-1.5" />
-                      {user.student_id}
+                      {profile.student_id}
                     </Badge>
                   )}
                   <Badge variant="outline" className="text-xs font-normal">
                     <Calendar className="w-3 h-3 mr-1.5" />
-                    {new Date(user.created_at).toLocaleDateString('es-PE', { year: 'numeric', month: 'short' })}
+                    {new Date(profile.created_at).toLocaleDateString('es-PE', { year: 'numeric', month: 'short' })}
                   </Badge>
                 </div>
 
-                {user.description && (
+                {profile.description && (
                   <p className="text-sm text-muted-foreground italic border-l-2 border-border pl-3 mt-4">
-                    {user.description}
+                    {profile.description}
                   </p>
                 )}
               </div>
@@ -160,16 +139,16 @@ export default function ProfilePage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-muted-foreground uppercase tracking-wide">Nombre</label>
-                  <p className="mt-1 font-medium">{user.first_name || '-'}</p>
+                  <p className="mt-1 font-medium">{profile.first_name || '-'}</p>
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground uppercase tracking-wide">Apellido</label>
-                  <p className="mt-1 font-medium">{user.last_name || '-'}</p>
+                  <p className="mt-1 font-medium">{profile.last_name || '-'}</p>
                 </div>
               </div>
               <div>
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">Usuario</label>
-                <p className="mt-1 font-medium">{user.nickname || '-'}</p>
+                <p className="mt-1 font-medium">{profile.nickname || '-'}</p>
               </div>
             </CardContent>
           </Card>
@@ -182,17 +161,17 @@ export default function ProfilePage() {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">Universidad</label>
-                <p className="mt-1 font-medium">{user.university?.name}</p>
+                <p className="mt-1 font-medium">{profile.university?.name || '-'}</p>
               </div>
               <div>
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">Codigo</label>
-                <p className="mt-1 font-medium">{user.student_id || '-'}</p>
+                <p className="mt-1 font-medium">{profile.student_id || '-'}</p>
               </div>
               <div>
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">Email</label>
                 <p className="mt-1 font-medium flex items-center gap-2">
                   <Mail className="w-3.5 h-3.5 text-muted-foreground" />
-                  {user.email}
+                  {email}
                 </p>
               </div>
             </CardContent>
@@ -217,8 +196,8 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent>
             <div className="min-h-[100px] p-4 bg-muted/30 rounded-lg border border-border/50">
-              {user.description ? (
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{user.description}</p>
+              {profile.description ? (
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{profile.description}</p>
               ) : (
                 <p className="text-sm text-muted-foreground/60 italic">
                   Agrega una descripcion sobre ti, tus intereses academicos o cualquier informacion que quieras compartir.
@@ -232,11 +211,12 @@ export default function ProfilePage() {
       {/* Edit Modal */}
       {editingField && (
         <ProfileEditModal
-          user={user}
+          profile={profile}
           editField={editingField}
           isOpen={!!editingField}
           onClose={() => setEditingField(null)}
-          onSave={handleEditComplete}
+          onUpdate={updateProfile}
+          onUploadAvatar={uploadAvatar}
         />
       )}
     </div>

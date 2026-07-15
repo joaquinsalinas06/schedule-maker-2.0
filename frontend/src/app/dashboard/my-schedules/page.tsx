@@ -1,198 +1,137 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { FavoriteSchedule, ShareResponse } from "@/types"
+import { FavoriteSchedule } from "@/types"
 import { FavoriteSchedules } from "@/components/FavoriteSchedules"
 import { useToast } from '@/hooks/use-toast'
 import { SecureStorage } from "@/utils/secureStorage"
+import {
+  listMySchedules,
+  saveSchedule,
+  deleteSchedule,
+  setFavorite,
+  renameSchedule,
+  shareSchedule,
+  type ScheduleRow,
+} from "@/features/schedule"
 import { Star } from "lucide-react"
 import { CourseListSkeleton } from "@/components/ui/loading-skeletons";
+
+function toFavoriteSchedule(row: ScheduleRow): FavoriteSchedule {
+  return {
+    id: row.id,
+    name: row.name || "Sin nombre",
+    combination: row.combination_data,
+    created_at: row.created_at,
+  };
+}
 
 export default function MySchedulesPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const [favoriteSchedules, setFavoriteSchedules] = useState<
-    FavoriteSchedule[]
-  >([]);
-  const [isFavoritesLoaded, setIsFavoritesLoaded] = useState(false);
+  const [rows, setRows] = useState<ScheduleRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    const schedules = await listMySchedules();
+    setRows(schedules);
+    return schedules;
+  }, []);
 
   useEffect(() => {
     const loadSchedules = async () => {
-      if (typeof window !== "undefined") {
-        const savedFavorites = SecureStorage.getItem("favoriteSchedules");
-        if (savedFavorites) {
-          try {
-            setFavoriteSchedules(JSON.parse(savedFavorites));
-          } catch {
-            // Error loading saved favorites
+      try {
+        const schedules = await refresh();
+
+        // One-time migration: localStorage favorites -> Supabase, only if the
+        // user has no rows yet (avoids duplicating on every load).
+        if (schedules.length === 0) {
+          const savedFavorites = SecureStorage.getItem("favoriteSchedules");
+          if (savedFavorites) {
+            try {
+              const localFavorites: FavoriteSchedule[] = JSON.parse(savedFavorites);
+              for (const fav of localFavorites) {
+                await saveSchedule({
+                  name: fav.name || "Sin nombre",
+                  combination: fav.combination,
+                  isFavorite: true,
+                });
+              }
+              SecureStorage.removeItem("favoriteSchedules");
+              SecureStorage.removeItem("favoritedCombinations");
+              await refresh();
+            } catch (error) {
+              console.error("Failed to migrate local favorites to Supabase:", error);
+            }
           }
         }
-
-        try {
-          const { CollaborationAPI } =
-            await import("@/services/collaborationAPI");
-          const databaseSchedules = await CollaborationAPI.getSavedSchedules();
-
-          const convertedSchedules = databaseSchedules.map((schedule) => ({
-            id: `db_${schedule.id}`,
-            name: schedule.name || "Sin nombre",
-            combination: schedule.combination_data || {},
-            created_at: schedule.created_at || new Date().toISOString(),
-            notes: schedule.description || "",
-          }));
-
-          setFavoriteSchedules((prev) => {
-            const allSchedules = [...prev, ...convertedSchedules];
-            const uniqueSchedules = new Map();
-
-            allSchedules.forEach((schedule) => {
-              const comboId = schedule.combination?.combination_id;
-              if (comboId !== undefined && comboId !== null) {
-                // Ensure number vs string matching works perfectly
-                uniqueSchedules.set(String(comboId), schedule);
-              } else {
-                // Fallback for missing combo ids
-                uniqueSchedules.set(schedule.id, schedule);
-              }
-            });
-
-            const deduplicated = Array.from(uniqueSchedules.values());
-
-            // Clean up localStorage to permanently remove duplicates globally
-            SecureStorage.setItem(
-              "favoriteSchedules",
-              JSON.stringify(deduplicated),
-            );
-
-            // Re-sync favoritedCombinations array
-            const combinationsSet = new Set(
-              deduplicated.map((s) => String(s.combination?.combination_id)),
-            );
-            SecureStorage.setItem(
-              "favoritedCombinations",
-              JSON.stringify(Array.from(combinationsSet)),
-            );
-
-            return deduplicated;
-          });
-        } catch (error) {
-          console.error("Failed to load schedules from database:", error);
-        }
-
+      } catch (error) {
+        console.error("Failed to load schedules:", error);
+      } finally {
         setIsLoading(false);
-        setIsFavoritesLoaded(true);
       }
     };
 
     loadSchedules();
-  }, []);
+  }, [refresh]);
 
-  // Sync favorites reactively
-  useEffect(() => {
-    if (isFavoritesLoaded) {
-      SecureStorage.setItem(
-        "favoriteSchedules",
-        JSON.stringify(favoriteSchedules),
-      );
-    }
-  }, [favoriteSchedules, isFavoritesLoaded]);
-
-  const editFavorite = (
-    scheduleId: string,
-    newName: string,
-    newNotes?: string,
-  ) => {
-    setFavoriteSchedules((prev) =>
-      prev.map((schedule) =>
-        schedule.id === scheduleId
-          ? { ...schedule, name: newName, notes: newNotes }
-          : schedule,
-      ),
+  const editFavorite = async (scheduleId: string, newName: string) => {
+    setRows((prev) =>
+      prev.map((row) => (row.id === scheduleId ? { ...row, name: newName } : row)),
     );
+    try {
+      await renameSchedule(scheduleId, newName);
+    } catch (error) {
+      console.error("Failed to rename schedule:", error);
+    }
   };
 
   const removeFavorite = async (scheduleId: string) => {
-    // 1. If it's saved in the database, delete it there
-    if (scheduleId.startsWith("db_")) {
-      try {
-        const { CollaborationAPI } =
-          await import("@/services/collaborationAPI");
-        const realId = scheduleId.replace("db_", "");
-        await CollaborationAPI.deleteSavedSchedule(realId);
-      } catch (error) {
-        console.error("Failed to delete schedule from database:", error);
-        // Continue to delete from local state anyway
-      }
+    setRows((prev) => prev.filter((row) => row.id !== scheduleId));
+    try {
+      await deleteSchedule(scheduleId);
+    } catch (error) {
+      console.error("Failed to delete schedule:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el horario",
+        variant: "destructive",
+      });
+      await refresh();
     }
-
-    // 2. Remove from local state and storage
-    setFavoriteSchedules((prev) => {
-      const schedule = prev.find((s) => s.id === scheduleId);
-      if (schedule) {
-        const savedCombinations = SecureStorage.getItem(
-          "favoritedCombinations",
-        );
-        if (savedCombinations) {
-          try {
-            const combinations = JSON.parse(savedCombinations);
-            const updatedCombinations = combinations.filter(
-              (id: string) =>
-                id !== schedule.combination.combination_id?.toString(),
-            );
-            SecureStorage.setItem(
-              "favoritedCombinations",
-              JSON.stringify(updatedCombinations),
-            );
-          } catch {
-            // Error updating combinations
-          }
-        }
-      }
-      return prev.filter((s) => s.id !== scheduleId);
-    });
   };
 
-  const shareSchedule = async (
-    favoriteSchedule: FavoriteSchedule,
-  ): Promise<ShareResponse | undefined> => {
+  const toggleFavorite = async (scheduleId: string) => {
+    const row = rows.find((r) => r.id === scheduleId);
+    if (!row) return;
+    const next = !row.is_favorite;
+    setRows((prev) =>
+      prev.map((r) => (r.id === scheduleId ? { ...r, is_favorite: next } : r)),
+    );
     try {
-      const { CollaborationAPI } = await import("@/services/collaborationAPI");
+      await setFavorite(scheduleId, next);
+    } catch (error) {
+      console.error("Failed to update favorite:", error);
+      await refresh();
+    }
+  };
 
-      const scheduleData = {
-        name: favoriteSchedule.name,
-        combination: favoriteSchedule.combination,
-        description: favoriteSchedule.notes || "",
-      };
-
-      const savedSchedule = await CollaborationAPI.saveSchedule(scheduleData);
-      const scheduleId = savedSchedule.data.schedule_id;
-
-      const shareData = {
-        schedule_id: scheduleId,
-      };
-
-      const sharedSchedule = await CollaborationAPI.shareSchedule(shareData);
-
-      const shareableLink = `${window.location.origin}/dashboard/collaboration?code=${sharedSchedule.share_token}`;
-
+  const shareFavorite = async (favorite: FavoriteSchedule) => {
+    try {
+      const { url } = await shareSchedule(favorite.id);
+      const shareableLink = `${window.location.origin}${url}`;
       await navigator.clipboard.writeText(shareableLink);
-
       toast({
         title: "Horario compartido",
-        description: `Enlace copiado al portapapeles. Codigo: ${sharedSchedule.share_token}`,
+        description: "Enlace copiado al portapapeles.",
       });
-
-      return { share_token: sharedSchedule.share_token };
     } catch (error: unknown) {
       toast({
         title: "Error",
         description:
-          error instanceof Error
-            ? error.message
-            : "Error al compartir el horario",
+          error instanceof Error ? error.message : "Error al compartir el horario",
         variant: "destructive",
       });
     }
@@ -202,6 +141,8 @@ export default function MySchedulesPage() {
     sessionStorage.setItem("viewingFavoriteSchedule", JSON.stringify(favorite));
     router.push("/dashboard/schedules");
   };
+
+  const favoriteSchedules = rows.map(toFavoriteSchedule);
 
   return (
     <div className="h-full animate-in fade-in zoom-in-95 duration-500">
@@ -213,7 +154,7 @@ export default function MySchedulesPage() {
               Mis Horarios
             </h1>
             <p className="text-sm text-muted-foreground">
-              Horarios guardados como favoritos
+              Horarios guardados
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -236,8 +177,10 @@ export default function MySchedulesPage() {
               favorites={favoriteSchedules}
               onEdit={editFavorite}
               onRemove={removeFavorite}
-              onShare={shareSchedule}
+              onShare={shareFavorite}
               onView={handleViewSchedule}
+              onToggleFavorite={toggleFavorite}
+              favoriteIds={new Set(rows.filter((r) => r.is_favorite).map((r) => r.id))}
             />
           )}
         </div>

@@ -44,6 +44,8 @@ export interface FavoriteSchedule {
 // UI State Types
 export interface SelectedSection {
   sectionId: number;
+  /** Optional: needed by local schedule generation to populate course_id on results. */
+  courseId?: number;
   courseCode: string;
   courseName: string;
   sectionCode: string;

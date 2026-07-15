@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,6 @@ import {
   Calendar,
   Mail,
   Lock,
-  User as UserIcon,
   ArrowLeft,
   Eye,
   EyeOff,
@@ -19,131 +18,64 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
-import { authService } from "@/services/auth";
-import { authSessionManager } from "@/lib/authSessionManager";
+import { useAuth } from "@/features/auth";
 import { ButtonLoader } from "@/components/ui/loading-skeletons";
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden="true">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.85A11 11 0 0 0 12 23z" />
+      <path fill="#FBBC05" d="M5.84 14.09A6.6 6.6 0 0 1 5.5 12c0-.73.13-1.43.34-2.09V7.06H2.18A11 11 0 0 0 1 12c0 1.77.43 3.45 1.18 4.94z" />
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1a11 11 0 0 0-9.82 6.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z" />
+    </svg>
+  );
+}
 
 export default function AuthPage() {
   const router = useRouter();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
   const [activeTab, setActiveTab] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    confirmPassword: "",
-    firstName: "",
-    lastName: "",
-    studentId: "",
-    rememberMe: false,
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  // If user is already authenticated, sync the cookie and redirect to dashboard
-  useEffect(() => {
-    authSessionManager.syncCookieFromStorage();
-    if (authSessionManager.isAuthenticated()) {
-      const params = new URLSearchParams(window.location.search);
-      const redirectTo = params.get("redirect") || "/dashboard";
-      router.replace(redirectTo);
+  const handleGoogle = async () => {
+    setError("");
+    setIsLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch {
+      setError("No se pudo iniciar sesion con Google. Intenta nuevamente.");
+      setIsLoading(false);
     }
-  }, [router]);
-
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.email) {
-      newErrors.email = "El correo electronico es requerido";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Ingresa un correo electronico valido";
-    }
-
-    if (!formData.password) {
-      newErrors.password = "La contrasena es requerida";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "La contrasena debe tener al menos 6 caracteres";
-    }
-
-    if (activeTab === "register") {
-      if (!formData.firstName) {
-        newErrors.firstName = "El nombre es requerido";
-      } else if (formData.firstName.trim().length < 2) {
-        newErrors.firstName = "El nombre debe tener al menos 2 caracteres";
-      }
-
-      if (!formData.lastName) {
-        newErrors.lastName = "El apellido es requerido";
-      } else if (formData.lastName.trim().length < 2) {
-        newErrors.lastName = "El apellido debe tener al menos 2 caracteres";
-      }
-
-      if (!formData.studentId) {
-        newErrors.studentId = "El codigo de estudiante es requerido";
-      } else if (!/^\d{9}$/.test(formData.studentId)) {
-        newErrors.studentId = "El codigo debe tener exactamente 9 digitos";
-      } else {
-        const year = parseInt(formData.studentId.substring(0, 4));
-        const cycle = parseInt(formData.studentId.substring(4, 5));
-        const currentYear = new Date().getFullYear();
-
-        if (year < 2016 || year > currentYear + 1) {
-          newErrors.studentId = `El ano debe estar entre 2016 y ${currentYear + 1}`;
-        } else if (cycle !== 1 && cycle !== 2) {
-          newErrors.studentId = "El ciclo debe ser 1 o 2";
-        }
-      }
-
-      if (!formData.confirmPassword) {
-        newErrors.confirmPassword = "Confirma tu contrasena";
-      } else if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = "Las contrasenas no coinciden";
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    setError("");
+
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      setError("Ingresa un correo electronico valido");
+      return;
+    }
+    if (password.length < 6) {
+      setError("La contrasena debe tener al menos 6 caracteres");
+      return;
+    }
 
     setIsLoading(true);
     try {
-      // Check for redirect parameter from middleware
-      const params = new URLSearchParams(window.location.search);
-      const redirectTo = params.get("redirect") || "/dashboard";
-
       if (activeTab === "login") {
-        await authService.login({
-          email: formData.email,
-          password: formData.password,
-          rememberMe: formData.rememberMe,
-        });
-        window.location.href = redirectTo;
+        await signInWithEmail(email, password);
       } else {
-        await authService.register({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          password: formData.password,
-          student_id: formData.studentId,
-          university_id: 1,
-        });
-        localStorage.removeItem("schedule-maker-first-time-user");
-        window.location.href = redirectTo;
+        await signUpWithEmail(email, password);
       }
-    } catch (error) {
-      console.error("Authentication error:", error);
-      setErrors({ general: "Error en la autenticacion. Intenta nuevamente." });
+      router.replace("/dashboard");
+    } catch {
+      setError("Error en la autenticacion. Intenta nuevamente.");
     } finally {
       setIsLoading(false);
     }
@@ -200,7 +132,6 @@ export default function AuthPage() {
       {/* Right Side - Auth Form */}
       <div className="flex-1 flex items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-500">
         <div className="w-full max-w-sm">
-          {/* Mobile back link */}
           <Link
             href="/"
             className="lg:hidden inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
@@ -209,7 +140,6 @@ export default function AuthPage() {
             Volver
           </Link>
 
-          {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2.5 mb-8">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Calendar className="w-4 h-4 text-primary-foreground" />
@@ -230,311 +160,91 @@ export default function AuthPage() {
             </p>
           </div>
 
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-10 mb-6 gap-2"
+            onClick={handleGoogle}
+            disabled={isLoading}
           >
+            <GoogleIcon />
+            Continuar con Google
+          </Button>
+
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                O con tu correo
+              </span>
+            </div>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="w-full grid grid-cols-2 mb-6">
               <TabsTrigger value="login">Ingresar</TabsTrigger>
-              <TabsTrigger value="register">Registrarse</TabsTrigger>
+              <TabsTrigger value="signup">Registrarse</TabsTrigger>
             </TabsList>
 
-            {/* General errors */}
-            {errors.general && (
+            {error && (
               <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                 <div className="flex items-center gap-2 text-destructive text-sm">
                   <AlertCircle className="w-4 h-4" />
-                  <span>{errors.general}</span>
+                  <span>{error}</span>
                 </div>
               </div>
             )}
 
-            {/* Login and Registration Forms */}
-            {(activeTab === "login" || activeTab === "register") && (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <TabsContent value="login" className="space-y-4 mt-0">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium">
-                      Correo Electronico
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="tu.correo@utec.edu.pe"
-                        value={formData.email}
-                        onChange={(e) =>
-                          handleInputChange("email", e.target.value)
-                        }
-                        className={`pl-10 h-10 ${errors.email ? "border-destructive" : ""}`}
-                      />
-                    </div>
-                    {errors.email && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {errors.email}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-sm font-medium">
-                      Contrasena
-                    </Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Tu contrasena"
-                        value={formData.password}
-                        onChange={(e) =>
-                          handleInputChange("password", e.target.value)
-                        }
-                        className={`pl-10 pr-10 h-10 ${errors.password ? "border-destructive" : ""}`}
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                    {errors.password && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {errors.password}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="rounded border-border"
-                        checked={formData.rememberMe}
-                        onChange={(e) =>
-                          handleInputChange("rememberMe", e.target.checked)
-                        }
-                      />
-                      <span className="text-muted-foreground">Recordarme</span>
-                    </label>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full h-10"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? <ButtonLoader /> : "Ingresar"}
-                  </Button>
-                </TabsContent>
-
-                <TabsContent value="register" className="space-y-4 mt-0">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="firstName"
-                        className="text-sm font-medium"
-                      >
-                        Nombre
-                      </Label>
-                      <div className="relative">
-                        <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <Input
-                          id="firstName"
-                          type="text"
-                          placeholder="Juan"
-                          value={formData.firstName}
-                          onChange={(e) => {
-                            const value = e.target.value
-                              .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "")
-                              .replace(/\s+/g, " ")
-                              .substring(0, 50);
-                            handleInputChange("firstName", value);
-                          }}
-                          className={`pl-10 h-10 ${errors.firstName ? "border-destructive" : ""}`}
-                        />
-                      </div>
-                      {errors.firstName && (
-                        <p className="text-xs text-destructive">
-                          {errors.firstName}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName" className="text-sm font-medium">
-                        Apellido
-                      </Label>
-                      <Input
-                        id="lastName"
-                        type="text"
-                        placeholder="Perez"
-                        value={formData.lastName}
-                        onChange={(e) => {
-                          const value = e.target.value
-                            .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "")
-                            .replace(/\s+/g, " ")
-                            .substring(0, 50);
-                          handleInputChange("lastName", value);
-                        }}
-                        className={`h-10 ${errors.lastName ? "border-destructive" : ""}`}
-                      />
-                      {errors.lastName && (
-                        <p className="text-xs text-destructive">
-                          {errors.lastName}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="studentId" className="text-sm font-medium">
-                      Codigo de Estudiante
-                    </Label>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <TabsContent value={activeTab} className="space-y-4 mt-0">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium">
+                    Correo Electronico
+                  </Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                     <Input
-                      id="studentId"
-                      type="text"
-                      placeholder="202310XXX"
-                      maxLength={9}
-                      value={formData.studentId}
-                      onChange={(e) => {
-                        const value = e.target.value
-                          .replace(/\D/g, "")
-                          .substring(0, 9);
-                        handleInputChange("studentId", value);
-                      }}
-                      className={`h-10 ${errors.studentId ? "border-destructive" : ""}`}
+                      id="email"
+                      type="email"
+                      placeholder="tu.correo@utec.edu.pe"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-10 h-10"
                     />
-                    {errors.studentId && (
-                      <p className="text-xs text-destructive">
-                        {errors.studentId}
-                      </p>
-                    )}
                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="registerEmail"
-                      className="text-sm font-medium"
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium">
+                    Contrasena
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Minimo 6 caracteres"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-10 pr-10 h-10"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => setShowPassword(!showPassword)}
                     >
-                      Correo Electronico
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                      <Input
-                        id="registerEmail"
-                        type="email"
-                        placeholder="tu.correo@utec.edu.pe"
-                        value={formData.email}
-                        onChange={(e) =>
-                          handleInputChange("email", e.target.value)
-                        }
-                        className={`pl-10 h-10 ${errors.email ? "border-destructive" : ""}`}
-                      />
-                    </div>
-                    {errors.email && (
-                      <p className="text-xs text-destructive">{errors.email}</p>
-                    )}
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="registerPassword"
-                      className="text-sm font-medium"
-                    >
-                      Contrasena
-                    </Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                      <Input
-                        id="registerPassword"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Minimo 6 caracteres"
-                        value={formData.password}
-                        onChange={(e) =>
-                          handleInputChange("password", e.target.value)
-                        }
-                        className={`pl-10 pr-10 h-10 ${errors.password ? "border-destructive" : ""}`}
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                    {errors.password && (
-                      <p className="text-xs text-destructive">
-                        {errors.password}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="confirmPassword"
-                      className="text-sm font-medium"
-                    >
-                      Confirmar Contrasena
-                    </Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                      <Input
-                        id="confirmPassword"
-                        type={showConfirmPassword ? "text" : "password"}
-                        placeholder="Repite tu contrasena"
-                        value={formData.confirmPassword}
-                        onChange={(e) =>
-                          handleInputChange("confirmPassword", e.target.value)
-                        }
-                        className={`pl-10 pr-10 h-10 ${errors.confirmPassword ? "border-destructive" : ""}`}
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        onClick={() =>
-                          setShowConfirmPassword(!showConfirmPassword)
-                        }
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                    {errors.confirmPassword && (
-                      <p className="text-xs text-destructive">
-                        {errors.confirmPassword}
-                      </p>
-                    )}
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full h-10"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? <ButtonLoader /> : "Crear cuenta"}
-                  </Button>
-                </TabsContent>
-              </form>
-            )}
+                <Button type="submit" className="w-full h-10" disabled={isLoading}>
+                  {isLoading ? <ButtonLoader /> : activeTab === "login" ? "Ingresar" : "Crear cuenta"}
+                </Button>
+              </TabsContent>
+            </form>
           </Tabs>
         </div>
       </div>

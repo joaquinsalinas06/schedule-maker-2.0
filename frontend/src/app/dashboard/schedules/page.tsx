@@ -12,8 +12,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { apiService } from "@/services/api";
-import { SecureStorage } from "@/utils/secureStorage";
+import { searchCourses } from "@/features/catalog";
+import {
+  generateSchedules,
+  listMySchedules,
+  saveSchedule,
+  deleteSchedule,
+  type ScheduleRow,
+} from "@/features/schedule";
 import {
   Course,
   SelectedSection,
@@ -94,14 +100,16 @@ export default function SchedulesPage() {
     department: "",
   });
 
-  // Favorite schedule management states
-  const [favoriteSchedules, setFavoriteSchedules] = useState<
-    FavoriteSchedule[]
-  >([]);
-  const [favoritedCombinations, setFavoritedCombinations] = useState<
-    Set<string>
-  >(new Set());
-  const [isFavoritesLoaded, setIsFavoritesLoaded] = useState(false);
+  // Favorite schedule management state — cloud-backed via @/features/schedule
+  // (see saveSchedule/deleteSchedule below). favoritedCombinations is derived
+  // from the loaded rows, not stored separately.
+  const [myScheduleRows, setMyScheduleRows] = useState<ScheduleRow[]>([]);
+  const favoritedCombinations = new Set(
+    myScheduleRows
+      .filter((row) => row.is_favorite)
+      .map((row) => row.combination_data?.combination_id?.toString())
+      .filter((id): id is string => Boolean(id)),
+  );
 
   const calculateImpossibleSections = (
     schedules: any,
@@ -132,8 +140,6 @@ export default function SchedulesPage() {
     if (typeof window !== "undefined") {
       const savedSchedules = sessionStorage.getItem("generatedSchedules");
       const savedSelectedSections = sessionStorage.getItem("selectedSections");
-      const savedFavorites = SecureStorage.getItem("favoriteSchedules"); // 🔒 User-specific
-      const savedCombinations = SecureStorage.getItem("favoritedCombinations"); // 🔒 User-specific
       const viewingFavorite = sessionStorage.getItem("viewingFavoriteSchedule");
 
       let parsedSchedules: any = null;
@@ -177,23 +183,6 @@ export default function SchedulesPage() {
         setMaxOptionalCourses(parseInt(savedMaxOptional, 10) || 1);
       }
 
-      if (savedFavorites) {
-        try {
-          setFavoriteSchedules(JSON.parse(savedFavorites));
-        } catch {
-          // Error loading saved favorites
-        }
-      }
-
-      if (savedCombinations) {
-        try {
-          const combinations = JSON.parse(savedCombinations);
-          setFavoritedCombinations(new Set(combinations));
-        } catch {
-          // Error loading saved combinations
-        }
-      }
-
       // Handle viewing favorite schedule from my-schedules
       if (viewingFavorite) {
         try {
@@ -205,23 +194,18 @@ export default function SchedulesPage() {
           // Error loading viewing favorite
         }
       }
-      setIsFavoritesLoaded(true);
     }
   }, []);
 
-  // Sync favorites to SecureStorage reactively
+  // Load cloud-saved schedules once, so we know which combinations are
+  // already favorited (is_favorite=true rows).
   useEffect(() => {
-    if (isFavoritesLoaded) {
-      SecureStorage.setItem(
-        "favoriteSchedules",
-        JSON.stringify(favoriteSchedules),
-      );
-      SecureStorage.setItem(
-        "favoritedCombinations",
-        JSON.stringify(Array.from(favoritedCombinations)),
-      );
-    }
-  }, [favoriteSchedules, favoritedCombinations, isFavoritesLoaded]);
+    listMySchedules()
+      .then(setMyScheduleRows)
+      .catch(() => {
+        // Anonymous / not authenticated — just show nothing favorited.
+      });
+  }, []);
 
   // Helper function to group sections by course
   const groupSectionsByCourse = (): GroupedCourse[] => {
@@ -287,7 +271,7 @@ export default function SchedulesPage() {
 
     setScheduleSearchLoading(true);
     try {
-      const response = await apiService.searchCourses(
+      const response = await searchCourses(
         scheduleSearchQuery.trim(),
         "UTEC",
         scheduleFilters.department || undefined,
@@ -308,6 +292,7 @@ export default function SchedulesPage() {
 
     const newSelection: SelectedSection = {
       sectionId: section.id,
+      courseId: course.id,
       courseCode: course.code,
       courseName: course.name,
       sectionCode: section.section_number,
@@ -351,28 +336,14 @@ export default function SchedulesPage() {
 
     setIsLoading(true);
     try {
-      const requiredSections = selectedSections
-        .filter((s) => !optionalCourses.has(s.courseCode))
-        .map((s) => s.sectionId);
-      const optionalSectionIds = selectedSections
-        .filter((s) => optionalCourses.has(s.courseCode))
-        .map((s) => s.sectionId);
-
-      const request = {
-        selected_sections: requiredSections,
-        optional_sections:
-          optionalSectionIds.length > 0 ? optionalSectionIds : undefined,
-        max_optional_courses:
-          optionalSectionIds.length > 0 ? maxOptionalCourses : undefined,
-        sort_by: "score" as const,
-      };
-
-      console.log("Regenerating schedules with payload:", request);
-
-      const response = await apiService.generateSchedules(request);
-      setGeneratedSchedules(response.data);
+      const result = generateSchedules({
+        selectedSections,
+        optionalCourses,
+        maxOptionalCourses,
+      });
+      setGeneratedSchedules(result);
       setImpossibleSections(
-        calculateImpossibleSections(response.data, selectedSections),
+        calculateImpossibleSections(result, selectedSections),
       );
 
       setViewingFavoriteSchedule(null); // Clear any favorite being viewed
@@ -380,7 +351,7 @@ export default function SchedulesPage() {
       // Update sessionStorage
       sessionStorage.setItem(
         "generatedSchedules",
-        JSON.stringify(response.data),
+        JSON.stringify(result),
       );
       sessionStorage.setItem(
         "optionalCourses",
@@ -392,7 +363,6 @@ export default function SchedulesPage() {
       );
     } catch (error) {
       console.error("Error generating schedules:", error);
-      // Handle auth errors through the axios interceptor
     } finally {
       setIsLoading(false);
     }
@@ -414,83 +384,39 @@ export default function SchedulesPage() {
     await addToFavorites(typedSchedule);
   };
 
-  // Favorite schedule management
+  // Favorite schedule management — saves/deletes a row in the cloud
+  // `schedules` table. Unfavoriting from this page deletes the row it
+  // created (this page has no "saved but not favorited" concept — that's
+  // my-schedules' job).
   const addToFavorites = async (schedule: TypesScheduleCombination) => {
     const combinationId = schedule.combination_id.toString();
+    // Prevent duplicates in case of double clicks
+    if (favoritedCombinations.has(combinationId)) return;
 
-    const favoriteId = `fav_${Date.now()}`;
-    const newFavorite: FavoriteSchedule = {
-      id: favoriteId,
-      name: `Horario ${favoriteSchedules.length + 1}`,
-      combination: schedule,
-      created_at: new Date().toISOString(),
-      notes: "",
-    };
-
-    setFavoritedCombinations((prev) => {
-      const newSet = new Set(prev);
-      newSet.add(combinationId);
-      return newSet;
-    });
-
-    setFavoriteSchedules((prev) => {
-      // Prevent duplicates in case of double clicks
-      if (
-        prev.some(
-          (f) => f.combination.combination_id?.toString() === combinationId,
-        )
-      ) {
-        return prev;
-      }
-      return [...prev, newFavorite];
-    });
-
-    // Also save to database
     try {
-      console.log("Attempting to save schedule to database:", newFavorite.name);
-      const { CollaborationAPI } = await import("@/services/collaborationAPI");
-      const scheduleData = {
-        name: newFavorite.name,
+      const row = await saveSchedule({
+        name: `Horario ${myScheduleRows.length + 1}`,
         combination: schedule,
-        description: newFavorite.notes || "",
-      };
-      const result = await CollaborationAPI.saveSchedule(scheduleData);
-      console.log("Schedule saved to database successfully:", result);
+        isFavorite: true,
+      });
+      setMyScheduleRows((prev) => [row, ...prev]);
     } catch (error) {
-      console.error("Failed to save schedule to database:", error);
+      console.error("Failed to save favorite:", error);
     }
   };
 
   const removeFromFavoritesByCombinationId = async (combinationId: string) => {
-    // 1. Try to find the favorite in our current state to get its actual ID
-    const favorite = favoriteSchedules.find(
-      (fav) => fav.combination.combination_id?.toString() === combinationId,
+    const row = myScheduleRows.find(
+      (r) => r.combination_data?.combination_id?.toString() === combinationId,
     );
+    if (!row) return;
 
-    // 2. If we found an ID and it starts with db_, delete from backend
-    if (favorite && favorite.id.startsWith("db_")) {
-      try {
-        const { CollaborationAPI } =
-          await import("@/services/collaborationAPI");
-        const realId = favorite.id.replace("db_", "");
-        await CollaborationAPI.deleteSavedSchedule(realId);
-        console.log("Favorite successfully deleted from database");
-      } catch (error) {
-        console.error("Failed to delete schedule from database:", error);
-      }
+    setMyScheduleRows((prev) => prev.filter((r) => r.id !== row.id));
+    try {
+      await deleteSchedule(row.id);
+    } catch (error) {
+      console.error("Failed to remove favorite:", error);
     }
-
-    setFavoritedCombinations((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(combinationId);
-      return newSet;
-    });
-
-    setFavoriteSchedules((prev) => {
-      return prev.filter(
-        (fav) => fav.combination.combination_id?.toString() !== combinationId,
-      );
-    });
   };
 
   return (
@@ -725,27 +651,17 @@ export default function SchedulesPage() {
                   }
                   onRemoveFromFavorites={
                     viewingFavoriteSchedule
-                      ? (id) => {
-                          // Remove the favorite schedule entirely
-                          const updatedFavorites = favoriteSchedules.filter(
-                            (fav) => fav.id !== viewingFavoriteSchedule.id,
+                      ? async () => {
+                          // Delete the row entirely (this button removes the
+                          // saved schedule, not just its favorite flag).
+                          setMyScheduleRows((prev) =>
+                            prev.filter((r) => r.id !== viewingFavoriteSchedule.id),
                           );
-                          setFavoriteSchedules(updatedFavorites);
-                          SecureStorage.setItem(
-                            "favoriteSchedules",
-                            JSON.stringify(updatedFavorites),
-                          ); // 🔒 User-specific
-
-                          // Remove from favoritedCombinations set
-                          const newFavoritedCombinations = new Set(
-                            favoritedCombinations,
-                          );
-                          newFavoritedCombinations.delete(id);
-                          setFavoritedCombinations(newFavoritedCombinations);
-                          SecureStorage.setItem(
-                            "favoritedCombinations",
-                            JSON.stringify([...newFavoritedCombinations]),
-                          ); // 🔒 User-specific
+                          try {
+                            await deleteSchedule(viewingFavoriteSchedule.id);
+                          } catch (error) {
+                            console.error("Failed to remove favorite:", error);
+                          }
 
                           // Go back to my schedules
                           setViewingFavoriteSchedule(null);

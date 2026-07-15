@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Calendar, Grid3X3, Users, Star, UserPlus, Database } from "lucide-react"
-import { authService } from "@/services/auth"
-import { authSessionManager } from "@/lib/authSessionManager"
+import { Calendar, Grid3X3, Star, UserPlus, Database } from "lucide-react"
 import { SidebarSection } from "@/types"
 import { useFirstTimeUser } from "@/hooks/useFirstTimeUser"
-import { useUserSessionSecurity } from "@/hooks/useUserSessionSecurity"
+import { useProfile } from "@/features/profile"
 
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar'
 import { MobileHeader } from '@/components/dashboard/MobileHeader'
@@ -22,54 +20,13 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
-  
-  useUserSessionSecurity()
-  
+
+  const { profile } = useProfile()
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [authLoading, setAuthLoading] = useState(true)
-  const [currentUser, setCurrentUser] = useState<{ role?: string } | null>(null)
   const { isFirstTime, isLoading: firstTimeLoading, markAsVisited } = useFirstTimeUser()
-
-  useEffect(() => {
-    const user = authService.getCurrentUser()
-    setCurrentUser(user)
-  }, [])
-
-  // Auth check + auto-refresh using the session manager
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    // Validate session properly (JWT expiry check)
-    if (!authSessionManager.isAuthenticated()) {
-      // Try to get a valid token (may trigger refresh)
-      authSessionManager.getValidToken().then((token) => {
-        if (!token) {
-          window.location.href = '/auth'
-          return
-        }
-        setAuthLoading(false)
-      })
-    } else {
-      setAuthLoading(false)
-    }
-
-    // Start proactive auto-refresh
-    authSessionManager.startAutoRefresh()
-
-    // Listen for auth state changes (e.g., logout from another tab)
-    const { unsubscribe } = authSessionManager.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
-        window.location.href = '/auth'
-      }
-    })
-
-    return () => {
-      authSessionManager.stopAutoRefresh()
-      unsubscribe()
-    }
-  }, [])
 
   const sidebarSections: SidebarSection[] = [
     {
@@ -91,18 +48,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: Star,
     },
     {
-      id: "collaboration",
-      title: "Colaboracion",
-      shortTitle: "Colaborar",
-      icon: Users,
-    },
-    {
       id: "friends",
       title: "Mis Amigos",
       shortTitle: "Amigos",
       icon: UserPlus,
     },
-    ...(currentUser?.role === "admin"
+    ...(profile?.role === "admin"
       ? [
           {
             id: "admin",
@@ -126,18 +77,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   useEffect(() => {
-    const checkAuth = () => {
-      if (typeof window !== 'undefined' && !authService.isAuthenticated()) {
-        window.location.href = '/'
-        return
-      }
-      setAuthLoading(false)
-    }
-    
-    checkAuth()
-  }, [])
-
-  useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth < 1024
       setIsMobile(mobile)
@@ -152,7 +91,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  if (authLoading || firstTimeLoading) {
+  if (firstTimeLoading) {
     return <DashboardSkeleton />
   }
 

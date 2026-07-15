@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, ChevronDown, Info, X } from "lucide-react";
-import { useCurriculumStore } from "@/stores/curriculumStore";
-import { CurriculumAPI } from "@/services/curriculumAPI";
-import CurriculumGraph from "@/components/curriculum/CurriculumGraph";
-import ProgressSummaryCard from "@/components/curriculum/ProgressSummaryCard";
-import type { CurriculumListItem } from "@/types/curriculum";
+import { useCurriculumStore, CurriculumGraph, ProgressSummaryCard, listCurricula } from "@/features/curriculum";
+import type { CurriculumListItem } from "@/features/curriculum";
 
 const CurriculumSkeleton = () => (
   <div className="flex-1 w-full h-full p-8 flex flex-col gap-8 relative overflow-hidden bg-zinc-950">
@@ -64,7 +61,7 @@ export default function CurriculumPage() {
   useEffect(() => {
     async function load() {
       try {
-        const list = await CurriculumAPI.listCurricula();
+        const list = await listCurricula();
         setCurricula(list);
         if (list.length > 0) {
           setSelectedId(list[0].id);

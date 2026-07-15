@@ -1,0 +1,2175 @@
+[
+  {
+    "name": "case1_conflict_pruning",
+    "fixtures": {
+      "courses": [
+        {
+          "id": 1,
+          "code": "CS101",
+          "name": "Intro to CS"
+        },
+        {
+          "id": 2,
+          "code": "MA201",
+          "name": "Calculus II"
+        }
+      ],
+      "sections": [
+        {
+          "id": 101,
+          "course_id": 1,
+          "section_number": "A",
+          "professor": "Prof Alan",
+          "capacity": 30,
+          "enrolled": 0
+        },
+        {
+          "id": 102,
+          "course_id": 1,
+          "section_number": "B",
+          "professor": "Prof Beta",
+          "capacity": 30,
+          "enrolled": 0
+        },
+        {
+          "id": 201,
+          "course_id": 2,
+          "section_number": "A",
+          "professor": "Prof Gamma",
+          "capacity": 30,
+          "enrolled": 0
+        },
+        {
+          "id": 202,
+          "course_id": 2,
+          "section_number": "B",
+          "professor": "Prof Delta",
+          "capacity": 30,
+          "enrolled": 0
+        }
+      ],
+      "sessions": {
+        "101": [
+          {
+            "id": 1001,
+            "section_id": 101,
+            "session_type": "Teoria",
+            "day": "lunes",
+            "start_time": "08:00",
+            "end_time": "10:00",
+            "location": "Room 1",
+            "modality": "presencial"
+          },
+          {
+            "id": 1002,
+            "section_id": 101,
+            "session_type": "Teoria",
+            "day": "miercoles",
+            "start_time": "08:00",
+            "end_time": "10:00",
+            "location": "Room 1",
+            "modality": "presencial"
+          }
+        ],
+        "102": [
+          {
+            "id": 1003,
+            "section_id": 102,
+            "session_type": "Teoria",
+            "day": "martes",
+            "start_time": "14:00",
+            "end_time": "16:00",
+            "location": "Room 2",
+            "modality": "presencial"
+          },
+          {
+            "id": 1004,
+            "section_id": 102,
+            "session_type": "Teoria",
+            "day": "jueves",
+            "start_time": "14:00",
+            "end_time": "16:00",
+            "location": "Room 2",
+            "modality": "presencial"
+          }
+        ],
+        "201": [
+          {
+            "id": 2001,
+            "section_id": 201,
+            "session_type": "Teoria",
+            "day": "lunes",
+            "start_time": "10:00",
+            "end_time": "12:00",
+            "location": "Room 3",
+            "modality": "presencial"
+          }
+        ],
+        "202": [
+          {
+            "id": 2002,
+            "section_id": 202,
+            "session_type": "Teoria",
+            "day": "lunes",
+            "start_time": "08:30",
+            "end_time": "10:30",
+            "location": "Room 4",
+            "modality": "presencial"
+          }
+        ]
+      }
+    },
+    "input": {
+      "selected_section_ids": [
+        101,
+        102,
+        201,
+        202
+      ],
+      "optional_section_ids": [],
+      "max_optional_courses": null,
+      "sort_by": "score",
+      "max_results": 200
+    },
+    "output_sort_score": [
+      {
+        "combination_id": "ba2d004e-dbcb-459f-af63-389e8fe10e37",
+        "id_string": "101_201",
+        "course_count": 2,
+        "scores": {
+          "earliest": 0.639,
+          "gaps": 1.0,
+          "spread": 0.938,
+          "compactness": 0.8,
+          "composite": 0.846
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 101,
+            "section_number": "A",
+            "professor": "Prof Alan",
+            "sessions": [
+              {
+                "session_id": 1001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              },
+              {
+                "session_id": 1002,
+                "session_type": "Teoria",
+                "day": "miercoles",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 201,
+            "section_number": "A",
+            "professor": "Prof Gamma",
+            "sessions": [
+              {
+                "session_id": 2001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "10:00",
+                "end_time": "12:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "bc2568fd-26e6-4524-be89-fef0f305823b",
+        "id_string": "102_202",
+        "course_count": 2,
+        "scores": {
+          "earliest": 0.493,
+          "gaps": 1.0,
+          "spread": 1.0,
+          "compactness": 0.6,
+          "composite": 0.788
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 102,
+            "section_number": "B",
+            "professor": "Prof Beta",
+            "sessions": [
+              {
+                "session_id": 1003,
+                "session_type": "Teoria",
+                "day": "martes",
+                "start_time": "14:00",
+                "end_time": "16:00",
+                "location": "Room 2",
+                "modality": "presencial"
+              },
+              {
+                "session_id": 1004,
+                "session_type": "Teoria",
+                "day": "jueves",
+                "start_time": "14:00",
+                "end_time": "16:00",
+                "location": "Room 2",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 202,
+            "section_number": "B",
+            "professor": "Prof Delta",
+            "sessions": [
+              {
+                "session_id": 2002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:30",
+                "end_time": "10:30",
+                "location": "Room 4",
+                "modality": "presencial"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "9e9d180b-5a11-4d0c-9b84-800041cdf210",
+        "id_string": "102_201",
+        "course_count": 2,
+        "scores": {
+          "earliest": 0.472,
+          "gaps": 1.0,
+          "spread": 1.0,
+          "compactness": 0.6,
+          "composite": 0.782
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 102,
+            "section_number": "B",
+            "professor": "Prof Beta",
+            "sessions": [
+              {
+                "session_id": 1003,
+                "session_type": "Teoria",
+                "day": "martes",
+                "start_time": "14:00",
+                "end_time": "16:00",
+                "location": "Room 2",
+                "modality": "presencial"
+              },
+              {
+                "session_id": 1004,
+                "session_type": "Teoria",
+                "day": "jueves",
+                "start_time": "14:00",
+                "end_time": "16:00",
+                "location": "Room 2",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 201,
+            "section_number": "A",
+            "professor": "Prof Gamma",
+            "sessions": [
+              {
+                "session_id": 2001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "10:00",
+                "end_time": "12:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "input_earliest": {
+      "selected_section_ids": [
+        101,
+        102,
+        201,
+        202
+      ],
+      "optional_section_ids": [],
+      "max_optional_courses": null,
+      "sort_by": "earliest",
+      "max_results": 200
+    },
+    "output_sort_earliest": [
+      {
+        "combination_id": "73e1f2cb-19e7-4948-871e-7ba9b6af616d",
+        "id_string": "101_201",
+        "course_count": 2,
+        "scores": {
+          "earliest": 0.639,
+          "gaps": 1.0,
+          "spread": 0.938,
+          "compactness": 0.8,
+          "composite": 0.846
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 101,
+            "section_number": "A",
+            "professor": "Prof Alan",
+            "sessions": [
+              {
+                "session_id": 1001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              },
+              {
+                "session_id": 1002,
+                "session_type": "Teoria",
+                "day": "miercoles",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 201,
+            "section_number": "A",
+            "professor": "Prof Gamma",
+            "sessions": [
+              {
+                "session_id": 2001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "10:00",
+                "end_time": "12:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "8ba5559c-cd97-41b2-8544-5f81b3794aed",
+        "id_string": "102_202",
+        "course_count": 2,
+        "scores": {
+          "earliest": 0.493,
+          "gaps": 1.0,
+          "spread": 1.0,
+          "compactness": 0.6,
+          "composite": 0.788
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 102,
+            "section_number": "B",
+            "professor": "Prof Beta",
+            "sessions": [
+              {
+                "session_id": 1003,
+                "session_type": "Teoria",
+                "day": "martes",
+                "start_time": "14:00",
+                "end_time": "16:00",
+                "location": "Room 2",
+                "modality": "presencial"
+              },
+              {
+                "session_id": 1004,
+                "session_type": "Teoria",
+                "day": "jueves",
+                "start_time": "14:00",
+                "end_time": "16:00",
+                "location": "Room 2",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 202,
+            "section_number": "B",
+            "professor": "Prof Delta",
+            "sessions": [
+              {
+                "session_id": 2002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:30",
+                "end_time": "10:30",
+                "location": "Room 4",
+                "modality": "presencial"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "c32367ba-0d5b-4f7c-93eb-9e6f711c34a6",
+        "id_string": "102_201",
+        "course_count": 2,
+        "scores": {
+          "earliest": 0.472,
+          "gaps": 1.0,
+          "spread": 1.0,
+          "compactness": 0.6,
+          "composite": 0.782
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 102,
+            "section_number": "B",
+            "professor": "Prof Beta",
+            "sessions": [
+              {
+                "session_id": 1003,
+                "session_type": "Teoria",
+                "day": "martes",
+                "start_time": "14:00",
+                "end_time": "16:00",
+                "location": "Room 2",
+                "modality": "presencial"
+              },
+              {
+                "session_id": 1004,
+                "session_type": "Teoria",
+                "day": "jueves",
+                "start_time": "14:00",
+                "end_time": "16:00",
+                "location": "Room 2",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 201,
+            "section_number": "A",
+            "professor": "Prof Gamma",
+            "sessions": [
+              {
+                "session_id": 2001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "10:00",
+                "end_time": "12:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "case2_optional_courses",
+    "fixtures": {
+      "courses": [
+        {
+          "id": 1,
+          "code": "CS101",
+          "name": "Intro to CS"
+        },
+        {
+          "id": 2,
+          "code": "PH100",
+          "name": "Physics I"
+        },
+        {
+          "id": 3,
+          "code": "HI100",
+          "name": "History I"
+        }
+      ],
+      "sections": [
+        {
+          "id": 101,
+          "course_id": 1,
+          "section_number": "A",
+          "professor": "Prof Alan",
+          "capacity": 30,
+          "enrolled": 0
+        },
+        {
+          "id": 301,
+          "course_id": 2,
+          "section_number": "A",
+          "professor": "Prof Phy",
+          "capacity": 30,
+          "enrolled": 0
+        },
+        {
+          "id": 302,
+          "course_id": 2,
+          "section_number": "B",
+          "professor": "Prof Phy2",
+          "capacity": 30,
+          "enrolled": 0
+        },
+        {
+          "id": 401,
+          "course_id": 3,
+          "section_number": "A",
+          "professor": "Prof His",
+          "capacity": 30,
+          "enrolled": 0
+        }
+      ],
+      "sessions": {
+        "101": [
+          {
+            "id": 1001,
+            "section_id": 101,
+            "session_type": "Teoria",
+            "day": "lunes",
+            "start_time": "08:00",
+            "end_time": "10:00",
+            "location": "Room 1",
+            "modality": "presencial"
+          }
+        ],
+        "301": [
+          {
+            "id": 3001,
+            "section_id": 301,
+            "session_type": "Teoria",
+            "day": "martes",
+            "start_time": "08:00",
+            "end_time": "10:00",
+            "location": "Room 5",
+            "modality": "presencial"
+          }
+        ],
+        "302": [
+          {
+            "id": 3002,
+            "section_id": 302,
+            "session_type": "Teoria",
+            "day": "lunes",
+            "start_time": "08:00",
+            "end_time": "09:00",
+            "location": "Room 6",
+            "modality": "presencial"
+          }
+        ],
+        "401": [
+          {
+            "id": 4001,
+            "section_id": 401,
+            "session_type": "Teoria",
+            "day": "miercoles",
+            "start_time": "10:00",
+            "end_time": "11:00",
+            "location": "Room 7",
+            "modality": "presencial"
+          }
+        ]
+      }
+    },
+    "input": {
+      "selected_section_ids": [
+        101
+      ],
+      "optional_section_ids": [
+        301,
+        302,
+        401
+      ],
+      "max_optional_courses": 1,
+      "sort_by": "score",
+      "max_results": 200
+    },
+    "output_sort_score": [
+      {
+        "combination_id": "738a1d19-8492-4b6c-aeef-81b7a2af24f8",
+        "id_string": "101_301",
+        "course_count": 2,
+        "scores": {
+          "earliest": 0.667,
+          "gaps": 1.0,
+          "spread": 1.0,
+          "compactness": 0.8,
+          "composite": 0.87
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 101,
+            "section_number": "A",
+            "professor": "Prof Alan",
+            "sessions": [
+              {
+                "session_id": 1001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "PH100",
+            "course_name": "Physics I",
+            "section_id": 301,
+            "section_number": "A",
+            "professor": "Prof Phy",
+            "sessions": [
+              {
+                "session_id": 3001,
+                "session_type": "Teoria",
+                "day": "martes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 5",
+                "modality": "presencial"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "45c26fc1-1850-4941-a8d1-0032987d0684",
+        "id_string": "101_401",
+        "course_count": 2,
+        "scores": {
+          "earliest": 0.625,
+          "gaps": 1.0,
+          "spread": 1.0,
+          "compactness": 0.8,
+          "composite": 0.858
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 101,
+            "section_number": "A",
+            "professor": "Prof Alan",
+            "sessions": [
+              {
+                "session_id": 1001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "HI100",
+            "course_name": "History I",
+            "section_id": 401,
+            "section_number": "A",
+            "professor": "Prof His",
+            "sessions": [
+              {
+                "session_id": 4001,
+                "session_type": "Teoria",
+                "day": "miercoles",
+                "start_time": "10:00",
+                "end_time": "11:00",
+                "location": "Room 7",
+                "modality": "presencial"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "input_compact": {
+      "selected_section_ids": [
+        101
+      ],
+      "optional_section_ids": [
+        301,
+        302,
+        401
+      ],
+      "max_optional_courses": 1,
+      "sort_by": "compact",
+      "max_results": 200
+    },
+    "output_sort_compact": [
+      {
+        "combination_id": "22694bcd-cb69-40e0-817d-7118e4eed9db",
+        "id_string": "101_301",
+        "course_count": 2,
+        "scores": {
+          "earliest": 0.667,
+          "gaps": 1.0,
+          "spread": 1.0,
+          "compactness": 0.8,
+          "composite": 0.87
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 101,
+            "section_number": "A",
+            "professor": "Prof Alan",
+            "sessions": [
+              {
+                "session_id": 1001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "PH100",
+            "course_name": "Physics I",
+            "section_id": 301,
+            "section_number": "A",
+            "professor": "Prof Phy",
+            "sessions": [
+              {
+                "session_id": 3001,
+                "session_type": "Teoria",
+                "day": "martes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 5",
+                "modality": "presencial"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "d944b8de-b5a3-48cc-98c7-43495fbc338c",
+        "id_string": "101_401",
+        "course_count": 2,
+        "scores": {
+          "earliest": 0.625,
+          "gaps": 1.0,
+          "spread": 1.0,
+          "compactness": 0.8,
+          "composite": 0.858
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 101,
+            "section_number": "A",
+            "professor": "Prof Alan",
+            "sessions": [
+              {
+                "session_id": 1001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "HI100",
+            "course_name": "History I",
+            "section_id": 401,
+            "section_number": "A",
+            "professor": "Prof His",
+            "sessions": [
+              {
+                "session_id": 4001,
+                "session_type": "Teoria",
+                "day": "miercoles",
+                "start_time": "10:00",
+                "end_time": "11:00",
+                "location": "Room 7",
+                "modality": "presencial"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "case3_gaps_spread_scoring",
+    "fixtures": {
+      "courses": [
+        {
+          "id": 1,
+          "code": "CS101",
+          "name": "Intro to CS"
+        },
+        {
+          "id": 2,
+          "code": "MA201",
+          "name": "Calculus II"
+        },
+        {
+          "id": 3,
+          "code": "EN100",
+          "name": "English I"
+        }
+      ],
+      "sections": [
+        {
+          "id": 101,
+          "course_id": 1,
+          "section_number": "A",
+          "professor": "Prof Alan",
+          "capacity": 30,
+          "enrolled": 0
+        },
+        {
+          "id": 102,
+          "course_id": 1,
+          "section_number": "B",
+          "professor": "Prof Beta",
+          "capacity": 30,
+          "enrolled": 0
+        },
+        {
+          "id": 201,
+          "course_id": 2,
+          "section_number": "A",
+          "professor": "Prof Gamma",
+          "capacity": 30,
+          "enrolled": 0
+        },
+        {
+          "id": 202,
+          "course_id": 2,
+          "section_number": "B",
+          "professor": "Prof Delta",
+          "capacity": 30,
+          "enrolled": 0
+        },
+        {
+          "id": 301,
+          "course_id": 3,
+          "section_number": "A",
+          "professor": "Prof Eng",
+          "capacity": 30,
+          "enrolled": 0
+        },
+        {
+          "id": 302,
+          "course_id": 3,
+          "section_number": "B",
+          "professor": "Prof Eng2",
+          "capacity": 30,
+          "enrolled": 0
+        }
+      ],
+      "sessions": {
+        "101": [
+          {
+            "id": 1001,
+            "section_id": 101,
+            "session_type": "Teoria",
+            "day": "lunes",
+            "start_time": "08:00",
+            "end_time": "10:00",
+            "location": "Room 1",
+            "modality": "presencial"
+          }
+        ],
+        "102": [
+          {
+            "id": 1002,
+            "section_id": 102,
+            "session_type": "Teoria",
+            "day": "lunes",
+            "start_time": "16:00",
+            "end_time": "18:00",
+            "location": "Room 1",
+            "modality": "presencial"
+          }
+        ],
+        "201": [
+          {
+            "id": 2001,
+            "section_id": 201,
+            "session_type": "Teoria",
+            "day": "lunes",
+            "start_time": "10:00",
+            "end_time": "12:00",
+            "location": "Room 3",
+            "modality": "presencial"
+          }
+        ],
+        "202": [
+          {
+            "id": 2002,
+            "section_id": 202,
+            "session_type": "Teoria",
+            "day": "martes",
+            "start_time": "08:00",
+            "end_time": "10:00",
+            "location": "Room 3",
+            "modality": "presencial"
+          }
+        ],
+        "301": [
+          {
+            "id": 3001,
+            "section_id": 301,
+            "session_type": "Teoria",
+            "day": "viernes",
+            "start_time": "09:00",
+            "end_time": "10:00",
+            "location": "Room 9",
+            "modality": "virtual"
+          }
+        ],
+        "302": [
+          {
+            "id": 3002,
+            "section_id": 302,
+            "session_type": "Teoria",
+            "day": "lunes",
+            "start_time": "12:30",
+            "end_time": "13:30",
+            "location": "Room 9",
+            "modality": "virtual"
+          }
+        ]
+      }
+    },
+    "input": {
+      "selected_section_ids": [
+        101,
+        102,
+        201,
+        202,
+        301,
+        302
+      ],
+      "optional_section_ids": [],
+      "max_optional_courses": null,
+      "sort_by": "gaps",
+      "max_results": 200
+    },
+    "output_sort_gaps": [
+      {
+        "combination_id": "0435134c-32e1-4474-8f5b-7649fdda68f0",
+        "id_string": "101_201_301",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.625,
+          "gaps": 1.0,
+          "spread": 0.938,
+          "compactness": 0.8,
+          "composite": 0.842
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 101,
+            "section_number": "A",
+            "professor": "Prof Alan",
+            "sessions": [
+              {
+                "session_id": 1001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 201,
+            "section_number": "A",
+            "professor": "Prof Gamma",
+            "sessions": [
+              {
+                "session_id": 2001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "10:00",
+                "end_time": "12:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 301,
+            "section_number": "A",
+            "professor": "Prof Eng",
+            "sessions": [
+              {
+                "session_id": 3001,
+                "session_type": "Teoria",
+                "day": "viernes",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "2ec85426-f7a7-4e5f-871e-ebc877d4ebf3",
+        "id_string": "101_202_301",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.653,
+          "gaps": 1.0,
+          "spread": 1.0,
+          "compactness": 0.6,
+          "composite": 0.836
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 101,
+            "section_number": "A",
+            "professor": "Prof Alan",
+            "sessions": [
+              {
+                "session_id": 1001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 202,
+            "section_number": "B",
+            "professor": "Prof Delta",
+            "sessions": [
+              {
+                "session_id": 2002,
+                "session_type": "Teoria",
+                "day": "martes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 301,
+            "section_number": "A",
+            "professor": "Prof Eng",
+            "sessions": [
+              {
+                "session_id": 3001,
+                "session_type": "Teoria",
+                "day": "viernes",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "b2450876-b5b9-4a6a-aa90-26d57b828605",
+        "id_string": "102_202_301",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.542,
+          "gaps": 1.0,
+          "spread": 1.0,
+          "compactness": 0.6,
+          "composite": 0.802
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 102,
+            "section_number": "B",
+            "professor": "Prof Beta",
+            "sessions": [
+              {
+                "session_id": 1002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "16:00",
+                "end_time": "18:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 202,
+            "section_number": "B",
+            "professor": "Prof Delta",
+            "sessions": [
+              {
+                "session_id": 2002,
+                "session_type": "Teoria",
+                "day": "martes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 301,
+            "section_number": "A",
+            "professor": "Prof Eng",
+            "sessions": [
+              {
+                "session_id": 3001,
+                "session_type": "Teoria",
+                "day": "viernes",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "c5a62b64-85c0-4407-8086-3345bb45f770",
+        "id_string": "101_201_302",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.576,
+          "gaps": 0.9,
+          "spread": 0.0,
+          "compactness": 1.0,
+          "composite": 0.593
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 101,
+            "section_number": "A",
+            "professor": "Prof Alan",
+            "sessions": [
+              {
+                "session_id": 1001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 201,
+            "section_number": "A",
+            "professor": "Prof Gamma",
+            "sessions": [
+              {
+                "session_id": 2001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "10:00",
+                "end_time": "12:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 302,
+            "section_number": "B",
+            "professor": "Prof Eng2",
+            "sessions": [
+              {
+                "session_id": 3002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "12:30",
+                "end_time": "13:30",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "a83454c4-818d-4fed-a63a-299e49ad3c65",
+        "id_string": "101_202_302",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.604,
+          "gaps": 0.5,
+          "spread": 0.938,
+          "compactness": 0.8,
+          "composite": 0.686
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 101,
+            "section_number": "A",
+            "professor": "Prof Alan",
+            "sessions": [
+              {
+                "session_id": 1001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 202,
+            "section_number": "B",
+            "professor": "Prof Delta",
+            "sessions": [
+              {
+                "session_id": 2002,
+                "session_type": "Teoria",
+                "day": "martes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 302,
+            "section_number": "B",
+            "professor": "Prof Eng2",
+            "sessions": [
+              {
+                "session_id": 3002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "12:30",
+                "end_time": "13:30",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "fe4807cb-f27a-4563-96c0-ce00bd244328",
+        "id_string": "102_202_302",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.493,
+          "gaps": 0.5,
+          "spread": 0.938,
+          "compactness": 0.8,
+          "composite": 0.652
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 102,
+            "section_number": "B",
+            "professor": "Prof Beta",
+            "sessions": [
+              {
+                "session_id": 1002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "16:00",
+                "end_time": "18:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 202,
+            "section_number": "B",
+            "professor": "Prof Delta",
+            "sessions": [
+              {
+                "session_id": 2002,
+                "session_type": "Teoria",
+                "day": "martes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 302,
+            "section_number": "B",
+            "professor": "Prof Eng2",
+            "sessions": [
+              {
+                "session_id": 3002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "12:30",
+                "end_time": "13:30",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "77a3c105-2096-47fb-9c19-5552dfdf750c",
+        "id_string": "102_201_302",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.465,
+          "gaps": 0.4,
+          "spread": 0.0,
+          "compactness": 1.0,
+          "composite": 0.41
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 102,
+            "section_number": "B",
+            "professor": "Prof Beta",
+            "sessions": [
+              {
+                "session_id": 1002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "16:00",
+                "end_time": "18:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 201,
+            "section_number": "A",
+            "professor": "Prof Gamma",
+            "sessions": [
+              {
+                "session_id": 2001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "10:00",
+                "end_time": "12:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 302,
+            "section_number": "B",
+            "professor": "Prof Eng2",
+            "sessions": [
+              {
+                "session_id": 3002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "12:30",
+                "end_time": "13:30",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "4d9a235a-f124-428d-bcfb-820792d8f9a1",
+        "id_string": "102_201_301",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.514,
+          "gaps": 0.2,
+          "spread": 0.938,
+          "compactness": 0.8,
+          "composite": 0.569
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 102,
+            "section_number": "B",
+            "professor": "Prof Beta",
+            "sessions": [
+              {
+                "session_id": 1002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "16:00",
+                "end_time": "18:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 201,
+            "section_number": "A",
+            "professor": "Prof Gamma",
+            "sessions": [
+              {
+                "session_id": 2001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "10:00",
+                "end_time": "12:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 301,
+            "section_number": "A",
+            "professor": "Prof Eng",
+            "sessions": [
+              {
+                "session_id": 3001,
+                "session_type": "Teoria",
+                "day": "viernes",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "input_spread": {
+      "selected_section_ids": [
+        101,
+        102,
+        201,
+        202,
+        301,
+        302
+      ],
+      "optional_section_ids": [],
+      "max_optional_courses": null,
+      "sort_by": "spread",
+      "max_results": 200
+    },
+    "output_sort_spread": [
+      {
+        "combination_id": "497bb60c-0318-4ee7-ae0d-636abe7bda61",
+        "id_string": "101_202_301",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.653,
+          "gaps": 1.0,
+          "spread": 1.0,
+          "compactness": 0.6,
+          "composite": 0.836
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 101,
+            "section_number": "A",
+            "professor": "Prof Alan",
+            "sessions": [
+              {
+                "session_id": 1001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 202,
+            "section_number": "B",
+            "professor": "Prof Delta",
+            "sessions": [
+              {
+                "session_id": 2002,
+                "session_type": "Teoria",
+                "day": "martes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 301,
+            "section_number": "A",
+            "professor": "Prof Eng",
+            "sessions": [
+              {
+                "session_id": 3001,
+                "session_type": "Teoria",
+                "day": "viernes",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "86dc9562-ea3d-4092-a7a0-d7a030f21bf5",
+        "id_string": "102_202_301",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.542,
+          "gaps": 1.0,
+          "spread": 1.0,
+          "compactness": 0.6,
+          "composite": 0.802
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 102,
+            "section_number": "B",
+            "professor": "Prof Beta",
+            "sessions": [
+              {
+                "session_id": 1002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "16:00",
+                "end_time": "18:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 202,
+            "section_number": "B",
+            "professor": "Prof Delta",
+            "sessions": [
+              {
+                "session_id": 2002,
+                "session_type": "Teoria",
+                "day": "martes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 301,
+            "section_number": "A",
+            "professor": "Prof Eng",
+            "sessions": [
+              {
+                "session_id": 3001,
+                "session_type": "Teoria",
+                "day": "viernes",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "89ddca50-0244-40a2-baa0-642315dcf0d6",
+        "id_string": "101_201_301",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.625,
+          "gaps": 1.0,
+          "spread": 0.938,
+          "compactness": 0.8,
+          "composite": 0.842
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 101,
+            "section_number": "A",
+            "professor": "Prof Alan",
+            "sessions": [
+              {
+                "session_id": 1001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 201,
+            "section_number": "A",
+            "professor": "Prof Gamma",
+            "sessions": [
+              {
+                "session_id": 2001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "10:00",
+                "end_time": "12:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 301,
+            "section_number": "A",
+            "professor": "Prof Eng",
+            "sessions": [
+              {
+                "session_id": 3001,
+                "session_type": "Teoria",
+                "day": "viernes",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "f2f35c2c-fc3a-44b0-b7da-a07fe542c7ed",
+        "id_string": "101_202_302",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.604,
+          "gaps": 0.5,
+          "spread": 0.938,
+          "compactness": 0.8,
+          "composite": 0.686
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 101,
+            "section_number": "A",
+            "professor": "Prof Alan",
+            "sessions": [
+              {
+                "session_id": 1001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 202,
+            "section_number": "B",
+            "professor": "Prof Delta",
+            "sessions": [
+              {
+                "session_id": 2002,
+                "session_type": "Teoria",
+                "day": "martes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 302,
+            "section_number": "B",
+            "professor": "Prof Eng2",
+            "sessions": [
+              {
+                "session_id": 3002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "12:30",
+                "end_time": "13:30",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "7b04c0b9-412c-4239-9842-2ca2cddb0ca1",
+        "id_string": "102_201_301",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.514,
+          "gaps": 0.2,
+          "spread": 0.938,
+          "compactness": 0.8,
+          "composite": 0.569
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 102,
+            "section_number": "B",
+            "professor": "Prof Beta",
+            "sessions": [
+              {
+                "session_id": 1002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "16:00",
+                "end_time": "18:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 201,
+            "section_number": "A",
+            "professor": "Prof Gamma",
+            "sessions": [
+              {
+                "session_id": 2001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "10:00",
+                "end_time": "12:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 301,
+            "section_number": "A",
+            "professor": "Prof Eng",
+            "sessions": [
+              {
+                "session_id": 3001,
+                "session_type": "Teoria",
+                "day": "viernes",
+                "start_time": "09:00",
+                "end_time": "10:00",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "2bac83b1-8a5c-4bfe-93ae-a5e5bb81e4a7",
+        "id_string": "102_202_302",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.493,
+          "gaps": 0.5,
+          "spread": 0.938,
+          "compactness": 0.8,
+          "composite": 0.652
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 102,
+            "section_number": "B",
+            "professor": "Prof Beta",
+            "sessions": [
+              {
+                "session_id": 1002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "16:00",
+                "end_time": "18:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 202,
+            "section_number": "B",
+            "professor": "Prof Delta",
+            "sessions": [
+              {
+                "session_id": 2002,
+                "session_type": "Teoria",
+                "day": "martes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 302,
+            "section_number": "B",
+            "professor": "Prof Eng2",
+            "sessions": [
+              {
+                "session_id": 3002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "12:30",
+                "end_time": "13:30",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "b240c0ed-51bf-4572-9dcb-fce9c69da05d",
+        "id_string": "101_201_302",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.576,
+          "gaps": 0.9,
+          "spread": 0.0,
+          "compactness": 1.0,
+          "composite": 0.593
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 101,
+            "section_number": "A",
+            "professor": "Prof Alan",
+            "sessions": [
+              {
+                "session_id": 1001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "08:00",
+                "end_time": "10:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 201,
+            "section_number": "A",
+            "professor": "Prof Gamma",
+            "sessions": [
+              {
+                "session_id": 2001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "10:00",
+                "end_time": "12:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 302,
+            "section_number": "B",
+            "professor": "Prof Eng2",
+            "sessions": [
+              {
+                "session_id": 3002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "12:30",
+                "end_time": "13:30",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "combination_id": "c2e1ee5c-1676-4fe7-aa13-4319e6bc5532",
+        "id_string": "102_201_302",
+        "course_count": 3,
+        "scores": {
+          "earliest": 0.465,
+          "gaps": 0.4,
+          "spread": 0.0,
+          "compactness": 1.0,
+          "composite": 0.41
+        },
+        "courses": [
+          {
+            "course_id": 1,
+            "course_code": "CS101",
+            "course_name": "Intro to CS",
+            "section_id": 102,
+            "section_number": "B",
+            "professor": "Prof Beta",
+            "sessions": [
+              {
+                "session_id": 1002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "16:00",
+                "end_time": "18:00",
+                "location": "Room 1",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 2,
+            "course_code": "MA201",
+            "course_name": "Calculus II",
+            "section_id": 201,
+            "section_number": "A",
+            "professor": "Prof Gamma",
+            "sessions": [
+              {
+                "session_id": 2001,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "10:00",
+                "end_time": "12:00",
+                "location": "Room 3",
+                "modality": "presencial"
+              }
+            ]
+          },
+          {
+            "course_id": 3,
+            "course_code": "EN100",
+            "course_name": "English I",
+            "section_id": 302,
+            "section_number": "B",
+            "professor": "Prof Eng2",
+            "sessions": [
+              {
+                "session_id": 3002,
+                "session_type": "Teoria",
+                "day": "lunes",
+                "start_time": "12:30",
+                "end_time": "13:30",
+                "location": "Room 9",
+                "modality": "virtual"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

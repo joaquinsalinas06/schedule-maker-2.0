@@ -4,11 +4,10 @@ import { useState } from "react"
 import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
-import { 
-  Search, 
-  Calendar, 
-  Users, 
-  Share2, 
+import {
+  Search,
+  Calendar,
+  Share2,
   Download, 
   BookOpen,
   Target,
@@ -29,7 +28,6 @@ export default function HowItWorksPage() {
     { id: "schedule-generation", title: "Generacion de Horarios", icon: Target },
     { id: "schedule-management", title: "Gestion de Horarios", icon: Calendar },
     { id: "sharing", title: "Compartir", icon: Share2 },
-    { id: "collaboration", title: "Colaboracion", icon: Users },
     { id: "friends", title: "Amigos", icon: UserPlus },
   ]
 
@@ -137,28 +135,6 @@ export default function HowItWorksPage() {
         }
       ]
     },
-    "collaboration": {
-      title: "Sesiones Colaborativas",
-      description: "Trabaja en equipo para encontrar horarios compatibles con tus companeros.",
-      steps: [
-        {
-          title: "Crear una sesion",
-          description: "Inicia una sesion colaborativa y comparte el codigo con tus companeros de estudio."
-        },
-        {
-          title: "Cursos individuales vs compartidos",
-          description: "Define que cursos son solo tuyos y cuales deben coincidir con el grupo."
-        },
-        {
-          title: "Comparar horarios",
-          description: "Visualiza donde coinciden los horarios de todos los participantes."
-        }
-      ],
-      tip: {
-        title: "Ideal para",
-        content: "Grupos de estudio que quieren tener clases juntos o tiempo libre para reunirse."
-      }
-    },
     "friends": {
       title: "Sistema de Amigos",
       description: "Conecta con otros estudiantes y comparte horarios facilmente.",
@@ -173,7 +149,7 @@ export default function HowItWorksPage() {
         },
         {
           title: "Ver horarios de amigos",
-          description: "Una vez conectados, pueden ver y comparar sus horarios facilmente."
+          description: "Una vez conectados, puedes ver los horarios que tus amigos comparten contigo."
         }
       ]
     }

@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Calendar, LogOut, PanelLeftClose, PanelLeft, User, ChevronRight, GitBranch } from "lucide-react"
-import { authService } from "@/services/auth"
-import { SidebarSection, User as UserType } from "@/types"
+import { useAuth } from "@/features/auth"
+import { useProfile } from "@/features/profile"
+import { SidebarSection } from "@/types"
 
 interface DashboardSidebarProps {
   sidebarSections: SidebarSection[]
@@ -28,23 +28,17 @@ export function DashboardSidebar({
   mobileMenuOpen,
   setMobileMenuOpen
 }: DashboardSidebarProps) {
-  const [currentUser, setCurrentUser] = useState<UserType | null>(null)
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user')
-    if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser))
-    }
-  }, [])
+  const { signOut } = useAuth()
+  const { profile, email } = useProfile()
 
   const getDisplayName = () => {
-    if (!currentUser) return 'Usuario'
-    if (currentUser.nickname) return currentUser.nickname.trim()
-    if (currentUser.first_name && currentUser.last_name) {
-      return `${currentUser.first_name.trim()} ${currentUser.last_name.trim()}`
+    if (!profile) return 'Usuario'
+    if (profile.nickname) return profile.nickname.trim()
+    if (profile.first_name && profile.last_name) {
+      return `${profile.first_name.trim()} ${profile.last_name.trim()}`
     }
-    if (currentUser.first_name) return currentUser.first_name.trim()
-    return currentUser.email?.split('@')[0] || 'Usuario'
+    if (profile.first_name) return profile.first_name.trim()
+    return email?.split('@')[0] || 'Usuario'
   }
 
   const getInitials = () => {
@@ -160,10 +154,10 @@ export function DashboardSidebar({
         {/* User Section */}
         <div className="border-t border-sidebar-border p-2 space-y-1">
           {/* User Info */}
-          {(!sidebarCollapsed || isMobile) && currentUser && (
+          {(!sidebarCollapsed || isMobile) && profile && (
             <div className="flex items-center gap-2.5 px-3 py-2 mb-1">
               <Avatar className="w-7 h-7">
-                <AvatarImage src={currentUser.profile_photo} />
+                <AvatarImage src={profile.profile_photo ?? undefined} />
                 <AvatarFallback className="text-xs font-medium bg-sidebar-accent text-sidebar-foreground">
                   {getInitials()}
                 </AvatarFallback>
@@ -173,7 +167,7 @@ export function DashboardSidebar({
                   {getDisplayName()}
                 </p>
                 <p className="text-xs text-sidebar-foreground/50 truncate">
-                  {currentUser.university?.short_name || currentUser.email}
+                  {profile.university?.short_name || email}
                 </p>
               </div>
             </div>
@@ -217,7 +211,9 @@ export function DashboardSidebar({
           </button>
 
           <button
-            onClick={() => authService.logout()}
+            onClick={() => {
+              signOut()
+            }}
             className={`
               w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors cursor-pointer
               text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10

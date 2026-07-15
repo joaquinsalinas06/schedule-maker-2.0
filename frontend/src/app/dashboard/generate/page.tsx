@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { apiService } from "@/services/api";
-import { authService } from "@/services/auth";
+import { searchCourses, getBulkCoursesByIds } from "@/features/catalog";
+import { generateSchedules } from "@/features/schedule";
 import {
   Course,
   SelectedSection,
@@ -11,7 +11,7 @@ import {
   SectionPopupState,
   GroupedCourse,
 } from "@/types";
-import { useCurriculumStore } from "@/stores/curriculumStore";
+import { useCurriculumStore, getUserCurriculumId } from "@/features/curriculum";
 
 import { CourseSearchCard } from "@/components/dashboard/CourseSearchCard";
 import { CourseResultsGrid } from "@/components/dashboard/CourseResultsGrid";
@@ -53,8 +53,12 @@ export default function GeneratePage() {
 
   // Curriculum integration
   const { curriculum, unlockedCourseDbIds, fetchProgress, fetchCurriculum, getPlannedCoursesForPeriod, getCurrentPeriod } = useCurriculumStore();
-  const currentUser = authService.getCurrentUser();
-  const hasCurriculum = !!currentUser?.curriculum_id;
+  const [curriculumId, setCurriculumId] = useState<number | null>(null);
+  const hasCurriculum = curriculumId != null;
+
+  useEffect(() => {
+    getUserCurriculumId().then(setCurriculumId).catch(() => setCurriculumId(null));
+  }, []);
 
   // Planned courses for current period
   const currentPeriod = getCurrentPeriod();
@@ -64,14 +68,14 @@ export default function GeneratePage() {
   );
 
   useEffect(() => {
-    if (hasCurriculum && currentUser?.curriculum_id) {
+    if (curriculumId != null) {
       if (!curriculum) {
-        fetchCurriculum(currentUser.curriculum_id);
+        fetchCurriculum(curriculumId);
       } else {
-        fetchProgress(currentUser.curriculum_id);
+        fetchProgress(curriculumId);
       }
     }
-  }, [hasCurriculum, currentUser?.curriculum_id, curriculum, fetchCurriculum, fetchProgress]);
+  }, [curriculumId, curriculum, fetchCurriculum, fetchProgress]);
 
   // Filter search results by unlocked courses when curriculum filter is enabled
   const filteredSearchResults = useMemo(() => {
@@ -151,7 +155,7 @@ export default function GeneratePage() {
     setIsLoading(true);
     setDisplayPage(1);
     try {
-      const response = await apiService.searchCourses(
+      const response = await searchCourses(
         searchQuery.trim(),
         filters.university,
         filters.department || undefined,
@@ -172,6 +176,7 @@ export default function GeneratePage() {
 
     const newSelection: SelectedSection = {
       sectionId: section.id,
+      courseId: course.id,
       courseCode: course.code,
       courseName: course.name,
       sectionCode: section.section_number,
@@ -203,6 +208,7 @@ export default function GeneratePage() {
           if (!alreadySelected) {
             newSelected.push({
               sectionId: section.id,
+              courseId: course.id,
               courseCode: course.code,
               courseName: course.name,
               sectionCode: section.section_number,
@@ -236,9 +242,9 @@ export default function GeneratePage() {
       console.log("[handlePlannedCoursesImport] Names to fetch:", namesToFetch);
       
       // Fetch bulk course details
-      const courses = await apiService.getBulkCoursesByIds(idsToFetch, namesToFetch);
+      const courses = await getBulkCoursesByIds(idsToFetch, namesToFetch);
       console.log("[handlePlannedCoursesImport] Received courses from API:", courses);
-      
+
       // Select all available sections of each course
       setSelectedSections((prev) => {
         let newSelected = [...prev];
@@ -251,6 +257,7 @@ export default function GeneratePage() {
               if (!alreadySelected) {
                 newSelected.push({
                   sectionId: section.id,
+                  courseId: course.id,
                   courseCode: course.code,
                   courseName: course.name,
                   sectionCode: section.section_number,
@@ -282,36 +289,15 @@ export default function GeneratePage() {
 
     setIsLoading(true);
     try {
-      // Split sections into required vs optional
-      const requiredSections = selectedSections
-        .filter((s) => !optionalCourses.has(s.courseCode))
-        .map((s) => s.sectionId);
-      const optionalSectionIds = selectedSections
-        .filter((s) => optionalCourses.has(s.courseCode))
-        .map((s) => s.sectionId);
-
-      const request = {
-        selected_sections: requiredSections,
-        optional_sections:
-          optionalSectionIds.length > 0 ? optionalSectionIds : undefined,
-        max_optional_courses:
-          optionalSectionIds.length > 0 ? maxOptionalCourses : undefined,
-        sort_by: "score" as const,
-      };
-
-      console.log("Generating schedules with payload:", request);
-      console.log(
-        "Optional courses limit:",
+      const result = generateSchedules({
+        selectedSections,
+        optionalCourses,
         maxOptionalCourses,
-        "out of",
-        optionalCourses.size,
-      );
-
-      const response = await apiService.generateSchedules(request);
+      });
 
       sessionStorage.setItem(
         "generatedSchedules",
-        JSON.stringify(response.data),
+        JSON.stringify(result),
       );
       sessionStorage.setItem(
         "selectedSections",

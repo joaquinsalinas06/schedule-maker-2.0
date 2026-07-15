@@ -24,6 +24,8 @@ interface FavoriteSchedulesProps {
   onView: (schedule: FavoriteSchedule) => void;
   onEdit: (id: string, name: string, notes?: string) => void;
   onShare?: (schedule: FavoriteSchedule) => void;
+  onToggleFavorite?: (id: string) => void;
+  favoriteIds?: ReadonlySet<string>;
 }
 
 export function FavoriteSchedules({
@@ -32,6 +34,8 @@ export function FavoriteSchedules({
   onView,
   onEdit,
   onShare,
+  onToggleFavorite,
+  favoriteIds,
 }: FavoriteSchedulesProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -256,6 +260,23 @@ ${index + 1}. ${course.course_code}: ${course.course_name}
                     >
                       <Share2 className="w-3.5 h-3.5 shrink-0" />
                       <span className="truncate">Compartir</span>
+                    </Button>
+                  )}
+                  {onToggleFavorite && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onToggleFavorite(favorite.id)}
+                      className="h-8 w-8 p-0 shrink-0"
+                      title={
+                        favoriteIds?.has(favorite.id)
+                          ? "Quitar de favoritos"
+                          : "Marcar como favorito"
+                      }
+                    >
+                      <Star
+                        className={`w-3.5 h-3.5 ${favoriteIds?.has(favorite.id) ? "fill-current text-yellow-500" : ""}`}
+                      />
                     </Button>
                   )}
                 </div>

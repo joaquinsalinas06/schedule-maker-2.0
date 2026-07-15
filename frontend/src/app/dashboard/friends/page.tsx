@@ -1,73 +1,49 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { UserPlus, Search, Users, Bell, User as UserIcon, Check, X, Trash2 } from "lucide-react"
-import { friendsAPI } from "@/services/friendsAPI"
+import { UserPlus, Search, Users, Bell, User as UserIcon, Check, X, Trash2, LogIn } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import { FriendProfileModal } from "@/components/FriendProfileModal"
 import { FriendListSkeleton } from "@/components/ui/loading-skeletons"
-import { comparisonService } from "@/services/comparisonService"
 import { useRouter } from "next/navigation"
-import { User, FriendRequest } from "@/types/user"
+import { useAuth } from "@/features/auth"
+import { useFriends, FriendProfileModal } from "@/features/friends"
+import type { FriendProfile, SearchResult } from "@/features/friends"
+
+const getDisplayName = (user: Pick<FriendProfile, 'nickname' | 'first_name' | 'last_name'>) => {
+  if (user.nickname) return user.nickname
+  if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`
+  if (user.first_name) return user.first_name
+  return 'Usuario'
+}
+
+const getInitials = (user: Pick<FriendProfile, 'nickname' | 'first_name' | 'last_name'>) => {
+  const name = getDisplayName(user)
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+}
 
 export default function FriendsPage() {
   const router = useRouter()
+  const { isAnonymous, loading: authLoading } = useAuth()
+  const { friends, requests, loading, search, sendRequest, acceptRequest, rejectRequest, removeFriend } = useFriends()
   const [activeTab, setActiveTab] = useState('friends')
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<User[]>([])
-  const [friends, setFriends] = useState<User[]>([])
-  const [friendRequests, setFriendRequests] = useState<{
-    received: FriendRequest[]
-    sent: FriendRequest[]
-  }>({ received: [], sent: [] })
-  const [loading, setLoading] = useState(false)
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
   const [profileModalOpen, setProfileModalOpen] = useState(false)
-  const [selectedFriendId, setSelectedFriendId] = useState<number | null>(null)
+  const [selectedFriendId, setSelectedFriendId] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadFriends()
-    loadFriendRequests()
-  }, [])
-
-  const loadFriends = async () => {
-    try {
-      setLoading(true)
-      const response = await friendsAPI.getFriendsList()
-      setFriends(response.data)
-    } catch (error) {
-      console.error('Error loading friends:', error)
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los amigos",
-        variant: "destructive"
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadFriendRequests = async () => {
-    try {
-      const response = await friendsAPI.getFriendRequests()
-      setFriendRequests(response.data)
-    } catch (error) {
-      console.error("Error loading friend requests:", error)
-    }
-  }
-
-  const searchUsers = async (query: string) => {
+  const runSearch = async (query: string) => {
+    setSearchQuery(query)
     if (query.length < 2) {
       setSearchResults([])
       return
     }
     try {
       setSearchLoading(true)
-      const response = await friendsAPI.searchUsers(query)
-      setSearchResults(response.data)
+      setSearchResults(await search(query))
     } catch (error) {
       console.error("Error searching users:", error)
     } finally {
@@ -75,117 +51,83 @@ export default function FriendsPage() {
     }
   }
 
-  const sendFriendRequest = async (userId: number) => {
+  const handleSendRequest = async (userId: string) => {
     try {
-      await friendsAPI.sendFriendRequest(userId)
+      await sendRequest(userId)
       toast({ title: "Solicitud enviada", description: "Tu solicitud de amistad ha sido enviada" })
       setSearchResults(prev => prev.map(user => user.id === userId ? { ...user, friendship_status: 'request_sent' } : user))
     } catch (error: unknown) {
       toast({
         title: "Error",
-        description: (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "No se pudo enviar la solicitud",
+        description: (error as { message?: string })?.message || "No se pudo enviar la solicitud",
         variant: "destructive"
       })
     }
   }
 
-  const acceptFriendRequest = async (requestId: number) => {
+  const handleAccept = async (requestId: number) => {
     try {
-      await friendsAPI.acceptFriendRequest(requestId)
+      await acceptRequest(requestId)
       toast({ title: "Solicitud aceptada", description: "Ahora son amigos" })
-      loadFriends()
-      loadFriendRequests()
     } catch (error: unknown) {
       toast({
         title: "Error",
-        description: (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "No se pudo aceptar la solicitud",
+        description: (error as { message?: string })?.message || "No se pudo aceptar la solicitud",
         variant: "destructive"
       })
     }
   }
 
-  const rejectFriendRequest = async (requestId: number) => {
+  const handleReject = async (requestId: number) => {
     try {
-      await friendsAPI.rejectFriendRequest(requestId)
+      await rejectRequest(requestId)
       toast({ title: "Solicitud rechazada" })
-      loadFriendRequests()
     } catch (error: unknown) {
       toast({
         title: "Error",
-        description: (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "No se pudo rechazar la solicitud",
+        description: (error as { message?: string })?.message || "No se pudo rechazar la solicitud",
         variant: "destructive"
       })
     }
   }
 
-  const removeFriend = async (friendId: number) => {
+  const handleRemoveFriend = async (friendId: string) => {
     if (!confirm("Estas seguro de que quieres eliminar a este amigo?")) return
     try {
-      await friendsAPI.removeFriend(friendId)
+      await removeFriend(friendId)
       toast({ title: "Amigo eliminado" })
-      loadFriends()
     } catch (error: unknown) {
       toast({
         title: "Error",
-        description: (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "No se pudo eliminar el amigo",
+        description: (error as { message?: string })?.message || "No se pudo eliminar el amigo",
         variant: "destructive"
       })
-    }
-  }
-
-  const getDisplayName = (user: User) => {
-    if (user.nickname) return user.nickname
-    if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`
-    if (user.first_name) return user.first_name
-    return user.email.split('@')[0]
-  }
-
-  const getInitials = (user: User) => {
-    const name = getDisplayName(user)
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-  }
-
-  const handleViewSchedules = async (friendId: number, schedules: { id: number; name: string; description?: string; created_at: string; is_favorite: boolean }[]) => {
-    try {
-      const friend = friends.find(f => f.id === friendId)
-      if (!friend) return
-      
-      const friendName = getDisplayName(friend)
-      const detailedSchedules = await Promise.all(
-        schedules.map(async (schedule) => {
-          try {
-            const response = await friendsAPI.getFriendScheduleDetail(friendId, schedule.id)
-            return response.data
-          } catch { return null }
-        })
-      )
-      
-      const validSchedules = detailedSchedules.filter((schedule: any) => schedule !== null)
-      if (validSchedules.length === 0) {
-        toast({ title: "Error", description: "No se pudieron cargar los horarios", variant: "destructive" })
-        return
-      }
-      
-      const comparison = comparisonService.createComparison(`Comparacion con ${friendName}`)
-      const result = await comparisonService.addParticipantByFriend(comparison, friendId, friendName, validSchedules)
-      
-      if (result.success && result.participant) {
-        comparison.participants.push(result.participant)
-        sessionStorage.setItem('active_comparison', JSON.stringify(comparison))
-        router.push('/dashboard/collaboration')
-        toast({ title: "Comparacion creada", description: `Comparacion iniciada con ${friendName}` })
-      }
-    } catch (error) {
-      console.error('Error creating comparison:', error)
-      toast({ title: "Error", description: "Ocurrio un error al crear la comparacion", variant: "destructive" })
     }
   }
 
   const tabs = [
     { id: 'friends', label: 'Amigos', icon: Users, count: friends.length },
     { id: 'search', label: 'Buscar', icon: Search },
-    { id: 'requests', label: 'Solicitudes', icon: Bell, count: friendRequests.received.length },
+    { id: 'requests', label: 'Solicitudes', icon: Bell, count: requests.received.length },
   ]
+
+  if (!authLoading && isAnonymous) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+          <Users className="w-5 h-5 text-muted-foreground" />
+        </div>
+        <h3 className="font-semibold text-foreground mb-1">Inicia sesion para ver tus amigos</h3>
+        <p className="text-sm text-muted-foreground max-w-sm mb-4">
+          Necesitas una cuenta para buscar companeros y enviar solicitudes de amistad
+        </p>
+        <Button onClick={() => router.push('/login')} className="gap-2">
+          <LogIn className="w-4 h-4" />
+          Iniciar sesion
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -240,7 +182,7 @@ export default function FriendsPage() {
                   </div>
                   <h3 className="font-semibold text-foreground mb-1">Sin amigos aun</h3>
                   <p className="text-sm text-muted-foreground">
-                    Busca companeros en la pestana "Buscar"
+                    Busca companeros en la pestana &quot;Buscar&quot;
                   </p>
                 </div>
               ) : (
@@ -248,7 +190,7 @@ export default function FriendsPage() {
                   <div key={friend.id} className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:border-primary/30 transition-colors">
                     <div className="flex items-center gap-3">
                       <Avatar className="w-10 h-10">
-                        <AvatarImage src={friend.profile_photo} />
+                        <AvatarImage src={friend.profile_photo || undefined} />
                         <AvatarFallback className="text-sm">{getInitials(friend)}</AvatarFallback>
                       </Avatar>
                       <div>
@@ -260,7 +202,7 @@ export default function FriendsPage() {
                       <Button size="icon" variant="ghost" onClick={() => { setSelectedFriendId(friend.id); setProfileModalOpen(true) }} className="h-8 w-8">
                         <UserIcon className="w-4 h-4" />
                       </Button>
-                      <Button size="icon" variant="ghost" onClick={() => removeFriend(friend.id)} className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                      <Button size="icon" variant="ghost" onClick={() => handleRemoveFriend(friend.id)} className="h-8 w-8 text-muted-foreground hover:text-destructive">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -276,9 +218,9 @@ export default function FriendsPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por nombre, email o codigo..."
+                  placeholder="Buscar por nombre o apodo..."
                   value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); searchUsers(e.target.value) }}
+                  onChange={(e) => runSearch(e.target.value)}
                   className="pl-10 h-10"
                 />
               </div>
@@ -304,7 +246,7 @@ export default function FriendsPage() {
                     <div key={user.id} className="flex items-center justify-between p-4 rounded-lg border border-border bg-card">
                       <div className="flex items-center gap-3">
                         <Avatar className="w-10 h-10">
-                          <AvatarImage src={user.profile_photo} />
+                          <AvatarImage src={user.profile_photo || undefined} />
                           <AvatarFallback className="text-sm">{getInitials(user)}</AvatarFallback>
                         </Avatar>
                         <div>
@@ -319,7 +261,7 @@ export default function FriendsPage() {
                       ) : user.friendship_status === 'request_received' ? (
                         <span className="text-xs text-muted-foreground">Pendiente</span>
                       ) : (
-                        <Button size="sm" onClick={() => sendFriendRequest(user.id)} className="h-8 gap-1.5">
+                        <Button size="sm" onClick={() => handleSendRequest(user.id)} className="h-8 gap-1.5">
                           <UserPlus className="w-3.5 h-3.5" />
                           Agregar
                         </Button>
@@ -337,17 +279,17 @@ export default function FriendsPage() {
               {/* Received */}
               <div>
                 <h3 className="text-sm font-medium text-foreground mb-3">
-                  Recibidas ({friendRequests.received.length})
+                  Recibidas ({requests.received.length})
                 </h3>
-                {friendRequests.received.length === 0 ? (
+                {requests.received.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-8 text-center">Sin solicitudes pendientes</p>
                 ) : (
                   <div className="space-y-2">
-                    {friendRequests.received.map((request) => (
+                    {requests.received.map((request) => (
                       <div key={request.id} className="flex items-center justify-between p-4 rounded-lg border border-border bg-card">
                         <div className="flex items-center gap-3">
                           <Avatar className="w-10 h-10">
-                            <AvatarImage src={request.sender?.profile_photo} />
+                            <AvatarImage src={request.sender?.profile_photo || undefined} />
                             <AvatarFallback className="text-sm">
                               {request.sender ? getInitials(request.sender) : 'U'}
                             </AvatarFallback>
@@ -360,11 +302,11 @@ export default function FriendsPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button size="sm" onClick={() => acceptFriendRequest(request.id)} className="h-8 gap-1.5 bg-success hover:bg-success/90">
+                          <Button size="sm" onClick={() => handleAccept(request.id)} className="h-8 gap-1.5 bg-success hover:bg-success/90">
                             <Check className="w-3.5 h-3.5" />
                             Aceptar
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => rejectFriendRequest(request.id)} className="h-8">
+                          <Button size="sm" variant="outline" onClick={() => handleReject(request.id)} className="h-8">
                             <X className="w-3.5 h-3.5" />
                           </Button>
                         </div>
@@ -377,17 +319,17 @@ export default function FriendsPage() {
               {/* Sent */}
               <div>
                 <h3 className="text-sm font-medium text-foreground mb-3">
-                  Enviadas ({friendRequests.sent.length})
+                  Enviadas ({requests.sent.length})
                 </h3>
-                {friendRequests.sent.length === 0 ? (
+                {requests.sent.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-8 text-center">No has enviado solicitudes</p>
                 ) : (
                   <div className="space-y-2">
-                    {friendRequests.sent.map((request) => (
+                    {requests.sent.map((request) => (
                       <div key={request.id} className="flex items-center justify-between p-4 rounded-lg border border-border bg-card">
                         <div className="flex items-center gap-3">
                           <Avatar className="w-10 h-10">
-                            <AvatarImage src={request.receiver?.profile_photo} />
+                            <AvatarImage src={request.receiver?.profile_photo || undefined} />
                             <AvatarFallback className="text-sm">
                               {request.receiver ? getInitials(request.receiver) : 'U'}
                             </AvatarFallback>
@@ -414,7 +356,6 @@ export default function FriendsPage() {
         friendId={selectedFriendId}
         isOpen={profileModalOpen}
         onClose={() => { setProfileModalOpen(false); setSelectedFriendId(null) }}
-        onViewSchedules={handleViewSchedules}
       />
     </div>
   )

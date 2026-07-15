@@ -1,0 +1,67 @@
+[
+  {
+    "name": "case1_standard_rows",
+    "text": "MALLA CURRICULAR - CARGA HABIL\nCodigo Nombre Creditos Horas Requisitos Tipo\n\nCS4016 Computacion Paralela 4.00 0.00 0.00 Obligatorio\nMA2011 Calculo Diferencial 5.00 2.00 0.00 Obligatorio\nHU2003 Etica Profesional 3.00 0.00 0.00 Electivo\nThis is a random unrelated line without keywords\n",
+    "output": {
+      "mandatory": [
+        {
+          "code": "CS4016",
+          "name": "Computacion Paralela",
+          "type": "Obligatorio"
+        },
+        {
+          "code": "MA2011",
+          "name": "Calculo Diferencial",
+          "type": "Obligatorio"
+        }
+      ],
+      "electives": [
+        {
+          "code": "HU2003",
+          "name": "Etica Profesional",
+          "type": "Electivo"
+        }
+      ]
+    }
+  },
+  {
+    "name": "case2_loose_match_and_dedup",
+    "text": "CS4016 Computacion Paralela 4.00 0.00 0.00 Obligatorio\nDS3050 Machine Learning weird-format-credits Electivo\nCS4016 Computacion Paralela (Repetido) 4.00 0.00 0.00 Obligatorio\n",
+    "output": {
+      "mandatory": [
+        {
+          "code": "CS4016",
+          "name": "Computacion Paralela (Repetido)",
+          "type": "Obligatorio"
+        }
+      ],
+      "electives": [
+        {
+          "code": "DS3050",
+          "name": "Machine",
+          "type": "Electivo"
+        }
+      ]
+    }
+  },
+  {
+    "name": "case3_trailing_number_cleanup",
+    "text": "BI1010 Fundamentos de Bioingenieria 3.00 1.00 0.00 Obligatorio\nEL2020 Circuitos Electricos II 4.00 2 extra 99 Electivo\n",
+    "output": {
+      "mandatory": [
+        {
+          "code": "BI1010",
+          "name": "Fundamentos de Bioingenieria",
+          "type": "Obligatorio"
+        }
+      ],
+      "electives": [
+        {
+          "code": "EL2020",
+          "name": "Circuitos Electricos II",
+          "type": "Electivo"
+        }
+      ]
+    }
+  }
+]

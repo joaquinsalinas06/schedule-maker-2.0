@@ -2,8 +2,6 @@
 export * from './academic';
 export * from './user';
 export * from './schedule';
-export * from './comparison';
-export * from './collaboration';
 export * from './dashboard';
 export * from './components';
 export * from './curriculum';
@@ -26,10 +24,4 @@ export type {
   ShareResponse, 
   SharedScheduleData 
 } from './schedule';
-export type { 
-  ComparisonParticipant, 
-  ComparisonConflict, 
-  ScheduleComparison, 
-  ComparisonVisualizationProps 
-} from './comparison';
 export type { SectionPopupState, GroupedCourse, SidebarSection } from './dashboard';

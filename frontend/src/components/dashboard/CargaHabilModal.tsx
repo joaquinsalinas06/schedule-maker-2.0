@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { apiService } from '@/services/api';
+import { parseCargaHabilFile, getBulkCourseDetails } from '@/features/catalog';
 import { Course } from '@/types';
 import { X, UploadCloud, FileText, AlertTriangle, Loader2, Check, ChevronRight, Search } from 'lucide-react';
 
@@ -66,7 +66,7 @@ export function CargaHabilModal({ isOpen, onClose, onImportComplete }: CargaHabi
     setError(null);
     
     try {
-      const result = await apiService.parseCargaHabil(file);
+      const result = await parseCargaHabilFile(file);
       setMandatoryCourses(result.mandatory);
       setElectiveCourses(result.electives);
       
@@ -105,7 +105,7 @@ export function CargaHabilModal({ isOpen, onClose, onImportComplete }: CargaHabi
     setError(null);
     
     try {
-      const courses = await apiService.getBulkCourseDetails(codesToFetch);
+      const courses = await getBulkCourseDetails(codesToFetch);
       onImportComplete(courses);
       onClose();
     } catch (err: any) {
