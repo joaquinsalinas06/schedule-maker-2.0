@@ -20,6 +20,12 @@ const SPANISH_DAYS: Record<string, string> = {
 // Minimal RFC4180 parser (quoted fields, escaped "" quotes, CRLF/LF). No
 // dependency added: the format here is simple exported spreadsheet CSV.
 function parseCsvRows(text: string): string[][] {
+  // UTEC's portal exports semicolon-delimited files with a UTF-8 BOM;
+  // sniff the dominant delimiter instead of assuming commas.
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1)
+  const sample = text.slice(0, 2000)
+  const delimiter = (sample.match(/;/g)?.length ?? 0) > (sample.match(/,/g)?.length ?? 0) ? ";" : ","
+
   const rows: string[][] = []
   let row: string[] = []
   let field = ""
@@ -51,7 +57,7 @@ function parseCsvRows(text: string): string[][] {
     } else {
       if (c === '"') {
         inQuotes = true
-      } else if (c === ",") {
+      } else if (c === delimiter) {
         pushField()
       } else if (c === "\r") {
         // skip, \n handles the row break
@@ -164,6 +170,8 @@ export function parseCsvText(text: string): CourseImportRow[] {
     const courseCode = get(row, "Código Curso")
     const courseName = get(row, "Curso")
     if (!courseCode || !courseName) continue
+    // Exports concatenate several tabs, each repeating the header line.
+    if (courseCode === "Código Curso") continue
 
     courseNames.set(courseCode, courseName)
 
@@ -238,9 +246,20 @@ export function parseCsvText(text: string): CourseImportRow[] {
 //    subgroup when several labs share one lecture.
 function createHierarchicalSections(allSessions: SessionMeta[]): SectionImportRow[] {
   const hasDecimalPattern = allSessions.some((s) => /TEORÍA \d+\.\d+/.test(s.sessionGroup))
-  const isHierarchical = allSessions.some(
-    (s) => ["Finanzas", "Ecuaciones"].some((kw) => s.courseName.includes(kw)) || s.sessionGroup.includes("VIRTUAL")
-  )
+  // A course is prefix-hierarchical when it mixes master theory groups
+  // (TEORÍA N, N < 10) with sub-groups (TEORÍA NN) — the old backend only
+  // detected this for a hardcoded course list, silently merging every other
+  // course's alternative theory groups into one giant section.
+  const theoryNums = allSessions
+    .map((s) => /^(?:TEORÍA|TEORÍA VIRTUAL)\s+(\d+)$/.exec(s.sessionGroup)?.[1])
+    .filter((n): n is string => n !== undefined)
+    .map(Number)
+  const hasMainAndSubTheories = theoryNums.some((n) => n < 10) && theoryNums.some((n) => n >= 10)
+  const isHierarchical =
+    hasMainAndSubTheories ||
+    allSessions.some(
+      (s) => ["Finanzas", "Ecuaciones"].some((kw) => s.courseName.includes(kw)) || s.sessionGroup.includes("VIRTUAL")
+    )
 
   if (isHierarchical) return createPrefixHierarchicalSections(allSessions)
   if (hasDecimalPattern) return createDecimalPatternSections(allSessions)
