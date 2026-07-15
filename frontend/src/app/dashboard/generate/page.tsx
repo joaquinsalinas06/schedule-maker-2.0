@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { searchCourses, getBulkCoursesByIds } from "@/features/catalog";
-import { generateSchedules } from "@/features/schedule";
+import { generateSchedules, type BlockingConflict } from "@/features/schedule";
 import {
   Course,
   SelectedSection,
@@ -20,6 +20,16 @@ import { SectionSelectionPopup } from "@/components/dashboard/SectionSelectionPo
 import { CargaHabilModal } from "@/components/dashboard/CargaHabilModal";
 import PlannedCoursesBanner from "@/components/dashboard/PlannedCoursesBanner";
 import { Upload } from "lucide-react";
+
+const DAY_ES: Record<string, string> = {
+  Monday: "Lunes",
+  Tuesday: "Martes",
+  Wednesday: "Miércoles",
+  Thursday: "Jueves",
+  Friday: "Viernes",
+  Saturday: "Sábado",
+  Sunday: "Domingo",
+};
 
 export default function GeneratePage() {
   const router = useRouter();
@@ -50,6 +60,7 @@ export default function GeneratePage() {
   const [maxOptionalCourses, setMaxOptionalCourses] = useState<number>(1);
   const [curriculumFilterEnabled, setCurriculumFilterEnabled] = useState(false);
   const [isCargaHabilModalOpen, setIsCargaHabilModalOpen] = useState(false);
+  const [blockingConflicts, setBlockingConflicts] = useState<BlockingConflict[] | null>(null);
 
   // Curriculum integration
   const { curriculum, unlockedCourseDbIds, fetchProgress, fetchCurriculum, getPlannedCoursesForPeriod, getCurrentPeriod } = useCurriculumStore();
@@ -288,12 +299,19 @@ export default function GeneratePage() {
     if (selectedSections.length === 0) return;
 
     setIsLoading(true);
+    setBlockingConflicts(null);
     try {
       const result = generateSchedules({
         selectedSections,
         optionalCourses,
         maxOptionalCourses,
       });
+
+      if (result.total_combinations === 0) {
+        // Stay on the page and explain instead of navigating to an empty list.
+        setBlockingConflicts(result.blocking_conflicts ?? []);
+        return;
+      }
 
       sessionStorage.setItem(
         "generatedSchedules",
@@ -419,6 +437,46 @@ export default function GeneratePage() {
           </div>
         </div>
       </div>
+
+      {/* Zero-results explanation */}
+      {blockingConflicts !== null && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-30 w-[min(40rem,calc(100vw-2rem))]">
+          <div className="rounded-lg border border-destructive/40 bg-background shadow-lg p-4 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-semibold text-destructive">
+                No se puede generar ningún horario con esta selección
+              </p>
+              <button
+                onClick={() => setBlockingConflicts(null)}
+                className="text-muted-foreground hover:text-foreground text-sm"
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+            {blockingConflicts.length > 0 ? (
+              <ul className="text-sm text-muted-foreground space-y-1">
+                {blockingConflicts.map((c, i) => (
+                  <li key={i}>
+                    <span className="text-foreground font-medium">{c.courseA}</span> (Sección {c.example.sectionA}){" "}
+                    siempre choca con{" "}
+                    <span className="text-foreground font-medium">{c.courseB}</span> (Sección {c.example.sectionB}):{" "}
+                    {DAY_ES[c.example.day] ?? c.example.day} {c.example.startA}–{c.example.endA} vs {c.example.startB}–{c.example.endB}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Los cruces involucran a más de dos cursos a la vez. Marca algunos cursos como
+                opcionales o quita alguno para encontrar combinaciones válidas.
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Quita uno de los cursos en conflicto o márcalo como opcional.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Selected Sections (shown as floating panel) */}
       {selectedSections.length > 0 && (

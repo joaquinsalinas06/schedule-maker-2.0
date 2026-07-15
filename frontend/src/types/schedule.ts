@@ -30,6 +30,8 @@ export interface ScheduleResponse {
   combinations: ScheduleCombination[];
   total_combinations: number;
   message: string;
+  /** Present when total_combinations is 0: course pairs whose sections always overlap. */
+  blocking_conflicts?: import("@/features/schedule/logic/conflictExplainer").BlockingConflict[];
 }
 
 // Favorite Schedule Types

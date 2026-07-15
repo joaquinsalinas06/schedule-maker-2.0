@@ -4,6 +4,7 @@
 // network round-trip, works for anonymous users.
 import { generateCombinations } from "../logic/scheduleGenerator";
 import type { SectionOption } from "../logic/scheduleGenerator";
+import { findBlockingConflicts, type BlockingConflict } from "../logic/conflictExplainer";
 import type { SelectedSection, ScheduleResponse, ScheduleCombination } from "@/types";
 import type { GenerateSchedulesParams } from "../types";
 
@@ -54,9 +55,14 @@ export function generateSchedules({
     sortBy,
   });
 
+  // Zero results: tell the user which course pairs make it impossible.
+  const blockingConflicts: BlockingConflict[] =
+    combinations.length === 0 ? findBlockingConflicts(sections, requiredSectionIds) : [];
+
   return {
     combinations: combinations as unknown as ScheduleCombination[],
     total_combinations: combinations.length,
     message: combinations.length > 0 ? "OK" : "No valid combinations found",
+    blocking_conflicts: blockingConflicts,
   };
 }
