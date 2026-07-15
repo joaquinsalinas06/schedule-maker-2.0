@@ -68,9 +68,12 @@ interface ScheduleVisualizationProps {
   showBackButton?: boolean;
   favoritedCombinations?: ReadonlySet<string>;
   scheduleName?: string;
+  /** Course names to render with destructive-red styling (blocks + legend), e.g. courses in a blocking conflict. */
+  conflictingCourseNames?: ReadonlySet<string>;
 }
 
 const EMPTY_FAVORITES: ReadonlySet<string> = new Set();
+const EMPTY_CONFLICTS: ReadonlySet<string> = new Set();
 const SCHEDULE_VIZ_LOG = "[schedule-viz-debug]";
 const CUSTOM_COLORS_STORAGE_KEY = "scheduleCustomColors";
 
@@ -197,6 +200,7 @@ export function ScheduleVisualization({
   showBackButton = false,
   favoritedCombinations = EMPTY_FAVORITES,
   scheduleName,
+  conflictingCourseNames = EMPTY_CONFLICTS,
 }: ScheduleVisualizationProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -745,16 +749,34 @@ export function ScheduleVisualization({
         // Sort blocks by start time
         blocks.sort((a, b) => a.startY - b.startY);
 
-        blocks.forEach((block) => {
+        // Assign overlapping blocks to side-by-side columns (greedy interval
+        // coloring) so a conflict is visible instead of one block occluding
+        // the other. ponytail: column count uses the day's global max overlap
+        // rather than per-cluster, so non-overlapping blocks elsewhere in the
+        // same day may render narrower than strictly necessary — fine for a
+        // conflict-preview grid, revisit if it looks cramped on dense days.
+        const columnEndY: number[] = [];
+        const blocksWithCols = blocks.map((block) => {
+          let col = columnEndY.findIndex((endY) => endY <= block.startY);
+          if (col === -1) {
+            col = columnEndY.length;
+            columnEndY.push(0);
+          }
+          columnEndY[col] = block.startY + block.height;
+          return { ...block, col };
+        });
+        const colCount = columnEndY.length;
+
+        blocksWithCols.forEach((block) => {
           const course = block.course;
           const sessions = block.sessions;
           const session = sessions[0]; // We have one session per block in this structure
 
-          // Calculate position
-          const xPos = sideMarginOffset + dayWidth * dayIndex;
+          // Calculate position (split width across overlapping columns)
+          const blockWidth = dayWidth / colCount;
+          const xPos = sideMarginOffset + dayWidth * dayIndex + block.col * blockWidth;
           const yPos = block.startY;
           const blockHeight = block.height;
-          const blockWidth = dayWidth;
 
           // Validate coordinates
           if (
@@ -772,6 +794,7 @@ export function ScheduleVisualization({
           const color =
             customColors[course.course_code] ||
             courseColors[courseIndex % courseColors.length];
+          const isConflicting = conflictingCourseNames.has(course.course_name);
 
           // Draw shadow
           ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
@@ -785,9 +808,10 @@ export function ScheduleVisualization({
           ctx.fillStyle = color.bg.replace("0.9", "0.7");
           ctx.fillRect(xPos + 4, yPos + 2, blockWidth - 8, 3);
 
-          // Draw clean border
-          ctx.strokeStyle = color.bg.replace("0.9", "1");
-          ctx.lineWidth = 2;
+          // Draw border — red + thicker for courses in a blocking conflict, so
+          // the grid connects visually to the explanation message above it.
+          ctx.strokeStyle = isConflicting ? "#ef4444" : color.bg.replace("0.9", "1");
+          ctx.lineWidth = isConflicting ? 3 : 2;
           ctx.strokeRect(xPos + 4, yPos + 2, blockWidth - 8, blockHeight - 4);
 
           // Store clickable block info
@@ -952,6 +976,7 @@ export function ScheduleVisualization({
       favoritedCombinations,
       scheduleName,
       customColors,
+      conflictingCourseNames,
     ],
   );
 
@@ -1413,11 +1438,18 @@ export function ScheduleVisualization({
                   const color =
                     customColors[courseSection.course_code] ||
                     courseColors[index % courseColors.length];
+                  const isConflicting = conflictingCourseNames.has(
+                    courseSection.course_name,
+                  );
 
                   return (
                     <div
                       key={`course-${courseSection.course_id}-${index}`}
-                      className={`flex items-center gap-3 p-3 border border-border rounded-lg bg-muted/30 ${
+                      className={`flex items-center gap-3 p-3 border rounded-lg bg-muted/30 ${
+                        isConflicting
+                          ? "border-destructive ring-1 ring-destructive"
+                          : "border-border"
+                      } ${
                         !isMobile
                           ? "cursor-pointer hover:bg-muted/50 transition-colors"
                           : ""
@@ -1544,7 +1576,9 @@ export function ScheduleVisualization({
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm text-foreground">
+                        <div
+                          className={`font-medium text-sm ${isConflicting ? "text-destructive" : "text-foreground"}`}
+                        >
                           {courseSection.course_name}
                         </div>
                         <div className="text-xs text-muted-foreground truncate">

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { searchCourses, getBulkCoursesByIds } from "@/features/catalog";
 import { generateSchedules, type BlockingConflict } from "@/features/schedule";
+import { ScheduleVisualization } from "@/components/ScheduleVisualization";
 import {
   Course,
   SelectedSection,
@@ -295,6 +296,50 @@ export default function GeneratePage() {
   ];
   const totalCoursesCount = uniqueCourses.length;
 
+  // Course names involved in a blocking conflict, so the grid below the
+  // explanation can highlight exactly those blocks in red.
+  const conflictingCourseNames = useMemo(
+    () =>
+      new Set(
+        (blockingConflicts ?? []).flatMap((c) => [c.courseA, c.courseB]),
+      ),
+    [blockingConflicts],
+  );
+
+  // Synthetic "combination" built straight from the user's selection (not a
+  // real generated schedule — there are none) so ScheduleVisualization can
+  // render the conflicting classes overlapped on the weekly grid.
+  const conflictPreviewData = useMemo(() => {
+    if (blockingConflicts === null) return null;
+    return {
+      combinations: [
+        {
+          combination_id: "conflict-preview",
+          course_count: totalCoursesCount,
+          courses: selectedSections.map((s) => ({
+            course_id: s.courseId ?? s.sectionId,
+            course_code: s.courseCode,
+            course_name: s.courseName,
+            section_id: s.sectionId,
+            section_number: s.sectionCode,
+            professor: s.professor,
+            sessions: (s.sessions || []).map((session) => ({
+              session_id: session.id,
+              session_type: session.session_type,
+              day: session.day_of_week,
+              start_time: session.start_time,
+              end_time: session.end_time,
+              location: session.classroom,
+              modality: "Presencial",
+            })),
+          })),
+        },
+      ],
+      total_combinations: 1,
+      selected_courses_count: totalCoursesCount,
+    };
+  }, [blockingConflicts, selectedSections, totalCoursesCount]);
+
   const handleGenerateSchedules = async () => {
     if (selectedSections.length === 0) return;
 
@@ -438,42 +483,54 @@ export default function GeneratePage() {
         </div>
       </div>
 
-      {/* Zero-results explanation */}
+      {/* Zero-results explanation: message + the conflicting classes rendered
+          overlapped on the weekly grid, so the collision is visible and not
+          just described. */}
       {blockingConflicts !== null && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-30 w-[min(40rem,calc(100vw-2rem))]">
-          <div className="rounded-lg border border-destructive/40 bg-background shadow-lg p-4 space-y-2">
-            <div className="flex items-start justify-between gap-2">
-              <p className="font-semibold text-destructive">
-                No se puede generar ningún horario con esta selección
+        <div className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4 sm:p-8">
+          <div className="w-full max-w-4xl space-y-4 my-auto">
+            <div className="rounded-lg border border-destructive/40 bg-background shadow-lg p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <p className="font-semibold text-destructive">
+                  No se puede generar ningún horario con esta selección
+                </p>
+                <button
+                  onClick={() => setBlockingConflicts(null)}
+                  className="text-muted-foreground hover:text-foreground text-sm"
+                  aria-label="Cerrar"
+                >
+                  ✕
+                </button>
+              </div>
+              {blockingConflicts.length > 0 ? (
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  {blockingConflicts.map((c, i) => (
+                    <li key={i}>
+                      <span className="text-destructive font-medium">{c.courseA}</span> (Sección {c.example.sectionA}){" "}
+                      siempre choca con{" "}
+                      <span className="text-destructive font-medium">{c.courseB}</span> (Sección {c.example.sectionB}):{" "}
+                      {DAY_ES[c.example.day] ?? c.example.day} {c.example.startA}–{c.example.endA} vs {c.example.startB}–{c.example.endB}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Los cruces involucran a más de dos cursos a la vez. Marca algunos cursos como
+                  opcionales o quita alguno para encontrar combinaciones válidas.
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Quita uno de los cursos en conflicto o márcalo como opcional. Los cursos resaltados
+                en rojo abajo son los que chocan entre sí.
               </p>
-              <button
-                onClick={() => setBlockingConflicts(null)}
-                className="text-muted-foreground hover:text-foreground text-sm"
-                aria-label="Cerrar"
-              >
-                ✕
-              </button>
             </div>
-            {blockingConflicts.length > 0 ? (
-              <ul className="text-sm text-muted-foreground space-y-1">
-                {blockingConflicts.map((c, i) => (
-                  <li key={i}>
-                    <span className="text-foreground font-medium">{c.courseA}</span> (Sección {c.example.sectionA}){" "}
-                    siempre choca con{" "}
-                    <span className="text-foreground font-medium">{c.courseB}</span> (Sección {c.example.sectionB}):{" "}
-                    {DAY_ES[c.example.day] ?? c.example.day} {c.example.startA}–{c.example.endA} vs {c.example.startB}–{c.example.endB}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Los cruces involucran a más de dos cursos a la vez. Marca algunos cursos como
-                opcionales o quita alguno para encontrar combinaciones válidas.
-              </p>
+
+            {conflictPreviewData && (
+              <ScheduleVisualization
+                scheduleData={conflictPreviewData}
+                conflictingCourseNames={conflictingCourseNames}
+              />
             )}
-            <p className="text-xs text-muted-foreground">
-              Quita uno de los cursos en conflicto o márcalo como opcional.
-            </p>
           </div>
         </div>
       )}
