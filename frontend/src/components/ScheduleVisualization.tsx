@@ -76,6 +76,9 @@ interface ScheduleVisualizationProps {
 
 const EMPTY_FAVORITES: ReadonlySet<string> = new Set();
 const EMPTY_CONFLICTS: ReadonlySet<string> = new Set();
+
+// Display times as HH:MM — DB `time` columns arrive as "HH:MM:SS".
+const fmtTime = (t: string | undefined | null): string => (t ? t.slice(0, 5) : "");
 const SCHEDULE_VIZ_LOG = "[schedule-viz-debug]";
 const CUSTOM_COLORS_STORAGE_KEY = "scheduleCustomColors";
 
@@ -760,7 +763,10 @@ export function ScheduleVisualization({
         // conflict-preview grid, revisit if it looks cramped on dense days.
         const columnEndY: number[] = [];
         const blocksWithCols = blocks.map((block) => {
-          let col = columnEndY.findIndex((endY) => endY <= block.startY);
+          // Half-pixel epsilon: startY/endY come from separate float divisions,
+          // so a class ending 18:00 and one starting 18:00 can differ by 1 ULP
+          // and must still count as back-to-back, not overlapping.
+          let col = columnEndY.findIndex((endY) => endY <= block.startY + 0.5);
           if (col === -1) {
             col = columnEndY.length;
             columnEndY.push(0);
@@ -937,7 +943,7 @@ export function ScheduleVisualization({
           ) {
             ctx.fillStyle = "#ffffff";
             const timeHeight = drawFittingText(
-              `${session.start_time} - ${session.end_time}`,
+              `${fmtTime(session.start_time)} - ${fmtTime(session.end_time)}`,
               textX,
               currentY,
               maxWidth,
@@ -1793,7 +1799,7 @@ export function ScheduleVisualization({
                             {dayName}
                           </strong>
                           <span className="text-foreground font-mono font-semibold text-xs bg-muted px-2 py-0.5 rounded">
-                            {session.start_time} - {session.end_time}
+                            {fmtTime(session.start_time)} - {fmtTime(session.end_time)}
                           </span>
                         </div>
                         <div className="flex flex-col gap-1 mt-1">
