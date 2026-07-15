@@ -55,15 +55,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAnonymous = !!user?.is_anonymous
 
   const signInWithGoogle = useCallback(async () => {
+    const redirectTo = `${window.location.origin}/dashboard`
     if (isAnonymous) {
       // Upgrade the anonymous user in place instead of creating a new account.
-      await supabase.auth.linkIdentity({ provider: "google" })
-    } else {
-      await supabase.auth.signInWithOAuth({
+      // linkIdentity returns { error } rather than throwing — if linking is
+      // unavailable (manual linking disabled, or the Google identity already
+      // belongs to an existing account) fall back to a normal OAuth sign-in,
+      // which logs into that account and abandons the anonymous session.
+      const { error } = await supabase.auth.linkIdentity({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/dashboard` },
+        options: { redirectTo },
       })
+      if (!error) return
+      console.warn("linkIdentity failed, falling back to signInWithOAuth:", error.message)
     }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo },
+    })
+    if (error) throw error
   }, [supabase, isAnonymous])
 
   const signInWithEmail = useCallback(
